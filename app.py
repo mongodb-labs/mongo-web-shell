@@ -1,20 +1,29 @@
-import os
-import logging
-import pymongo
 from urlparse import urlparse
+import logging
+import os
+
 from flask import Flask
+import pymongo
+
+HOST= '0.0.0.0'
+PORT = int(os.environ.get('PORT', 5000))
+MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
+DEBUG = True
 
 app = Flask(__name__)
 _logger = logging.getLogger(__name__)
 db = None
 
+def main():
+    app.run(host=HOST, port=PORT, debug=DEBUG)
+
 def get_connection():
     global db
     if db:
         return db
-    config = urlparse(os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db'))
+    config = urlparse(MONGO_URL)
     db_name = config.path.rpartition('/')[2]
-    connection = pymongo.Connection(config.hostname, config.port)
+    connection = pymongo.MongoClient(config.hostname, config.port)
     db = connection[db_name]
     if config.username:
         db.authenticate(config.username, config.password)
@@ -27,7 +36,4 @@ def hello():
     return 'Hello World! {0}'.format(emptyset.count())
 
 if __name__ == '__main__':
-    # Bind to PORT if defined, otherwise default to 5000.
-    port = int(os.environ.get('PORT', 5000))
-    app.debug = True
-    app.run(host='0.0.0.0', port=port)
+    main()
