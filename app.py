@@ -14,6 +14,9 @@ app = Flask(__name__)
 _logger = logging.getLogger(__name__)
 db = None
 
+def main():
+    app.run(host=HOST, port=PORT, debug=DEBUG)
+
 def get_connection():
     global db
     if db:
@@ -33,4 +36,4 @@ def hello():
     return 'Hello World! {0}'.format(emptyset.count())
 
 if __name__ == '__main__':
-    app.run(host=HOST, port=PORT, debug=DEBUG)
+    main()
