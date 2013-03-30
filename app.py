@@ -1,8 +1,9 @@
-import os
-import logging
-import pymongo
 from urlparse import urlparse
+import logging
+import os
+
 from flask import Flask
+import pymongo
 
 app = Flask(__name__)
 _logger = logging.getLogger(__name__)
