@@ -1,0 +1,28 @@
+version: 1
+
+formatters:
+  default:
+    format: '[%(asctime)s] %(name)s::%(levelname)s::%(funcName)s(): %(message)s'
+  root:
+    format: '[%(asctime)s] %(name)s::%(levelname)s: %(message)s'
+
+handlers:
+  console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: default
+    stream: ext://sys.stdout
+  root_console:
+    class: logging.StreamHandler
+    formatter: root
+    stream: ext://sys.stdout
+
+loggers:
+  __main__:
+    level: DEBUG
+    handlers: [console]
+    propagate: no
+
+root:
+  level: INFO
+  handlers: [root_console]
