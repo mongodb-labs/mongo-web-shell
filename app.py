@@ -20,7 +20,7 @@ def get_connection():
         return db
     config = urlparse(MONGO_URL)
     db_name = config.path.rpartition('/')[2]
-    connection = pymongo.Connection(config.hostname, config.port)
+    connection = pymongo.MongoClient(config.hostname, config.port)
     db = connection[db_name]
     if config.username:
         db.authenticate(config.username, config.password)
