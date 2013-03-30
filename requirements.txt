@@ -4,4 +4,4 @@ PyYAML==3.10
 Werkzeug==0.8.3
 distribute==0.6.35
 wsgiref==0.1.2
-pymongo==2.4
+pymongo==2.5
