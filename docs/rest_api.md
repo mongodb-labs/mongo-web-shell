@@ -37,16 +37,11 @@ change.
           success and which are failure.
         * Split result into result and error?
 
-* `PUT db/:id` :: Resets the db resource's timeout period at the given id.
+* `POST db/:id/keep-alive` :: Resets the db resource's timeout period at the
+  given id.
     * __Params__:
         * *id*: The id of the desired db resource.
     * __Returns__: N/A
-    * __TODO__:
-        * `PUT` should be idempotent, however, since the timeout period will
-          likely be dictated by timestamps, running `PUT` multiple times does
-          not cause an identical resource state. Therefore, this functionality
-          may need to be accessed by a `POST` request and thus the URI should
-          change, perhaps to `db/:id/keep-alive`.
 
 TODO
 ----
