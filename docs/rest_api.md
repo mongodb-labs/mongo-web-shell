@@ -7,7 +7,7 @@ change.
   returns the associated URI. A user can make requests to the returned URI (see
   the API below) to interact with the backing mongo instance.
 
-  Creating a db resource involves copying an initial mongoDB database template.
+  Creating a db resource involves copying an initial mongoDB database data set.
     * __Params__: N/A
     * __Returns__:
         * *uri*: The URI to use when querying the new resource. It is of the
@@ -18,8 +18,8 @@ change.
           resource can access it (probably done through cookies). Spec out this
           behavior.
         * Eventually, the db resource will be able to be copied from several
-          initial templates that are specified in the configuration file; there
-          should be a parameter in the request to specify which template to
+          initial data sets that are specified in the configuration file; there
+          should be a parameter in the request to specify which data set to
           copy.
 
 * `POST db/:id` :: Queries the db resource at the given id and returns a status
