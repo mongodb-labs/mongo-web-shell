@@ -10,10 +10,7 @@ import yaml
 
 from mongows import app
 
-HOST= '0.0.0.0'
-PORT = int(os.environ.get('PORT', 5000))
 MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
-DEBUG = True
 
 CONF_DIR = 'conf/'
 LOGGING_DIR = CONF_DIR + 'logging/'
@@ -21,9 +18,6 @@ DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
 
 _logger = None
 db = None
-
-def main():
-    app.run(host=HOST, port=PORT, debug=DEBUG)
 
 def get_connection():
     global db
@@ -77,6 +71,3 @@ def _init_logging():
     return logger
 
 _logger = _init_logging()
-
-if __name__ == '__main__':
-    main()
