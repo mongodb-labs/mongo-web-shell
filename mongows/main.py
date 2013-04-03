@@ -8,21 +8,16 @@ from flask import Flask
 import pymongo
 import yaml
 
-HOST= '0.0.0.0'
-PORT = int(os.environ.get('PORT', 5000))
+from mongows import app
+
 MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
-DEBUG = True
 
 CONF_DIR = 'conf/'
 LOGGING_DIR = CONF_DIR + 'logging/'
 DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
 
-app = Flask(__name__)
 _logger = None
 db = None
-
-def main():
-    app.run(host=HOST, port=PORT, debug=DEBUG)
 
 def get_connection():
     global db
@@ -35,12 +30,6 @@ def get_connection():
     if config.username:
         db.authenticate(config.username, config.password)
     return db
-
-@app.route('/')
-def hello():
-    db = get_connection()
-    emptyset = db.some_collection.find()
-    return 'Hello World! {0}'.format(emptyset.count())
 
 def _init_logging():
     """Returns a configured Logger object.
@@ -76,6 +65,3 @@ def _init_logging():
     return logger
 
 _logger = _init_logging()
-
-if __name__ == '__main__':
-    main()
