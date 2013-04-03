@@ -8,6 +8,8 @@ from flask import Flask
 import pymongo
 import yaml
 
+from mongows import app
+
 HOST= '0.0.0.0'
 PORT = int(os.environ.get('PORT', 5000))
 MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
@@ -17,7 +19,6 @@ CONF_DIR = 'conf/'
 LOGGING_DIR = CONF_DIR + 'logging/'
 DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
 
-app = Flask(__name__)
 _logger = None
 db = None
 
