@@ -31,12 +31,6 @@ def get_connection():
         db.authenticate(config.username, config.password)
     return db
 
-@app.route('/')
-def hello():
-    db = get_connection()
-    emptyset = db.some_collection.find()
-    return 'Hello World! {0}'.format(emptyset.count())
-
 def _init_logging():
     """Returns a configured Logger object.
 
