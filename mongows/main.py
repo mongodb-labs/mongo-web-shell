@@ -1,13 +1,12 @@
 from urlparse import urlparse
 import logging
 import logging.config
-import os
 import sys
 
 import pymongo
 import yaml
 
-MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
+from mongows import app
 
 CONF_DIR = 'conf/'
 LOGGING_DIR = CONF_DIR + 'logging/'
@@ -20,7 +19,7 @@ def get_connection():
     global db
     if db:
         return db
-    config = urlparse(MONGO_URL)
+    config = urlparse(app.config['MONGO_URL'])
     db_name = config.path.rpartition('/')[2]
     connection = pymongo.MongoClient(config.hostname, config.port)
     db = connection[db_name]
