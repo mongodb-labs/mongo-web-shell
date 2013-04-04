@@ -4,11 +4,8 @@ import logging.config
 import os
 import sys
 
-from flask import Flask
 import pymongo
 import yaml
-
-from mongows import app
 
 MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
 
