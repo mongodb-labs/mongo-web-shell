@@ -8,9 +8,8 @@ import yaml
 
 from mongows import app
 
-CONF_DIR = 'conf/'
-LOGGING_DIR = CONF_DIR + 'logging/'
-DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
+DEFAULT_CONF_DIR = 'mongows/default_config/'
+DEFAULT_LOGGING_CONF_FILE = DEFAULT_CONF_DIR + 'logging.yaml'
 
 _logger = None
 db = None
