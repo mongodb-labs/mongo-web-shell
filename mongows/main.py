@@ -1,17 +1,15 @@
 from urlparse import urlparse
 import logging
 import logging.config
-import os
 import sys
 
 import pymongo
 import yaml
 
-MONGO_URL = os.environ.get('MONGOHQ_URL', 'http://localhost:27017/db')
+from mongows import app
 
-CONF_DIR = 'conf/'
-LOGGING_DIR = CONF_DIR + 'logging/'
-DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
+DEFAULT_CONF_DIR = 'mongows/default_config/'
+DEFAULT_LOGGING_CONF_FILE = DEFAULT_CONF_DIR + 'logging.yaml'
 
 _logger = None
 db = None
@@ -20,7 +18,7 @@ def get_connection():
     global db
     if db:
         return db
-    config = urlparse(MONGO_URL)
+    config = urlparse(app.config['MONGO_URL'])
     db_name = config.path.rpartition('/')[2]
     connection = pymongo.MongoClient(config.hostname, config.port)
     db = connection[db_name]
@@ -28,6 +26,7 @@ def get_connection():
         db.authenticate(config.username, config.password)
     return db
 
+# TODO: Get config from instance/ folder if it exists.
 def _init_logging():
     """Returns a configured Logger object.
 
