@@ -1,9 +1,9 @@
 import unittest
 
 from mongows import views
-from tests import MongowsTestCase
+from tests import MongoWSTestCase
 
-class ViewsTestCase(MongowsTestCase):
+class ViewsTestCase(MongoWSTestCase):
 
     def test_hello(self):
         rv = self.app.get('/')

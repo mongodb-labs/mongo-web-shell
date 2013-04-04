@@ -2,7 +2,7 @@ from unittest import defaultTestLoader, TestCase
 
 from mongows import app
 
-class MongowsTestCase(TestCase):
+class MongoWSTestCase(TestCase):
     """A generic test case for the mongows package."""
 
     def setUp(self):
