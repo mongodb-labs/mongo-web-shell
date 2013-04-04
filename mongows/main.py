@@ -26,6 +26,7 @@ def get_connection():
         db.authenticate(config.username, config.password)
     return db
 
+# TODO: Get config from instance/ folder if it exists.
 def _init_logging():
     """Returns a configured Logger object.
 
