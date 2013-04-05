@@ -18,7 +18,7 @@ handlers:
     stream: ext://sys.stdout
 
 loggers:
-  __main__:
+  mongows:
     level: DEBUG
     handlers: [console]
     propagate: no
