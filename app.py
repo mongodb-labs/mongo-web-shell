@@ -4,7 +4,7 @@ import logging.config
 import os
 import sys
 
-from flask import Flask
+from flask import Flask, make_response, request, session
 import pymongo
 import yaml
 
@@ -18,6 +18,7 @@ LOGGING_DIR = CONF_DIR + 'logging/'
 DEFAULT_LOGGING_CONF_FILE = LOGGING_DIR + 'default.yaml'
 
 app = Flask(__name__)
+app.secret_key = 'KeepThisSecret' #Obviously we should change this to a real secret key
 _logger = None
 db = None
 
@@ -36,11 +37,42 @@ def get_connection():
         db.authenticate(config.username, config.password)
     return db
 
+#Need to write this method. I haven't done it yet because I don't know how to call
+#mongo to check to see if an id already exists
+def generateId():
+    _logger.warning('Not Implemented')
+    return
+
 @app.route('/')
 def hello():
     db = get_connection()
     emptyset = db.some_collection.find()
     return 'Hello World! {0}'.format(emptyset.count())
+
+@app.route('/db', methods=['POST'])
+def db_post():
+    db = get_connection()
+    id = session.get('id')
+    if id == None:
+        id = generateId()
+    #create new collection with id
+    return 'Not Implemented'
+
+@app.route('/db/:id', methods=['POST'])
+def db_id_post():
+    id = session.get('id')
+    if id == None:
+        #return session error
+        pass
+    #call mongo and return results
+    query = request.form['query']
+    return 'Not Implemented'
+
+@app.route('/db/:id/keep-alive', methods=['POST'])
+def db_id_post():
+    id = session.get('id')
+    #call mongo to keep session alive
+    return 'Not Implemented'
 
 def _init_logging():
     """Returns a configured Logger object.
