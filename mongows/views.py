@@ -1,5 +1,5 @@
 from mongows import app
-from mongows.main import get_connection
+from mongows.db import get_connection
 
 @app.route('/')
 def hello():
