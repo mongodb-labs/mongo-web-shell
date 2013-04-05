@@ -1,0 +1,19 @@
+#shell{
+	height: 800px;
+	width: 800px;
+	position: relative;
+	margin-left: auto;
+	margin-right: auto; 
+	background-color: black;
+}
+#query{
+	background-color: black;
+	color: white;
+	border: none;
+}
+li{
+  list-style-type: none;
+  color: green;
+  font-family: arial;
+  font-size: 20px;
+}
