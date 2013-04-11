@@ -22,6 +22,14 @@ change.
           should be a parameter in the request to specify which data set to
           copy.
 
+* `POST db/:id/keep-alive` :: Resets the db resource's timeout period at the
+  given id.
+    * __Params__:
+        * *id*: The id of the desired db resource.
+    * __Returns__: N/A
+
+db.collection
+-------------
 * `POST db/:id` :: Queries the db resource at the given id and returns a status
   code, the result of the query if successful or an error string if query is
   unsuccessful.
@@ -36,12 +44,6 @@ change.
         * Specify which error codes are returned, particularly which are
           success and which are failure.
         * Split result into result and error?
-
-* `POST db/:id/keep-alive` :: Resets the db resource's timeout period at the
-  given id.
-    * __Params__:
-        * *id*: The id of the desired db resource.
-    * __Returns__: N/A
 
 TODO
 ----
