@@ -31,13 +31,19 @@ web shell", is subject to change.
 
 db.collection
 -------------
-* `POST mws/:id` :: Queries the mws resource at the given id and returns a
-  status code, the result of the query if successful or an error string if
-  query is
+* `GET mws/:id/db/:collection/find` ::
+  [`db.collection.find(query, projection)`][.find()] ::
+  Performs a find() on the mws resource at the given id and returns a status
+  code, the result of the query if successful or an error string if query is
   unsuccessful.
     * __Params__:
-        * *id*: The id of the desired mws resource.
-        * *query*: The query to run on the mongodb instance.
+        * *:id*: The id of the desired mws resource.
+        * *:collection*: The mongo "collection" on which to run the query.
+        * *db*: The mongo "database" on which to run the query.
+        * *query*: (Optional) Specifies the selection criteria using
+        [query operators][].
+        * *projection*: (Optional) Controls the fields to return, or the
+        projection.
     * __Returns__:
         * *status_code*: The code describing the status of the given query.
         * *result*: The result of running the given query on the specified mws
@@ -46,9 +52,13 @@ db.collection
         * Specify which error codes are returned, particularly which are
           success and which are failure.
         * Split result into result and error?
+        * Should we return a cursor like the mongo js api does?
+        * Provide linked "projection" resources.
 
 TODO
 ----
 * Add types to params/return values?
-* Is taking id as a param necessary when it is specified in the URI? Twitter
-  appears to do it with their API; perhaps it is for convenience?
+
+[.find()]: http://docs.mongodb.org/manual/reference/method/db.collection.find/
+
+[query operators]: http://docs.mongodb.org/manual/reference/operators/
