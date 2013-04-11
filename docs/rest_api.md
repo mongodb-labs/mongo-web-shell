@@ -1,44 +1,46 @@
 mongoDB Web Shell REST API
 ==========================
-__Note__: The initial path component and resource name, "db", is subject to
-change.
+__Note__: The initial path component and resource name, "mws", short for "mongo
+web shell", is subject to change.
 
-* `POST db` :: Creates a new db resource that represents a mongoDB database and
-  returns the associated URI. A user can make requests to the returned URI (see
-  the API below) to interact with the backing mongo instance.
+* `POST mws` :: Creates a new mws resource that represents a mongoDB database
+  and returns the associated URI. A user can make requests to the returned URI
+  (see the API below) to interact with the backing mongo instance.
 
-  Creating a db resource involves copying an initial mongoDB database data set.
+  Creating a mws resource involves copying an initial mongoDB database data
+  set.
     * __Params__: N/A
     * __Returns__:
         * *uri*: The URI to use when querying the new resource. It is of the
-          form, `db/:id`.
+          form, `mws/:id`.
     * __TODO__:
-        * Spec out what else goes into creating a new db resource.
-        * A user must be authenticated to ensure only the creator of the db
+        * Spec out what else goes into creating a new mws resource.
+        * A user must be authenticated to ensure only the creator of the mws
           resource can access it (probably done through cookies). Spec out this
           behavior.
-        * Eventually, the db resource will be able to be copied from several
+        * Eventually, the mws resource will be able to be copied from several
           initial data sets that are specified in the configuration file; there
           should be a parameter in the request to specify which data set to
           copy.
 
-* `POST db/:id/keep-alive` :: Resets the db resource's timeout period at the
+* `POST mws/:id/keep-alive` :: Resets the mws resource's timeout period at the
   given id.
     * __Params__:
-        * *id*: The id of the desired db resource.
+        * *id*: The id of the desired mws resource.
     * __Returns__: N/A
 
 db.collection
 -------------
-* `POST db/:id` :: Queries the db resource at the given id and returns a status
-  code, the result of the query if successful or an error string if query is
+* `POST mws/:id` :: Queries the mws resource at the given id and returns a
+  status code, the result of the query if successful or an error string if
+  query is
   unsuccessful.
     * __Params__:
-        * *id*: The id of the desired db resource.
+        * *id*: The id of the desired mws resource.
         * *query*: The query to run on the mongodb instance.
     * __Returns__:
         * *status_code*: The code describing the status of the given query.
-        * *result*: The result of running the given query on the specified db
+        * *result*: The result of running the given query on the specified mws
           resource if successful, otherwise an error message.
     * __TODO__:
         * Specify which error codes are returned, particularly which are
