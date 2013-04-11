@@ -55,10 +55,27 @@ db.collection
         * Should we return a cursor like the mongo js api does?
         * Provide linked "projection" resources.
 
+* `POST mws/:id/db/:collection/insert` ::
+  [`db.collection.insert(document)`][.insert()] ::
+  Inserts the specified document into the mws resource at the given id and
+  returns a status code, and an error string if the insertion is unsuccessful.
+    * __Params__:
+        * *:id*: The id of the desired mws resource.
+        * *:collection*: The mongo "collection" in which to insert the document.
+        * *db*: The mongo "database" in which to insert the document.
+        * *document*: A mongo "document" to insert into the collection.
+    * __Returns__:
+        * *status_code*: The code describing the status of the given insertion.
+        * *result*: An error string if the insertion is unsuccessful.
+    * __TODO__:
+        * Move repetition from find() into a generic section under 'Queries'.
+        * Provide linked "document" resources.
+
 TODO
 ----
 * Add types to params/return values?
 
 [.find()]: http://docs.mongodb.org/manual/reference/method/db.collection.find/
+[.insert()]: http://docs.mongodb.org/manual/reference/method/db.collection.insert/
 
 [query operators]: http://docs.mongodb.org/manual/reference/operators/
