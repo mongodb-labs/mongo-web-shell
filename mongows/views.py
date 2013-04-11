@@ -1,8 +1,40 @@
+from flask import jsonify
+from flask import render_template
+from flask import request
 from mongows import app
 from mongows.db import get_connection
+from mongows.util import parse_arguments, try_number
+
+client = get_connection()
+db = client.test_database
 
 @app.route('/')
 def hello():
-    db = get_connection()
     emptyset = db.some_collection.find()
     return 'Hello World! {0}'.format(emptyset.count())
+
+@app.route('/shell')
+def shell():
+    return render_template("shell.html")
+
+@app.route('/find', methods = ['POST'])
+def find():
+    collection = request.form['collection']
+    arguments = request.form['arguments']
+    if arguments:
+        arguments = parse_arguments(arguments)
+    else:
+        arguments = {}
+    answer = db[collection].find(arguments)
+    return jsonify(answer)
+
+@app.route('/save', methods = ['POST'])
+def save():
+    collection = request.form['collection']
+    arguments = request.form['arguments']
+    if not arguments:
+        return None
+    arguments = parse_arguments(arguments)
+    answer = db[collection].save(arguments)
+    print type(answer)
+    return str(answer)
