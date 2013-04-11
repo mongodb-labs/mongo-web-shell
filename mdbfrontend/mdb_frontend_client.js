@@ -1,8 +1,10 @@
+var CSSPATH = "shellCss.css";
+
 function insertShells(){
     //create shells and dbs
     $(".mongoshell").each(function(){
         var div = this;
-        $.post("db", null, createMongoShell(div), "text");
+        $.post("db", null, createMongoShell(div), "text"); //TODO: handle error
     })
 
     //add input listening
@@ -14,7 +16,7 @@ function insertShells(){
 
     //add the css
     var element = document.createElement('link');
-    element.href = 'shellCss.css';
+    element.href = CSSPATH;
     element.rel = 'stylesheet';
     element.type = 'text/css';
     document.body.appendChild(element);
@@ -22,8 +24,8 @@ function insertShells(){
 
 function createMongoShell(div){
     return function(data, status){
-        if (status == 200){
-            var text =  '<div id = "mshellborder"><div id = "mshell"> <ul class = "inshellresponse" id ="' + data + '"> </ul><input type = "text" id ="' + data + '"class = "sinput"></div>';
+        if (status == 200){ //TODO: case where status != 200
+			var text =  '<div class = "mshell-border"><div class = "mshell-response"><ul class = "in-shell-response" id ="' + data + '" > </ul></div><div class = "shell-input-wrapper"><input type = "text" id ="' + data + '" class = "sinput"></div></div>';
             div.innerHTML = text;
         }
     }
@@ -41,21 +43,18 @@ function addInputSubmitEvent(input) {
 function submitInputAjax(input){
     var url = "db/:" + input.id + "/find/"
     var indata = parseInput(input.value);
-    $.post(url, indata, submitHelper(input), "text");
+    $.post(url, indata, submitHelper(input), "JSON");
 	input.value = "$";
 }
 
 function submitHelper(input){
-	return function(data, status){
-		if (status == 200){
+	return function(data.uri, status){
+		if (status == 200){ //TODO: case where status != 200
             var outputs = document.getElementsByClassName("inshellresponse");
-            for (var output in outputs){
+            for (var output = 0; ouput < outputs.length; output++){
                 if (outputs[output].id.valueOf() == input.id.valueOf()) {
                     var responseLines = data.split("\n");
-                    for (var line in responseLines){
-						if (line == responseLines.length - 1){
-							break;
-						}
+                    for (var line = 0; line < responseLines.length -1; line++){
                         var newLI = document.createElement("li");
                         newLI.innerHTML = responseLines[line];
                         outputs[output].innerHTML.appendChild(newLI);
@@ -90,7 +89,7 @@ function insertShellsMock(){
 }
 
 function createMongoShellMock(div, i){
-    var text =  '<div id = "mshellborder"><div id = "mshellresponse"><ul class = "inshellresponse" id ="' + 'test' + i + '" > </ul></div><div id="sinput"><input type = "text" id ="' + 'test' + i + '" class = "sinput"></div></div>';
+    var text =  '<div class = "mshell-border"><div class = "mshell-response"><ul class = "in-shell-response" id ="' + 'test' + i + '" > </ul></div><div class = "shell-input-wrapper"><input type = "text" id ="' + 'test' + i + '" class = "sinput"></div></div>';
     div.innerHTML = text;
 }
 
@@ -109,10 +108,7 @@ function submitInputAjaxMock(input){
     for (var i = 0; i < outputs.length; i++){
         if (outputs[i].id.valueOf() == input.id.valueOf()) {
             var responseLines = data.split("\n");
-            for (var line in responseLines){
-				if (line == responseLines.length - 1){
-					break;
-				}
+            for (var line = 0; line < responseLines.length -1; line++){
                 var newLI = document.createElement("li");
                 newLI.innerHTML = responseLines[line];
                 outputs[i].appendChild(newLI);
