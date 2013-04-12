@@ -1,19 +1,23 @@
-def parse_arguments(arguemnts):
+def parse_arguments(arguments):
     """
-    This functions parses the arguments, in the "k1:v1, k2:v2" to a dictionary
-    of key value pairs
+    Parses the arguments from the query from the console.
+    
+    The arguments received from the front end are comma separated and each
+    arguement is of the 'key:value' form. This function converts that into
+    a dictionary of arguments.
     """
     parsed_arguments = {}
-    arguemts_list = arguemnts.split(",")
-    for argument in arguemts_list:
+    arguments_list = arguments.split(",")
+    for argument in arguments_list:
         (key, value) = argument.split(":")
         # Key is always a string
-        key = str(key)
+        key = key
+        print type(key)
         
         # If the value was expicitely received in quotes, it should be 
         # treated as a string. Otherwise, try to convert it to a number.
         if (value[0] == '"' or value[0] == "'" ):
-            value = str(value[1:-1])
+            value = value[1:-1]
         else:
             value = try_number(value)
         
@@ -23,8 +27,13 @@ def parse_arguments(arguemnts):
 
 def try_number(input):
     """
-    This function tries to convert a number into integer or float. If
-    unsuccessful, it would return the string conversion of the input
+    Tries to convert a string to a number or a float. If not, returns string.
+    
+    The function first tries to convert the number to integer, if not then
+    tries to convert it a float. Otherwise, returns the string itself.
+    
+    TODO: Ideally, we should never get an unquoted string as a value and it
+    should be handled on the front end itself.
     """
     if input.isdigit():
         return int(input)
@@ -32,4 +41,4 @@ def try_number(input):
         input = float(input)
         return input
     except ValueError:
-        return str(input)
+        return input
