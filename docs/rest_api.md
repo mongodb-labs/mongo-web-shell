@@ -11,7 +11,7 @@ web shell", is subject to change.
   set.
     * __Params__: N/A
     * __Returns__:
-        * *id*: The id of the new resource. It should be used when making
+        * *res_id*: The id of the new resource. It should be used when making
         queries to the resource.
     * __TODO__:
         * Spec out what else goes into creating a new mws resource.
@@ -23,22 +23,22 @@ web shell", is subject to change.
           should be a parameter in the request to specify which data set to
           copy.
 
-* `POST mws/:id/keep-alive` :: Resets the mws resource's timeout period at the
-  given id.
+* `POST mws/:res_id/keep-alive` :: Resets the mws resource's timeout period at
+  the given id.
     * __Params__:
-        * *id*: The id of the desired mws resource.
+        * *:res_id*: The id of the desired mws resource.
     * __Returns__: N/A
 
 db.collection
 -------------
-* `GET mws/:id/db/:collection/find` ::
+* `GET mws/:res_id/db/:collection_name/find` ::
   [`db.collection.find(query, projection)`][.find()] ::
   Performs a find() on the mws resource at the given id and returns a status
   code, the result of the query if successful or an error string if query is
   unsuccessful.
     * __Params__:
-        * *:id*: The id of the desired mws resource.
-        * *:collection*: The mongo "collection" on which to run the query.
+        * *:res_id*: The id of the desired mws resource.
+        * *:collection_name*: The mongo "collection" on which to run the query.
         * *db*: The mongo "database" on which to run the query.
         * *query*: (Optional) Specifies the selection criteria using
         [query operators][].
@@ -55,13 +55,14 @@ db.collection
         * Should we return a cursor like the mongo js api does?
         * Provide linked "projection" resources.
 
-* `POST mws/:id/db/:collection/insert` ::
+* `POST mws/:res_id/db/:collection_name/insert` ::
   [`db.collection.insert(document)`][.insert()] ::
   Inserts the specified document into the mws resource at the given id and
   returns a status code, and an error string if the insertion is unsuccessful.
     * __Params__:
-        * *:id*: The id of the desired mws resource.
-        * *:collection*: The mongo "collection" in which to insert the document.
+        * *:res_id*: The id of the desired mws resource.
+        * *:collection_name*: The mongo "collection" in which to insert the
+        document.
         * *db*: The mongo "database" in which to insert the document.
         * *document*: A mongo "document" to insert into the collection.
     * __Returns__:
