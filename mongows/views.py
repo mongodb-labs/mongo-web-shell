@@ -21,3 +21,8 @@ def keep_mws_alive(res_id):
 def db_collection_find(res_id, collection_name):
     # TODO: Call find() on the specified params and return results.
     return '/mws/:id/db/:collection/find: Not yet implemented.'
+
+@app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
+def db_collection_insert(res_id, collection_name):
+    # TODO: Call insert() on the specified params, return status.
+    return '/mws/:id/db/:collection/insert: Not yet implemented.'
