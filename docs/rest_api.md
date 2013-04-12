@@ -11,8 +11,8 @@ web shell", is subject to change.
   set.
     * __Params__: N/A
     * __Returns__:
-        * *uri*: The URI to use when querying the new resource. It is of the
-          form, `mws/:id`.
+        * *id*: The id of the new resource. It should be used when making
+        queries to the resource.
     * __TODO__:
         * Spec out what else goes into creating a new mws resource.
         * A user must be authenticated to ensure only the creator of the mws
