@@ -1,5 +1,3 @@
-from flask import request
-
 from mongows import app
 from mongows.db import get_connection
 
@@ -9,18 +7,17 @@ def hello():
     emptyset = db.some_collection.find()
     return 'Hello World! {0}'.format(emptyset.count())
 
-@app.route('/db', methods=['POST'])
-def db_post():
-    # TODO: create new collection with id
-    return '/db Not Implemented'
+@app.route('/mws', methods=['POST'])
+def create_mws_resource():
+    # TODO: Create resource and return its associated id.
+    return '/mws: Not yet implemented.'
 
-@app.route('/db/:id', methods=['POST'])
-def db_id_post():
-    # TODO: call mongo and return results
-    query = request.form['query']
-    return '/db/:id Not Implemented'
+@app.route('/mws/<res_id>/keep-alive', methods=['POST'])
+def keep_mws_alive(res_id):
+    # TODO: Reset timeout period on mws resource with the given id.
+    return '/mws/:id/keep-alive: Not yet implemented.'
 
-@app.route('/db/:id/keep-alive', methods=['POST'])
-def db_id_keep-alive():
-    # TODO: call mongo to keep session alive
-    return 'keep-alive Not Implemented'
+@app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
+def db_collection_find(res_id, collection_name):
+    # TODO: Call find() on the specified params and return results.
+    return '/mws/:id/db/:collection/find: Not yet implemented.'
