@@ -1,6 +1,7 @@
 from flask import jsonify
 from flask import render_template
 from flask import request
+from bson.json_util import dumps
 from mongows import app
 from mongows.db import get_connection
 from mongows.util import parse_arguments, try_number
@@ -25,8 +26,9 @@ def find():
         arguments = parse_arguments(arguments)
     else:
         arguments = {}
-    answer = db[collection].find(arguments)
-    return jsonify(answer)
+    answer = list(db[collection].find(arguments))
+    answer = dumps(answer)
+    return answer
 
 @app.route('/save', methods = ['POST'])
 def save():
@@ -36,5 +38,5 @@ def save():
         return None
     arguments = parse_arguments(arguments)
     answer = db[collection].save(arguments)
-    print type(answer)
-    return str(answer)
+    answer = dumps(answer)
+    return answer
