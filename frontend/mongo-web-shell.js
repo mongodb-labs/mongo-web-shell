@@ -1,5 +1,5 @@
 var KEYCODE = 13;
-var CSSPATH = "shellCss.css"
+var CSSPATH = "mongo-web-shell.css";
 
 function insertShells(){
   //jquery
