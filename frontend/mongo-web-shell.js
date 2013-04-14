@@ -1,8 +1,9 @@
-var KEYCODE = 13;
-
 var mongoWebShell = (function () {
-  // TODO: Provide a way for the embeder to specify the path.
-  var CSS_PATH = "mongo-web-shell.css";
+  // TODO: Provide a way for the embeder to specify path. <meta> tag? js obj?
+  var CSS_PATH, MWS_BASE_RES_URL, MWS_HOST;
+  CSS_PATH = "mongo-web-shell.css";
+  MWS_HOST = 'http://localhost:5000';
+  MWS_BASE_RES_URL = MWS_HOST + '/mws';
 
   function injectStylesheet() {
     var linkElement = document.createElement('link');
@@ -17,15 +18,24 @@ var mongoWebShell = (function () {
     // TODO: Why is there a border class? Can it be done with CSS border (or be
     // renamed to be more descriptive)?
     // TODO: .mshell not defined in CSS; change it.
-    // TODO: mws-in-shell-response and mws-input set an ID received from the
-    // server in the old version; where can we inject that?
     var html = '<div class="mws-border">' +
                  '<div class="mshell">' +
                    '<ul class="mws-in-shell-response"></ul>' +
-                   '<input type="text" class="mws-input">' +
+                   '<form>' +
+                     '<input type="text" class="mws-input">' +
+                   '</form>' +
                  '</div>' +
                '</div>';
     element.innerHTML = html;
+  }
+
+  function handleShellInput(e) {
+    var formElement = e.target;
+    e.preventDefault();
+    console.log('Input event received.', e);
+    // TODO: Merge #25: Parse <input> content; remove console.log. Make AJAX
+    // request based on parsed input. On success/error, return output to
+    // console, at class mws-in-shell-response.
   }
 
   return {
@@ -40,48 +50,19 @@ var mongoWebShell = (function () {
       $('.mongo-web-shell').each(function (index, element) {
         injectShellHTML(element);
         // TODO: Disable shell input by default (during creation).
-        // TODO: POST mws resource. On success, add shell input handler, enable
-        // shell input. On error, display error message in the shell.
-        // $.post("db", null, createMongoShell(div), "text");
+        $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
+          // TODO: Check textStatus.
+          $(element).find('.mws-input').submit(handleShellInput);
+          // TODO: Enable shell input after disabling above.
+          // TODO: Inject returned mws resource id into appropriate elements;
+          // maybe the form so it's easy to get from input handler?
+        }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
+          // TODO: Display error message in the mongo web shell. Remove log.
+          console.log('AJAX request failed:', textStatus, errorThrown);
+        });
       });
     }
   };
 }());
-
-function addInputSubmitEvent(input) {
-  input.onkeydown = function(e) {
-    if (e.keyCode == KEYCODE) {
-      submitInputAjax(input);
-    }
-  };
-}
-
-function submitInputAjax(input){
-  var url = "db/:" + input.id + "/find/"
-  var indata = parseInput(input.value);
-  $.post(url, indata, submitHelper(input), "text");
-  input.value = "$";
-}
-
-function submitHelper(input){
-  return function(data, status){
-    if (status == 200){
-      var outputs = document.getElementsByClassName("inshellresponse");
-      for (var output in outputs){
-        if (outputs[output].id.valueOf() == input.id.valueOf()) {
-          var responseLines = data.split("\n");
-            for (var line in responseLines){
-              if (line == responseLines.length - 1){
-                break;
-              }
-              var newLI = document.createElement("li");
-              newLI.innerHTML = responseLines[line];
-              outputs[output].innerHTML.appendChild(newLI);
-            }
-        }
-      }
-    }
-  };
-}
 
 $(document).ready(mongoWebShell.injectShells);
