@@ -1,5 +1,6 @@
 var mongoWebShell = (function () {
-  // TODO: Provide a way for the embeder to specify path. <meta> tag? js obj?
+  // TODO: Provide a way for the embeder to specify path. <meta> tag? js obj
+  // declared on the window obj?
   var CSS_PATH, MWS_BASE_RES_URL, MWS_HOST;
   CSS_PATH = "mongo-web-shell.css";
   MWS_HOST = 'http://localhost:5000';
@@ -10,6 +11,7 @@ var mongoWebShell = (function () {
     linkElement.href = CSS_PATH;
     linkElement.rel = 'stylesheet';
     linkElement.type = 'text/css';
+    // TODO: Prepend? This would make the stylesheet overridable.
     $('head').append(linkElement);
   }
 
@@ -51,11 +53,10 @@ var mongoWebShell = (function () {
         injectShellHTML(element);
         // TODO: Disable shell input by default (during creation).
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
-          // TODO: Check textStatus.
           $(element).find('.mws-input').submit(handleShellInput);
           // TODO: Enable shell input after disabling above.
           // TODO: Inject returned mws resource id into appropriate elements;
-          // maybe the form so it's easy to get from input handler?
+          // maybe <form> so it's easy to get from handleShellInput?
         }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
           // TODO: Display error message in the mongo web shell. Remove log.
           console.log('AJAX request failed:', textStatus, errorThrown);
