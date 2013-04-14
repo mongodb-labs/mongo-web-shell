@@ -9,7 +9,7 @@ function insertShells(){
   document.getElementsByTagName('head')[0].appendChild(script);
 
   //create shells and dbs
-  $(".mongoshell").each(function(){
+  $(".mongo-web-shell").each(function(){
     var div = this;
     $.post("db", null, createMongoShell(div), "text");
   })

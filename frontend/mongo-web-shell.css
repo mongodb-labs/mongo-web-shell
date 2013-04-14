@@ -1,4 +1,5 @@
-#mshellborder {
+/* TODO: Why are there a classes here? */
+#mws-border {
   height: 640px;
   text-align: left;
   border: 2px solid;
@@ -8,7 +9,7 @@
   margin-bottom: 10px;
 }
 
-#mshellresponse {
+#mws-response {
   height: 560px;
   margin-top: 20px;
   overflow-y: auto;
@@ -17,32 +18,32 @@
   font-family: Terminal, monospace;
 }
 
-.inshellresponse {
+.mws-in-shell-response {
   list-style-type: none;
   margin-top: 0;
   margin-bottom: 0;
 }
 
-.inshellresponse li{
+.mws-in-shell-response li {
   margin-top: 3px;
 }
 
-#sinput {
+#mws-input {
   height: 60px;
   margin-top: 0px;
   text-align: center;
 }
 
-.sinput {
+.mws-input {
   width: 98%;
   height: 60px;
   border: none;
   background-color: #000000;
   color: #00e500;
   font-size: 20px;
-  font-family: Terminal, monospace
+  font-family: Terminal, monospace;
 }
 
-.sinput:focus {
+.mws-input:focus {
   outline: none;
 }
