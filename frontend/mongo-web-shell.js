@@ -1,42 +1,52 @@
 var KEYCODE = 13;
-var CSSPATH = "mongo-web-shell.css";
 
-function insertShells(){
-  //jquery
-  var script = document.createElement('script');
-  script.src = "https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"
-  script.type = 'text/javascript';
-  document.getElementsByTagName('head')[0].appendChild(script);
+var mongoWebShell = (function () {
+  // TODO: Provide a way for the embeder to specify the path.
+  var CSS_PATH = "mongo-web-shell.css";
 
-  //create shells and dbs
-  $(".mongo-web-shell").each(function(){
-    var div = this;
-    $.post("db", null, createMongoShell(div), "text");
-  })
-
-  //add input listening
-  var inputs = document.getElementsByClassName("sinput");
-  for (var i = 0; i < inputs.length; i++){
-    addInputSubmitEvent(inputs[i]);
-    inputs[i].value = "$";
+  function injectStylesheet() {
+    var linkElement = document.createElement('link');
+    linkElement.href = CSS_PATH;
+    linkElement.rel = 'stylesheet';
+    linkElement.type = 'text/css';
+    $('head').append(linkElement);
   }
 
-  //add the css
-  var element = document.createElement('link');
-  element.href = CSSPATH;
-  element.rel = 'stylesheet';
-  element.type = 'text/css';
-  document.body.appendChild(element);
-}
+  function injectShellHTML(element) {
+    // TODO: Use client-side templating instead.
+    // TODO: Why is there a border class? Can it be done with CSS border (or be
+    // renamed to be more descriptive)?
+    // TODO: .mshell not defined in CSS; change it.
+    // TODO: mws-in-shell-response and mws-input set an ID received from the
+    // server in the old version; where can we inject that?
+    var html = '<div class="mws-border">' +
+                 '<div class="mshell">' +
+                   '<ul class="mws-in-shell-response"></ul>' +
+                   '<input type="text" class="mws-input">' +
+                 '</div>' +
+               '</div>';
+    element.innerHTML = html;
+  }
 
-function createMongoShell(div){
-  return function(data, status){
-    if (status == 200){
-      var text =  '<div id = "mshellborder"><div id = "mshell"> <ul class = "inshellresponse" id ="' + data + '"> </ul><input type = "text" id ="' + data + '"class = "sinput"></div>';
-      div.innerHTML = text;
+  return {
+    /**
+     * Injects a mongo web shell into the DOM wherever an element of class
+     * 'mongo-web-shell' can be found. Additionally sets up the resources
+     * required by the web shell, including the mws REST resource and the mws
+     * CSS stylesheets.
+     */
+    injectShells: function () {
+      injectStylesheet();
+      $('.mongo-web-shell').each(function (index, element) {
+        injectShellHTML(element);
+        // TODO: Disable shell input by default (during creation).
+        // TODO: POST mws resource. On success, add shell input handler, enable
+        // shell input. On error, display error message in the shell.
+        // $.post("db", null, createMongoShell(div), "text");
+      });
     }
-  }
-}
+  };
+}());
 
 function addInputSubmitEvent(input) {
   input.onkeydown = function(e) {
@@ -73,3 +83,5 @@ function submitHelper(input){
     }
   };
 }
+
+$(document).ready(mongoWebShell.injectShells);
