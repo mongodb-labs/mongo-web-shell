@@ -1,0 +1,48 @@
+#mshellborder {
+  height: 640px;
+  text-align: left;
+  border: 2px solid;
+  border-radius: 25px;
+  background-color: #000000;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+#mshellresponse {
+  height: 560px;
+  margin-top: 20px;
+  overflow-y: auto;
+  color: #00e500;
+  font-size: 20px;
+  font-family: Terminal, monospace;
+}
+
+.inshellresponse {
+  list-style-type: none;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.inshellresponse li{
+  margin-top: 3px;
+}
+
+#sinput {
+  height: 60px;
+  margin-top: 0px;
+  text-align: center;
+}
+
+.sinput {
+  width: 98%;
+  height: 60px;
+  border: none;
+  background-color: #000000;
+  color: #00e500;
+  font-size: 20px;
+  font-family: Terminal, monospace
+}
+
+.sinput:focus {
+  outline: none;
+}
