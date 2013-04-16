@@ -31,13 +31,21 @@ var mongoWebShell = (function () {
     element.innerHTML = html;
   }
 
-  function handleShellInput(e) {
-    var formElement = e.target;
-    e.preventDefault();
-    console.log('Input event received.', e);
+  function handleShellInput(data) {
+    console.log('Received text:', data);
     // TODO: Merge #25: Parse <input> content; remove console.log. Make AJAX
     // request based on parsed input. On success/error, return output to
     // console, at class mws-in-shell-response.
+  }
+
+  function attachShellInputHandler(shellElement) {
+    $(shellElement).find('form').submit(function (e) {
+      var $input;
+      e.preventDefault();
+      $input = $(e.target).find('.mws-input');
+      handleShellInput($input.val());
+      $input.val('');
+    });
   }
 
   return {
@@ -49,11 +57,11 @@ var mongoWebShell = (function () {
      */
     injectShells: function () {
       injectStylesheet();
-      $('.mongo-web-shell').each(function (index, element) {
-        injectShellHTML(element);
+      $('.mongo-web-shell').each(function (index, shellElement) {
+        injectShellHTML(shellElement);
         // TODO: Disable shell input by default (during creation).
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
-          $(element).find('.mws-input').submit(handleShellInput);
+          attachShellInputHandler(shellElement);
           // TODO: Enable shell input after disabling above.
           // TODO: Inject returned mws resource id into appropriate elements;
           // maybe <form> so it's easy to get from handleShellInput?
