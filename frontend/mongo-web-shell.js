@@ -31,7 +31,7 @@ var mongoWebShell = (function () {
                  '<div class="mshell">' +
                    '<ul class="mws-in-shell-response"></ul>' +
                    '<form>' +
-                     '<input type="text" class="mws-input">' +
+                     '<input type="text" class="mws-input" disabled="true">' +
                    '</form>' +
                  '</div>' +
                '</div>';
@@ -67,7 +67,6 @@ var mongoWebShell = (function () {
         var $shell = $(shellElement);
         updateExternalResourcePaths($shell);
         injectShellHTML($shell);
-        // TODO: Disable shell input by default (during creation).
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
           if (!data.res_id) {
             // TODO: Print error in shell. Improve error below.
@@ -75,7 +74,7 @@ var mongoWebShell = (function () {
             return;
           }
           attachShellInputHandler($shell, data.res_id);
-          // TODO: Enable shell input after disabling above.
+          $shell.find('.mws-input')[0].disabled = false;
         }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
           // TODO: Display error message in the mongo web shell. Remove log.
           console.log('AJAX request failed:', textStatus, errorThrown);
