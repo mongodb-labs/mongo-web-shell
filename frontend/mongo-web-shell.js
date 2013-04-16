@@ -31,19 +31,19 @@ var mongoWebShell = (function () {
     element.innerHTML = html;
   }
 
-  function handleShellInput(data) {
-    console.log('Received text:', data);
+  function handleShellInput(data, mwsResourceID) {
+    console.log('Received text:', data, mwsResourceID);
     // TODO: Merge #25: Parse <input> content; remove console.log. Make AJAX
     // request based on parsed input. On success/error, return output to
     // console, at class mws-in-shell-response.
   }
 
-  function attachShellInputHandler(shellElement) {
+  function attachShellInputHandler(shellElement, mwsResourceID) {
     $(shellElement).find('form').submit(function (e) {
       var $input;
       e.preventDefault();
       $input = $(e.target).find('.mws-input');
-      handleShellInput($input.val());
+      handleShellInput($input.val(), mwsResourceID);
       $input.val('');
     });
   }
@@ -61,10 +61,13 @@ var mongoWebShell = (function () {
         injectShellHTML(shellElement);
         // TODO: Disable shell input by default (during creation).
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
-          attachShellInputHandler(shellElement);
+          if (!data.res_id) {
+            // TODO: Print error in shell. Improve error below.
+            console.log('No res_id received!', data);
+            return;
+          }
+          attachShellInputHandler(shellElement, data.res_id);
           // TODO: Enable shell input after disabling above.
-          // TODO: Inject returned mws resource id into appropriate elements;
-          // maybe <form> so it's easy to get from handleShellInput?
         }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
           // TODO: Display error message in the mongo web shell. Remove log.
           console.log('AJAX request failed:', textStatus, errorThrown);
