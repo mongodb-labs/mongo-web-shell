@@ -1,10 +1,17 @@
 var mongoWebShell = (function () {
-  // TODO: Provide a way for the embeder to specify path. <meta> tag? js obj
-  // declared on the window obj?
   var CSS_PATH, MWS_BASE_RES_URL, MWS_HOST;
-  CSS_PATH = "mongo-web-shell.css";
+  // Default values.
+  CSS_PATH = 'mongo-web-shell.css';
   MWS_HOST = 'http://localhost:5000';
   MWS_BASE_RES_URL = MWS_HOST + '/mws';
+
+  function updateExternalResourcePaths($shell) {
+    // TODO: Document these data attributes.
+    // TODO: Should each shell be able to have its own host?
+    CSS_PATH = $shell.data('css-path') || CSS_PATH;
+    MWS_HOST = $shell.data('mws-host') || MWS_HOST;
+    MWS_BASE_RES_URL = MWS_HOST + '/mws';
+  }
 
   function injectStylesheet() {
     var linkElement = document.createElement('link');
@@ -15,7 +22,7 @@ var mongoWebShell = (function () {
     $('head').append(linkElement);
   }
 
-  function injectShellHTML(element) {
+  function injectShellHTML($element) {
     // TODO: Use client-side templating instead.
     // TODO: Why is there a border class? Can it be done with CSS border (or be
     // renamed to be more descriptive)?
@@ -28,7 +35,7 @@ var mongoWebShell = (function () {
                    '</form>' +
                  '</div>' +
                '</div>';
-    element.innerHTML = html;
+    $element.html(html);
   }
 
   function handleShellInput(data, mwsResourceID) {
@@ -38,8 +45,8 @@ var mongoWebShell = (function () {
     // console, at class mws-in-shell-response.
   }
 
-  function attachShellInputHandler(shellElement, mwsResourceID) {
-    $(shellElement).find('form').submit(function (e) {
+  function attachShellInputHandler($shell, mwsResourceID) {
+    $shell.find('form').submit(function (e) {
       var $input;
       e.preventDefault();
       $input = $(e.target).find('.mws-input');
@@ -56,9 +63,10 @@ var mongoWebShell = (function () {
      * CSS stylesheets.
      */
     injectShells: function () {
-      injectStylesheet();
       $('.mongo-web-shell').each(function (index, shellElement) {
-        injectShellHTML(shellElement);
+        var $shell = $(shellElement);
+        updateExternalResourcePaths($shell);
+        injectShellHTML($shell);
         // TODO: Disable shell input by default (during creation).
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
           if (!data.res_id) {
@@ -66,13 +74,14 @@ var mongoWebShell = (function () {
             console.log('No res_id received!', data);
             return;
           }
-          attachShellInputHandler(shellElement, data.res_id);
+          attachShellInputHandler($shell, data.res_id);
           // TODO: Enable shell input after disabling above.
         }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
           // TODO: Display error message in the mongo web shell. Remove log.
           console.log('AJAX request failed:', textStatus, errorThrown);
         });
       });
+      injectStylesheet();
     }
   };
 }());
