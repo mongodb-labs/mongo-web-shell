@@ -28,7 +28,7 @@ var mongoWebShell = (function () {
     // renamed to be more descriptive)?
     // TODO: .mshell not defined in CSS; change it.
     var html = '<div class="mws-border">' +
-                 '<div class="mshell">' +
+                 '<div class="mws-shell">' +
                    '<ul class="mws-in-shell-response"></ul>' +
                    '<form>' +
                      '<input type="text" class="mws-input" disabled="true">' +
@@ -38,11 +38,20 @@ var mongoWebShell = (function () {
     $element.html(html);
   }
 
-  function handleShellInput(data, mwsResourceID) {
-    console.log('Received text:', data, mwsResourceID);
+  function handleShellInput(data, mwsResourceID, $output) {
     // TODO: Merge #25: Parse <input> content; remove console.log. Make AJAX
     // request based on parsed input. On success/error, return output to
     // console, at class mws-in-shell-response.
+
+    //upon recieveing output in a string w/ each line separated by a new line, add each line to the shell
+    var responseLines = data.split("\n"); //data is the object returned by the AJAX request
+    for (var i = 0; i < responseLines.length; i++){
+      if (i == responseLines.length -1){
+	break; //the last line will be an empty newline, dont want to print that
+      }
+      var line = '<li>' + responseLines[i] + '</li>';
+      $output.append(line);
+    }
   }
 
   function attachShellInputHandler($shell, mwsResourceID) {
@@ -50,7 +59,8 @@ var mongoWebShell = (function () {
       var $input;
       e.preventDefault();
       $input = $(e.target).find('.mws-input');
-      handleShellInput($input.val(), mwsResourceID);
+      $output = $shell.find('.mws-in-shell-response');
+      handleShellInput($input.val(), mwsResourceID, $output);
       $input.val('');
     });
   }
@@ -71,7 +81,7 @@ var mongoWebShell = (function () {
           if (!data.res_id) {
             // TODO: Print error in shell. Improve error below.
             console.log('No res_id received!', data);
-            return;
+            //return;
           }
           attachShellInputHandler($shell, data.res_id);
           $shell.find('.mws-input')[0].disabled = false;
