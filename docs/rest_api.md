@@ -72,6 +72,13 @@ db.collection
         * Move repetition from find() into a generic section under 'Queries'.
         * Provide linked "document" resources.
 
+* `GET / POST /mws/<res_id>/<error_type>` :: a method to redirect to to generate
+  error messages
+    *__Params__:
+      * *res_id*: The id of the requesting client
+      * *error_type*: The type of error (may change to a code)
+      *__Returns__: Error code
+
 TODO
 ----
 * Add types to params/return values?
