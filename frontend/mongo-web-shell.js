@@ -1,3 +1,5 @@
+/* jshint camelcase: false, unused: false */
+/* global debug */
 var mongoWebShell = (function () {
   var CSS_PATH, MWS_BASE_RES_URL, MWS_HOST;
   // Default values.
@@ -39,10 +41,10 @@ var mongoWebShell = (function () {
   }
 
   function handleShellInput(data, mwsResourceID) {
-    console.log('Received text:', data, mwsResourceID);
-    // TODO: Merge #25: Parse <input> content; remove console.log. Make AJAX
-    // request based on parsed input. On success/error, return output to
-    // console, at class mws-in-shell-response.
+    debug.debug('Received text:', data, mwsResourceID);
+    // TODO: Merge #25: Parse <input> content; Make AJAX request based on
+    // parsed input. On success/error, return output to console, at class
+    // mws-in-shell-response.
   }
 
   function attachShellInputHandler($shell, mwsResourceID) {
@@ -70,14 +72,14 @@ var mongoWebShell = (function () {
         $.post(MWS_BASE_RES_URL, null, function (data, textStatus, jqXHR) {
           if (!data.res_id) {
             // TODO: Print error in shell. Improve error below.
-            console.log('No res_id received!', data);
+            debug.warn('No res_id received! Shell disabled.', data);
             return;
           }
           attachShellInputHandler($shell, data.res_id);
           $shell.find('.mws-input')[0].disabled = false;
         }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
           // TODO: Display error message in the mongo web shell. Remove log.
-          console.log('AJAX request failed:', textStatus, errorThrown);
+          debug.error('AJAX request failed:', textStatus, errorThrown);
         });
       });
       injectStylesheet();
