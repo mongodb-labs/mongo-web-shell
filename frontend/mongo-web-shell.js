@@ -1,3 +1,5 @@
+// TODO: Remove devel once we integrate with debug().
+/* jshint camelcase: false, devel: true, unused: false */
 var mongoWebShell = (function () {
   var CSS_PATH, MWS_BASE_RES_URL, MWS_HOST;
   // Default values.
