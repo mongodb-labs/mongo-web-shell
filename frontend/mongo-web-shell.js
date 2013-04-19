@@ -1,5 +1,11 @@
-/* jshint camelcase: false, devel: true, unused: false */
+/* jshint camelcase: false, unused: false */
 var mongo = {};
+
+// Protect older browsers from an absent console.
+if (!console || !console.log) { var console = { log: function () {} }; }
+if (!console.debug || !console.error || !console.info || !console.warn) {
+  console.debug = console.error = console.info = console.warn = console.log;
+}
 
 /**
  * Injects a mongo web shell into the DOM wherever an element of class
