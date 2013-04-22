@@ -78,16 +78,18 @@ def keep_mws_alive(res_id):
 @app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_find(res_id, collection_name):
-    if 'arguments' in request.form:
-        try:
-            arguments = loads(request.form['arguments'])
-        except:
-            # TODO: return error to client
-            pass
+    if 'query' in request.json:
+        query = request.json['query']
     else:
-        arguments = {}
+        query = {}
 
-    mongo_cursor = db.collection_find(res_id, collection_name, arguments)
+    if 'projection' in request.json:
+        projection = request.json['projection']
+    else:
+        projection = {}
+
+    mongo_cursor = db.collection_find(res_id, collection_name, query,
+                                      projection)
     # Get the results from the cursor and convert it to JSON format before
     # returning
     result = list(mongo_cursor)
@@ -96,14 +98,11 @@ def db_collection_find(res_id, collection_name):
 @app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
-    if 'document' in request.form:
-        try:
-            document = loads(request.form['document'])
-        except:
-            # TODO: return error to client
-            pass
+    if 'document' in request.json:
+        document = request.json['document']
     else:
         # TODO: return an error. You must have document/s for insert.
+        print "Document argument not found in the request."
         pass
 
     result = db.collection_insert(res_id, collection_name, document)

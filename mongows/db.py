@@ -12,36 +12,44 @@ def get_connection():
         return client
     config = urlparse(app.config['MONGO_URL'])
     db_name = config.path.rpartition('/')[2]
-    client = pymongo.MongoClient(config.hostname, config.port)
+    try:
+        client = pymongo.MongoClient(config.hostname, config.port)
+    except TypeError:
+        print "Port is not an instance of int."
+        # TODO: Throw appropriate exception
+    except ConnectionFailure:
+        print "Connection to the database could not be made."
+        # TODO: Propogate the exception
+    except AutoReconnect:
+        print "Auto-reconnection performed."
+        # TODO: Propogate the exception
+
     return client
 
-def collection_find(res_id, collection, arguments):
-    client = get_connection()
-
-    if res_id in mongo_client:
+def collection_find(res_id, collection, query, projection):
+    mongo_client = get_connection()
+    if hasattr(mongo_client, res_id):
         db = mongo_client[res_id]
     else:
         # TODO: Throw an exception
-        pass
-    if not collection in db:
+        print "ERROR: Could not find the DB on server. DB name: " + res_id
+
+    if not hasattr(db, collection):
         # TODO: Throw an exception
-        pass
-
+        print "ERROR: Could not find the collection in DB. \
+               Collection name: " + collection
     db = client[res_id]
-    mongo_cursor = db[collection].find(arguments)
-
-    return mongo_cursor
+    return db[collection].find(query, projection)
 
 def collection_insert(res_id, collection, document):
-    client = get_connection()
-
-    if res_id in mongo_client:
+    mongo_client = get_connection()
+    if hasattr(mongo_client, res_id):
         db = mongo_client[res_id]
     else:
         # TODO: Throw an exception
-        pass
-    if not collection in db:
+        print "ERROR: Could not find the DB on server. DB name: " + res_id
+    if not hasattr(db, collection):
         # TODO: Throw an exception
-        pass
-
+        print "ERROR: Could not find the collection in DB. \
+               Collection name: " + collection
     return db[collection].insert(document)
