@@ -103,7 +103,6 @@ def db_collection_insert(res_id, collection_name):
     else:
         # TODO: return an error. You must have document/s for insert.
         print "Document argument not found in the request."
-        pass
 
     result = db.collection_insert(res_id, collection_name, document)
     return dumps(result)

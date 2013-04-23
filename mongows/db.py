@@ -36,8 +36,8 @@ def collection_find(res_id, collection, query, projection):
 
     if not hasattr(db, collection):
         # TODO: Throw an exception
-        print "ERROR: Could not find the collection in DB. \
-               Collection name: " + collection
+        print "ERROR: Could not find the collection in DB. " + \
+               "Collection name: " + collection
     db = client[res_id]
     return db[collection].find(query, projection)
 
