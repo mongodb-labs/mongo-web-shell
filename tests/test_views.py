@@ -24,18 +24,21 @@ class ViewsUnitTestCase(MongoWSTestCase):
         rv = self.app.post(url)
         self.assertTrue('{}' in rv.data)
 
-    def test_find(self):
+    def test_db_collection_find(self):
         # TODO: We should improve this test to assert something more relevant
         # than checking the presence of oid in the returned value. This should
         # be done once we add more functionality to find() and decide what
         # we are going to return to the front end.
-        rv = _make_find_request(self, "test_db", "test_collection", document)
-        self.assertTrue('$oid' in rv.data)
+        document = {'name': 'Mongo'}
+        rv = _make_find_request(self, 'test_db', 'test_collection', document)
+        json_rv_data = json.loads(rv.data)
+        self.assertTrue(len(json_rv_data) > 0)
+        self.assertTrue('_id' in json_rv_data[0])
 
-    def test_insert(self):
+    def test_db_collection_insert(self):
         # TODO: Make sure these rows are deleted in the tearDown
         document = {'name': 'Mongo'}
-        rv = _make_insert_request(self, "test_db", "test_collection", document)
+        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
         self.assertTrue('$oid' in rv.data)
 
 class ViewsIntegrationTestCase(MongoWSTestCase):
@@ -52,11 +55,14 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
         # Currently, I am just looking for presence of OBJECT_ID in the
         # return value of each call.
         document = {'name': 'Mongo'}
-        rv = _make_insert_request(self, "test_db", "test_collection", document)
-        self.assertTrue('$oid' in rv.data)
+        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
+        json_rv_data = json.loads(rv.data)
+        self.assertTrue('$oid' in json_rv_data)
 
-        rv = _make_find_request(self, "test_db", "test_collection", document)
-        self.assertTrue('$oid' in rv.data)
+        rv = _make_find_request(self, 'test_db', 'test_collection', document)
+        json_rv_data = json.loads(rv.data)
+        self.assertTrue(len(json_rv_data) > 0)
+        self.assertTrue('_id' in json_rv_data[0])
 
 def _make_find_request(self, res_id, collection, query=None, projection=None):
     url = '/mws/' + res_id +'/db/' + collection + '/find'
