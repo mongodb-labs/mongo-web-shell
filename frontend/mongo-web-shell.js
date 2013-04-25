@@ -1,4 +1,4 @@
-/* jshint camelcase: false, unused: false */
+/* jshint camelcase: false, evil: true, unused: false */
 /* global falafel */
 var mongo = {};
 
@@ -69,6 +69,58 @@ mongo.dom = (function () {
   };
 }());
 
+mongo.mutateSource = (function () {
+  var KEYWORDS = {
+    help: true,
+    show: true,
+    use: true
+  };
+  function isKeyword(id) { return KEYWORDS[id]; }
+
+  var NODE_TYPE_HANDLERS = {
+    'UnaryExpression': mutateUnaryExpression
+  };
+
+  function mutateUnaryExpression(node) {
+    switch (node.operator) {
+    case 'help':
+    case 'show':
+    case 'use':
+      console.warn('mutateUnaryExpression(): mutation of keyword "' +
+          node.operator + '" not yet implemented. Removing node source to ' +
+          'prevent parser errors.');
+      node.update('');
+      break;
+    default:
+      console.debug('mutateUnaryExpression(): keyword "' + node.operator +
+          '" is not mongo specific. Ignoring.');
+    }
+  }
+
+  /**
+   * Replaces mongo shell specific input (such as the `show` keyword or * `db.`
+   * methods) in the given javascript source with the equivalent mongo web
+   * shell calls and returns this mutated source. This transformation allows
+   * the code to be interpretted as standard javascript in the context of this
+   * html document.
+   */
+  function swapMongoCalls(src) {
+    var output = falafel(src, {isKeyword: isKeyword}, function (node) {
+      if (NODE_TYPE_HANDLERS[node.type]) {
+        NODE_TYPE_HANDLERS[node.type](node);
+      }
+    });
+    return output.toString();
+  }
+
+  return {
+    swapMongoCalls: swapMongoCalls,
+
+    _isKeyword: isKeyword,
+    _mutateUnaryExpression: mutateUnaryExpression
+  };
+}());
+
 var MWShell = function (rootElement) {
   this.$rootElement = $(rootElement);
   this.$input = null;
@@ -98,20 +150,35 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
   this.$rootElement.find('form').submit(function (e) {
     e.preventDefault();
     shell.handleInput();
-    shell.$input.val('');
   });
+};
+
+/**
+ * Retrieves the input from the mongo web shell, evaluates it, handles the
+ * responses (indirectly via callbacks), and clears the input field.
+ */
+MWShell.prototype.handleInput = function () {
+  var mutatedSrc, userInput = this.$input.val();
+  try {
+    mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput);
+    try {
+      console.debug('MWShell.handleInput(): mutated source:', mutatedSrc);
+      eval(mutatedSrc);
+    } catch (err) {
+      // TODO: This is an error on the mws front since esprima should catch
+      // standard js syntax errors in the user input and thus eval will only
+      // choke on mongo-specific sugar. Figure out how we should handle this.
+      console.error('MWShell.handleInput(): eval error:', err);
+    }
+  } catch (err) {
+    // TODO: Print parse error to mws.
+    console.warn('MWShell.handleInput(): esprima parse error:', err);
+  }
+  this.$input.val('');
 };
 
 MWShell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
-};
-
-MWShell.prototype.handleInput = function () {
-  var data = this.$input.val();
-  console.debug('Received text:', data, this.mwsResourceID);
-  // TODO: Merge #25: Parse <input> content; Make AJAX request based on
-  // parsed input. On success/error, return output to console, at class
-  // mws-in-shell-response.
 };
 
 $(document).ready(mongo.init);
