@@ -45,23 +45,26 @@ mongo.dom = (function () {
   var MWS_HOST = 'http://localhost:5000';
   var BASE_URL = MWS_HOST + '/mws';
 
-  return {
-    retrieveConfig: function () {
-      var $curScript = $('script').last();
-      return {
-        cssPath: $curScript.data('css-path') || CSS_PATH,
-        mwsHost: $curScript.data('mws-host') || MWS_HOST,
-        baseUrl: MWS_HOST + '/mws'
-      };
-    },
+  function retrieveConfig() {
+    var $curScript = $('script').last();
+    return {
+      cssPath: $curScript.data('css-path') || CSS_PATH,
+      mwsHost: $curScript.data('mws-host') || MWS_HOST,
+      baseUrl: MWS_HOST + '/mws'
+    };
+  }
 
-    injectStylesheet: function (cssPath) {
-      var linkElement = document.createElement('link');
-      linkElement.href = cssPath;
-      linkElement.rel = 'stylesheet';
-      linkElement.type = 'text/css';
-      $('head').prepend(linkElement); // Prepend so css can be overridden.
-    }
+  function injectStylesheet(cssPath) {
+    var linkElement = document.createElement('link');
+    linkElement.href = cssPath;
+    linkElement.rel = 'stylesheet';
+    linkElement.type = 'text/css';
+    $('head').prepend(linkElement); // Prepend so css can be overridden.
+  }
+
+  return {
+    retrieveConfig: retrieveConfig,
+    injectStylesheet: injectStylesheet
   };
 }());
 
