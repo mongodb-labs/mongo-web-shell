@@ -1,4 +1,5 @@
 /* jshint camelcase: false, unused: false */
+/* global falafel */
 var mongo = {};
 
 // Protect older browsers from an absent console.
