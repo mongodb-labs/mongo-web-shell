@@ -7,12 +7,13 @@ import yaml
 
 # Array of (app.config[key], 'envvar').
 _ENVVAR = [
-        ('MONGO_URL', 'MONGOHQ_URL'),
-        ('PORT',) * 2
+    ('MONGO_URL', 'MONGOHQ_URL'),
+    ('PORT',) * 2
 ]
 
 _DEFAULT_LOGGING_CONF = 'mongows/config/default_logging.yaml'
 _INSTANCE_LOGGING_CONF = 'instance/logging.yaml'
+
 
 def config_from_envvar(app):
     """Overrides the flask app's configuration with envvar where applicable."""
@@ -21,6 +22,7 @@ def config_from_envvar(app):
 
     # Correct data types.
     app.config['PORT'] = int(app.config['PORT'])
+
 
 def init_logging():
     """Configures the logging module for the app.
@@ -41,16 +43,16 @@ def init_logging():
             config_dict = yaml.load(f)
     except IOError as e:
         sys.stderr.write('WARNING::Unable to open logging configuration file: '
-                '%s' % str(e))
+                         '%s' % str(e))
     except yaml.YAMLError as e:
         sys.stderr.write('WARNING::Unable to parse yaml configuration file: '
-                '%s' % str(e))
+                         '%s' % str(e))
     else:
         try:
             logging.config.dictConfig(config_dict)
         except (ValueError, TypeError, AttributeError, ImportError) as e:
             sys.stderr.write('WARNING::dictConfig() failed to create '
-                    'configuration from file: %s' % str(e))
+                             'configuration from file: %s' % str(e))
         else:
             logging.getLogger(__name__).info('Logging initialized.')
             return

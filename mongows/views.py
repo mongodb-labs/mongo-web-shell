@@ -6,7 +6,8 @@ from flask import current_app, make_response, request
 
 from mongows import app, db
 
-REQUEST_ORIGIN = '*' # TODO: Get this value from app config.
+REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
+
 
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
 # via http://flask.pocoo.org/snippets/56/
@@ -51,6 +52,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
+
 @app.route('/')
 def hello():
     db_name = config.path.rpartition('/')[2]
@@ -58,6 +60,7 @@ def hello():
     db = mongo_client[db_name]
     emptyset = db.some_collection.find()
     return 'Hello World! {0}'.format(emptyset.count())
+
 
 @app.route('/mws', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -69,11 +72,13 @@ def create_mws_resource():
     result = {'res_id': 'test'}
     return dumps(result)
 
+
 @app.route('/mws/<res_id>/keep-alive', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def keep_mws_alive(res_id):
     # TODO: Reset timeout period on mws resource with the given id.
     return '{}'
+
 
 @app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -101,6 +106,7 @@ def db_collection_find(res_id, collection_name):
         # error message.
         print 'Error while trying to convert the values returned from ' + \
               'to JSON.'
+
 
 @app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)

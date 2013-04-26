@@ -6,6 +6,7 @@ from mongows import app
 
 client = None
 
+
 def get_connection():
     global client
     if client:
@@ -26,6 +27,7 @@ def get_connection():
 
     return client
 
+
 def collection_find(res_id, collection, query, projection):
     mongo_client = get_connection()
     if hasattr(mongo_client, res_id):
@@ -37,9 +39,10 @@ def collection_find(res_id, collection, query, projection):
     if not hasattr(db, collection):
         # TODO: Throw an exception
         print 'ERROR: Could not find the collection in DB. ' + \
-               'Collection name: ' + collection
+            'Collection name: ' + collection
     db = client[res_id]
     return db[collection].find(query, projection)
+
 
 def collection_insert(res_id, collection, document):
     mongo_client = get_connection()
