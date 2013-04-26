@@ -1,0 +1,3 @@
+[submodule "frontend/lib/falafel"]
+	path = frontend/lib/falafel
+	url = git://github.com/substack/node-falafel
