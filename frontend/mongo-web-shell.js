@@ -111,15 +111,30 @@ mongo.mutateSource = (function () {
     if (dbNode.type !== 'Identifier') { return; }
     // TODO: Resolve db reference in other identifiers.
     if (dbNode.name !== 'db') { return; }
-    // As long as this AST is more complex than "db.collection", continue.
+    if (collectionNode.type !== 'Identifier') {
+      // TODO: Can collectionNode be of any other types?
+      console.debug('collectionNode not of type Identifier.', collectionNode);
+      return;
+    }
+    // As long as this AST is deeper than "db.collection", continue.
     if (methodNode.type === 'ExpressionStatement') { return; }
 
-    // TODO: Make a call to a function that will return an object with methods
-    // corresponding to mongo db.collection methods. Note we probably need a
-    // shell reference. Like:
-    // var args = [shellID, collectionNode.source()].join(', ');
-    // node.update('generateCursor(' + args + ')');
-    console.debug('mutateMemberExpression(): would have mutated source',
+    var collectionArg = collectionNode.source();
+    if (node.computed) {
+      // TODO: We must substitute the given identifier for one not on the
+      // global object. This may be taken care of elsewhere.
+      console.error('mutateMemberExpression(): node.computed not yet' +
+          'implemented.');
+      return;
+    } else {
+      // The collection identifier should be taken from the user as a literal.
+      collectionArg = '"' + collectionArg + '"';
+    }
+
+    var args = ['mongo.shells[' + shellID + ']', collectionArg].join(', ');
+    var oldSrc = node.source();
+    node.update('new MWSQuery(' + args + ')');
+    console.debug('mutateMemberExpression(): mutated', oldSrc, 'to',
         node.source());
   }
 
@@ -225,6 +240,8 @@ var MWShell = function (rootElement, shellID) {
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
+
+  this.database = 'test'; // The name of the active mongo database.
 };
 
 MWShell.prototype.injectHTML = function () {
@@ -263,7 +280,7 @@ MWShell.prototype.handleInput = function () {
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput, this.id);
     try {
-      console.debug('MWShell.handleInput(): mutated source:', mutatedSrc);
+      console.debug('Evaling source:', mutatedSrc);
       eval(mutatedSrc);
     } catch (err) {
       // TODO: This is an error on the mws front since esprima should catch
@@ -280,6 +297,38 @@ MWShell.prototype.handleInput = function () {
 
 MWShell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
+};
+
+/**
+ * Handles a query of the form "db.collection.method()." Each method on this
+ * object will return an MWSCursor which is expected to continue the query
+ * lifecycle by propagating the request to the remote mongo web service and
+ * associated database.
+ */
+var MWSQuery = function (shell, collection) {
+  this.shell = shell;
+  this.collection = collection;
+  // The shell can change the active DB but a query's DB should be static.
+  this.database = this.shell.database;
+  console.debug('Create MWSQuery', this);
+};
+
+MWSQuery.prototype.find = function (query, projection) {
+  // TODO: Implement.
+  console.debug('find called:', this);
+  return new MWSCursor(this);
+};
+
+/**
+ * Provides a user with methods to modify the query result format, propagates
+ * this request to the remote mongo web service and associated database, and
+ * provides methods so a user can iterate through the results.
+ */
+var MWSCursor = function (mwsQuery) {
+  this.shell = mwsQuery.shell;
+  this.database = mwsQuery.database;
+  this.collection = mwsQuery.collection;
+  console.debug('Created MWSCursor:', this);
 };
 
 $(document).ready(mongo.init);
