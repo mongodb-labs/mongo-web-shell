@@ -277,22 +277,55 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
  */
 MWShell.prototype.handleInput = function () {
   var mutatedSrc, userInput = this.$input.val();
+  this.$input.val('');
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput, this.id);
-    try {
-      console.debug('Evaling source:', mutatedSrc);
-      eval(mutatedSrc);
-    } catch (err) {
-      // TODO: This is an error on the mws front since esprima should catch
-      // standard js syntax errors in the user input and thus eval will only
-      // choke on mongo-specific sugar. Figure out how we should handle this.
-      console.error('MWShell.handleInput(): eval error:', err);
+  } catch (err) {
+    // TODO: Print falafel parse error to shell.
+    console.error('MWShell.handleInput(): falafel/esprima parse error:', err);
+    return;
+  }
+
+  var ast;
+  try {
+    // XXX: We need the output of eval on each js statement so we construct the
+    // AST for the second time. :( It would be more efficient to patch falafel
+    // to return the ast, but I don't have time.
+    ast = esprima.parse(mutatedSrc, {range: true});
+  } catch (err) {
+    // TODO: This is an error on the mws front since the original source
+    // already passed parsing once before and we were the ones to make the
+    // changes to the source. Figure out how to handle this error.
+    // TODO: Print esprima parse error to shell.
+    console.debug('MWShell.handleInput(): esprima parse error on mutated ' +
+        'source:', err, mutatedSrc);
+    return;
+  }
+
+  try {
+    for (var i = 0; i < ast.body.length; i++) {
+      var srcIndices = ast.body[i].range;
+      var statement = mutatedSrc.substring(srcIndices[0], srcIndices[1]);
+      console.debug('MWShell.handleInput(): Evaling', i, statement);
+      var out = eval(statement);
+      if (out instanceof MWSCursor) {
+        // TODO: Lazily execute remote query of MWSCursor.
+        console.debug('MWShell.handleInput(): would execute remote query on ' +
+            'MWSCursor:', out);
+      } else {
+        // TODO: Print out to shell.
+        console.debug('MWShell.handleInput(): shell output:', out.toString(),
+            out);
+      }
     }
   } catch (err) {
-    // TODO: Print parse error to mws.
-    console.warn('MWShell.handleInput(): esprima parse error:', err);
+    // TODO: Print out to shell.
+    // TODO: This is probably an unknown identifier error. We should be hiding
+    // the identifiers from the global object by hand (to be implemented
+    // later) so so this is likely our fault. Figure out how to handle.
+    // TODO: "var i = 1;" throws a TypeError here. Find out why.
+    console.error('MWShell.handleInput(): eval error:', err);
   }
-  this.$input.val('');
 };
 
 MWShell.prototype.enableInput = function (bool) {
@@ -323,6 +356,11 @@ MWSQuery.prototype.find = function (query, projection) {
  * Provides a user with methods to modify the query result format, propagates
  * this request to the remote mongo web service and associated database, and
  * provides methods so a user can iterate through the results.
+ *
+ * The remote request is handled lazily - the query will only execute after all
+ * of the expressions in the statement containing the cursor are evaluated.
+ * After the request is sent, methods that modify the query result (e.g. sort)
+ * can no longer be called and result iteration methods are enabled.
  */
 var MWSCursor = function (mwsQuery) {
   this.shell = mwsQuery.shell;
