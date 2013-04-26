@@ -93,8 +93,32 @@ mongo.mutateSource = (function () {
   function isKeyword(id) { return KEYWORDS[id]; }
 
   var NODE_TYPE_HANDLERS = {
+    'MemberExpression': mutateMemberExpression,
     'UnaryExpression': mutateUnaryExpression
   };
+
+  function mutateMemberExpression(node) {
+    // Search for an expression of the form "db.collection.method()",
+    // attempting to match from the "db.collection" MemberExpression node as
+    // this is the one that will be modified.
+    var dbNode = node.object, collectionNode = node.property,
+        methodNode = node.parent;
+    // TODO: Resolve db reference from a CallExpression.
+    // TODO: Resolve db.collection reference from a CallExpression.
+    if (dbNode.type !== 'Identifier') { return; }
+    // TODO: Resolve db reference in other identifiers.
+    if (dbNode.name !== 'db') { return; }
+    // As long as this AST is more complex than "db.collection", continue.
+    if (methodNode.type === 'ExpressionStatement') { return; }
+
+    // TODO: Make a call to a function that will return an object with methods
+    // corresponding to mongo db.collection methods. Note we probably need a
+    // shell reference. Like:
+    // var args = [shellID, collectionNode.source()].join(', ');
+    // node.update('generateCursor(' + args + ')');
+    console.debug('mutateMemberExpression(): would have mutated source',
+        node.source());
+  }
 
   function mutateUnaryExpression(node) {
     switch (node.operator) {
@@ -132,6 +156,7 @@ mongo.mutateSource = (function () {
     swapMongoCalls: swapMongoCalls,
 
     _isKeyword: isKeyword,
+    _mutateMemberExpression: mutateMemberExpression,
     _mutateUnaryExpression: mutateUnaryExpression
   };
 }());
