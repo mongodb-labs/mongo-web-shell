@@ -31,9 +31,12 @@ class ViewsUnitTestCase(MongoWSTestCase):
         # we are going to return to the front end.
         document = {'name': 'Mongo'}
         rv = _make_find_request(self, 'test_db', 'test_collection', document)
-        json_rv_data = json.loads(rv.data)
-        self.assertTrue(len(json_rv_data) > 0)
-        self.assertTrue('_id' in json_rv_data[0])
+        try:
+            json_rv_data = json.loads(rv.data)
+            self.assertTrue(len(json_rv_data) > 0)
+            self.assertTrue('_id' in json_rv_data[0])
+        except ValueError:
+            self.assertTrue(False)
 
     def test_db_collection_insert(self):
         # TODO: Make sure these rows are deleted in the tearDown
@@ -56,13 +59,19 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
         # return value of each call.
         document = {'name': 'Mongo'}
         rv = _make_insert_request(self, 'test_db', 'test_collection', document)
-        json_rv_data = json.loads(rv.data)
-        self.assertTrue('$oid' in json_rv_data)
+        try:
+            json_rv_data = json.loads(rv.data)
+            self.assertTrue('$oid' in json_rv_data)
+        except ValueError:
+            self.assertTrue(False)
 
         rv = _make_find_request(self, 'test_db', 'test_collection', document)
-        json_rv_data = json.loads(rv.data)
-        self.assertTrue(len(json_rv_data) > 0)
-        self.assertTrue('_id' in json_rv_data[0])
+        try:
+            json_rv_data = json.loads(rv.data)
+            self.assertTrue(len(json_rv_data) > 0)
+            self.assertTrue('_id' in json_rv_data[0])
+        except ValueError:
+            self.assertTrue(False)
 
 def _make_find_request(self, res_id, collection, query=None, projection=None):
     url = '/mws/' + res_id +'/db/' + collection + '/find'

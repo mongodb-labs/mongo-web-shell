@@ -1,7 +1,7 @@
 from datetime import timedelta
 from functools import update_wrapper
 
-from bson.json_util import dumps, loads
+from bson.json_util import dumps
 from flask import current_app, make_response, request
 
 from mongows import app, db
@@ -93,7 +93,14 @@ def db_collection_find(res_id, collection_name):
     # Get the results from the cursor and convert it to JSON format before
     # returning
     result = list(mongo_cursor)
-    return dumps(result)
+    try:
+        result = dumps(result)
+        return result
+    except ValueError:
+        # TODO: Handle this appropriately instead of the just printing
+        # error message.
+        print 'Error while trying to convert the values returned from ' + \
+              'to JSON.'
 
 @app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -102,7 +109,14 @@ def db_collection_insert(res_id, collection_name):
         document = request.json['document']
     else:
         # TODO: return an error. You must have document/s for insert.
-        print "Document argument not found in the request."
+        print 'Document argument not found in the request.'
 
     result = db.collection_insert(res_id, collection_name, document)
-    return dumps(result)
+    try:
+        result = dumps(result)
+        return result
+    except ValueError:
+        # TODO: Handle this appropriately instead of the just printing
+        # error message.
+        print 'Error while trying to convert the values returned from ' + \
+              'to JSON.'
