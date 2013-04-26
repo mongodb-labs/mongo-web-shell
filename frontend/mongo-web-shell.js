@@ -366,7 +366,26 @@ var MWSCursor = function (mwsQuery) {
   this.shell = mwsQuery.shell;
   this.database = mwsQuery.database;
   this.collection = mwsQuery.collection;
+  this.executed = false;
   console.debug('Created MWSCursor:', this);
+};
+
+/**
+ * If a remote request has been made from this cursor, prints an error message
+ * and returns true. Otherwise returns false.
+ */
+MWSCursor.prototype._warnIfExecuted = function () {
+  if (this.executed) {
+    // TODO: Print warning to the shell.
+    console.warn('Cannot call sort on already executed MWSCursor.', this);
+  }
+  return this.executed;
+};
+
+MWSCursor.prototype.sort = function (sort) {
+  if (this._warnIfExecuted()) { return this; }
+  console.debug('MWSCursor would be sorted.', this);
+  return this;
 };
 
 $(document).ready(mongo.init);
