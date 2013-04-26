@@ -1,6 +1,8 @@
 /* jshint camelcase: false, evil: true, unused: false */
 /* global falafel */
-var mongo = {};
+var mongo = {
+  shells: {} // {shellID: MWShell}
+};
 
 // Protect older browsers from an absent console.
 if (!console || !console.log) { var console = { log: function () {} }; }
@@ -18,7 +20,8 @@ mongo.init = function () {
   var config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
   $('.mongo-web-shell').each(function (index, shellElement) {
-    var shell = new MWShell(shellElement);
+    var shell = new MWShell(shellElement, index);
+    mongo.shells[index] = shell;
     shell.injectHTML();
 
     // Attempt to create MWS resource on remote server.
@@ -97,7 +100,7 @@ mongo.mutateSource = (function () {
     'UnaryExpression': mutateUnaryExpression
   };
 
-  function mutateMemberExpression(node) {
+  function mutateMemberExpression(node, shellID) {
     // Search for an expression of the form "db.collection.method()",
     // attempting to match from the "db.collection" MemberExpression node as
     // this is the one that will be modified.
@@ -141,12 +144,13 @@ mongo.mutateSource = (function () {
    * methods) in the given javascript source with the equivalent mongo web
    * shell calls and returns this mutated source. This transformation allows
    * the code to be interpretted as standard javascript in the context of this
-   * html document.
+   * html document. Also takes the ID of the shell making the call so the
+   * returned code can reference the shell.
    */
-  function swapMongoCalls(src) {
+  function swapMongoCalls(src, shellID) {
     var output = falafel(src, {isKeyword: isKeyword}, function (node) {
       if (NODE_TYPE_HANDLERS[node.type]) {
-        NODE_TYPE_HANDLERS[node.type](node);
+        NODE_TYPE_HANDLERS[node.type](node, shellID);
       }
     });
     return output.toString();
@@ -214,9 +218,11 @@ mongo.Readline.prototype.submit = function (line) {
   this.historyIndex = this.history.length;
 };
 
-var MWShell = function (rootElement) {
+var MWShell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
+
+  this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
 };
@@ -255,7 +261,7 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
 MWShell.prototype.handleInput = function () {
   var mutatedSrc, userInput = this.$input.val();
   try {
-    mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput);
+    mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput, this.id);
     try {
       console.debug('MWShell.handleInput(): mutated source:', mutatedSrc);
       eval(mutatedSrc);
