@@ -1,5 +1,5 @@
 /* jshint camelcase: false, evil: true, unused: false */
-/* global falafel */
+/* global esprima, falafel */
 var mongo = {
   shells: {} // {shellID: MWShell}
 };
