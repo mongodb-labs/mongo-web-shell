@@ -56,11 +56,7 @@ def crossdomain(origin=None, methods=None, headers=None,
 
 @app.route('/')
 def hello():
-    db_name = config.path.rpartition('/')[2]
-    mongo_client = db.get_connection()
-    db = mongo_client[db_name]
-    emptyset = db.some_collection.find()
-    return 'Hello World! {0}'.format(emptyset.count())
+    return 'Hello World!'
 
 
 @app.route('/mws', methods=['POST'])
