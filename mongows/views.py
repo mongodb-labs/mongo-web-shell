@@ -97,15 +97,16 @@ def db_collection_find(res_id, collection_name):
                                       projection)
     # Get the results from the cursor and convert it to JSON format before
     # returning
-    result = list(mongo_cursor)
+    rows = list(mongo_cursor)
+    result = {'status': 0, 'result': rows}
     try:
         result = dumps(result)
-        return result
     except ValueError:
-        # TODO: Handle this appropriately instead of the just printing
-        # error message.
-        print 'Error while trying to convert the values returned from ' + \
-              'to JSON.'
+        error = 'Error in find while trying to convert the results to ' + \
+            'JSON format.'
+        result = {'status': -1, 'result': error}
+        result = dumps(result)
+    return result
 
 
 @app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
@@ -114,15 +115,18 @@ def db_collection_insert(res_id, collection_name):
     if 'document' in request.json:
         document = request.json['document']
     else:
-        # TODO: return an error. You must have document/s for insert.
-        print 'Document argument not found in the request.'
-
-    result = db.collection_insert(res_id, collection_name, document)
-    try:
+        error = '\'document\' argument not found in the insert request.'
+        result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
+
+    objId = db.collection_insert(res_id, collection_name, document)
+    result = {'status': 0, 'result': objId}
+    try:
+        result = dumps(result)
     except ValueError:
-        # TODO: Handle this appropriately instead of the just printing
-        # error message.
-        print 'Error while trying to convert the values returned from ' + \
-              'to JSON.'
+        error = 'Error in insert function while trying to convert the ' + \
+            'results to JSON format.'
+        result = {'status': -1, 'result': error}
+        result = dumps(result)
+    return result
