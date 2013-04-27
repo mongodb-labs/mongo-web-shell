@@ -1,6 +1,7 @@
 /* jshint camelcase: false, evil: true, unused: false */
 /* global esprima, falafel */
 var mongo = {
+  config: {},
   shells: {} // {shellID: MWShell}
 };
 
@@ -17,7 +18,7 @@ if (!console.debug || !console.error || !console.info || !console.warn) {
  * CSS stylesheets.
  */
 mongo.init = function () {
-  var config = mongo.dom.retrieveConfig();
+  var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
   $('.mongo-web-shell').each(function (index, shellElement) {
     var shell = new MWShell(shellElement, index);
@@ -233,6 +234,54 @@ mongo.Readline.prototype.submit = function (line) {
   this.historyIndex = this.history.length;
 };
 
+mongo.request = (function () {
+  function db_collection_find(cursor) {
+    var resID = cursor.shell.mwsResourceID;
+    var args = cursor.remoteQueryArgs;
+
+    var url = getResURL(resID, cursor.collection) + '/find';
+    var params = {
+      db: resID,
+      query: args.query,
+      projection: args.projection
+    };
+    pruneKeys(params, ['query', 'projection']);
+
+    console.debug('find() request:', url, params);
+    $.getJSON(url, params, function (data, textStatus, jqXHR) {
+      // TODO: Insert response into shell.
+      console.debug('db_collection_find success:', data);
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      // TODO: Print error into shell.
+      console.error('db_collection_find fail:', textStatus, errorThrown);
+    });
+  }
+
+  function getResURL(resID, collection) {
+    return mongo.config.baseUrl + '/' + resID + '/db/' + collection;
+  }
+
+  /**
+   * Removes the given keys from the given object if they are undefined or
+   * null. This can be used to make requests with optional args more compact.
+   */
+  function pruneKeys(obj, keys) {
+    keys.forEach(function (key, index, array) {
+      var val = obj[key];
+      if (val === undefined || val === null) {
+        delete obj[key];
+      }
+    });
+  }
+
+  return {
+    db_collection_find: db_collection_find,
+
+    _getResURL: getResURL,
+    _pruneKeys: pruneKeys
+  };
+}());
+
 var MWShell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
@@ -309,9 +358,7 @@ MWShell.prototype.handleInput = function () {
       console.debug('MWShell.handleInput(): Evaling', i, statement);
       var out = eval(statement);
       if (out instanceof MWSCursor) {
-        // TODO: Lazily execute remote query of MWSCursor.
-        console.debug('MWShell.handleInput(): would execute remote query on ' +
-            'MWSCursor:', out);
+        out.executeRemoteQuery();
       } else {
         // TODO: Print out to shell.
         console.debug('MWShell.handleInput(): shell output:', out.toString(),
@@ -347,9 +394,8 @@ var MWSQuery = function (shell, collection) {
 };
 
 MWSQuery.prototype.find = function (query, projection) {
-  // TODO: Implement.
-  console.debug('find called:', this);
-  return new MWSCursor(this);
+  var args = {query: query, projection: projection};
+  return new MWSCursor(this, mongo.request.db_collection_find, args);
 };
 
 /**
@@ -362,12 +408,21 @@ MWSQuery.prototype.find = function (query, projection) {
  * After the request is sent, methods that modify the query result (e.g. sort)
  * can no longer be called and result iteration methods are enabled.
  */
-var MWSCursor = function (mwsQuery) {
+var MWSCursor = function (mwsQuery, remoteQueryFunction, remoteQueryArgs) {
   this.shell = mwsQuery.shell;
   this.database = mwsQuery.database;
   this.collection = mwsQuery.collection;
+
   this.executed = false;
+  this.remoteQuery = remoteQueryFunction;
+  this.remoteQueryArgs = remoteQueryArgs;
   console.debug('Created MWSCursor:', this);
+};
+
+MWSCursor.prototype.executeRemoteQuery = function () {
+  console.debug('Executing remote query:', this);
+  this.remoteQuery(this);
+  this.executed = true;
 };
 
 /**
