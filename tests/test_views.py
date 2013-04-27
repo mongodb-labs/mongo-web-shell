@@ -44,6 +44,14 @@ class ViewsUnitTestCase(MongoWSTestCase):
         self.assertEqual(json_rv_data['status'], 0)
         self.assertIn('$oid', json_rv_data['result'])
 
+        # Test insert() with multiple documents
+        document = [{'name': 'Mongo'}, {'name': '10gen'}]
+        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(len(json_rv_data['result']), 2)
+        self.assertIn('$oid', json_rv_data['result'][0])
+
 class ViewsIntegrationTestCase(MongoWSTestCase):
     def setUp(self):
         super(ViewsIntegrationTestCase, self).setUp()

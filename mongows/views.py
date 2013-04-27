@@ -120,8 +120,8 @@ def db_collection_insert(res_id, collection_name):
         result = dumps(result)
         return result
 
-    objId = db.collection_insert(res_id, collection_name, document)
-    result = {'status': 0, 'result': objId}
+    ObjIds = db.collection_insert(res_id, collection_name, document)
+    result = {'status': 0, 'result': ObjIds}
     try:
         result = dumps(result)
     except ValueError:
