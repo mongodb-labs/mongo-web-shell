@@ -105,8 +105,9 @@ def db_collection_find(res_id, collection_name):
     return result
 
 
-@app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
-@crossdomain(origin=REQUEST_ORIGIN)
+@app.route('/mws/<res_id>/db/<collection_name>/insert',
+           methods=['POST', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:

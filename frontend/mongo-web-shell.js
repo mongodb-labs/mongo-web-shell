@@ -262,6 +262,30 @@ mongo.request = (function () {
     });
   }
 
+  function db_collection_insert(query, document_) {
+    var resID = query.shell.mwsResourceID;
+    var url = getResURL(resID, query.collection) + '/insert';
+    var params = {
+      db: resID,
+      document: document_
+    };
+
+    console.debug('insert() request:', url, params);
+    $.ajax({
+      type: 'POST',
+      url: url,
+      data: JSON.stringify(params),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        console.info('Insertion successful:', data);
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      // TODO: Print error into shell.
+      console.error('db_collection_insert fail:', textStatus, errorThrown);
+    });
+  }
+
   function getResURL(resID, collection) {
     return mongo.config.baseUrl + '/' + resID + '/db/' + collection;
   }
@@ -289,6 +313,7 @@ mongo.request = (function () {
 
   return {
     db_collection_find: db_collection_find,
+    db_collection_insert: db_collection_insert,
 
     _getResURL: getResURL,
     _pruneKeys: pruneKeys,
@@ -378,7 +403,7 @@ MWShell.prototype.handleInput = function () {
         // We execute the query lazily so result set modification methods (such
         // as sort()) can be called before the query's execution.
         out.executeQuery();
-      } else {
+      } else if (out !== undefined) {
         // TODO: Print out to shell.
         console.debug('MWShell.handleInput(): shell output:', out.toString(),
             out);
@@ -414,6 +439,10 @@ var MWSQuery = function (shell, collection) {
 MWSQuery.prototype.find = function (query, projection) {
   var args = {query: query, projection: projection};
   return new MWSCursor(this, mongo.request.db_collection_find, args);
+};
+
+MWSQuery.prototype.insert = function (document_) {
+  mongo.request.db_collection_insert(this, document_);
 };
 
 /**
