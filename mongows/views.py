@@ -87,21 +87,18 @@ def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    # TODO: Is there an easier way to convert these JSON args?
+    # TODO: Is there an easier way to convert these JSON args? Automatically?
     try:
-        query = json.loads(request.args.get('query', '{}'))
-        projection = json.loads(request.args.get('projection', '{}'))
+        query = json.loads(request.args.get('query', '{}')) or None
+        projection = json.loads(request.args.get('projection', '{}')) or None
     except ValueError:
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
 
-    mongo_cursor = db.collection_find(res_id, collection_name, query,
-                                      projection)
-    # Get the results from the cursor and convert it to JSON format before
-    # returning
-    rows = list(mongo_cursor)
-    result = {'status': 0, 'result': rows}
+    cursor = db.collection_find(res_id, collection_name, query, projection)
+    documents = list(cursor)
+    result = {'status': 0, 'result': documents}
     try:
         result = dumps(result)
     except ValueError:
