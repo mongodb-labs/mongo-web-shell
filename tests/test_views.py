@@ -4,6 +4,7 @@ import unittest
 from mongows import views
 from tests import MongoWSTestCase
 
+
 class ViewsUnitTestCase(MongoWSTestCase):
     def setUp(self):
         super(ViewsUnitTestCase, self).setUp()
@@ -55,6 +56,7 @@ class ViewsUnitTestCase(MongoWSTestCase):
         self.assertEqual(len(json_rv_data['result']), 2)
         self.assertIn('$oid', json_rv_data['result'][0])
 
+
 class ViewsIntegrationTestCase(MongoWSTestCase):
     def setUp(self):
         super(ViewsIntegrationTestCase, self).setUp()
@@ -82,14 +84,16 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
         self.assertGreater(len(json_rv_data['result']), 0)
         self.assertIn('_id', json_rv_data['result'][0])
 
+
 def _make_find_request(app, res_id, collection, query=None, projection=None):
     # TODO: Should we be passing in None for query and projection here? The
     # frontend should never pass 'None' so it might be incorrect.
-    url = '/mws/' + res_id +'/db/' + collection + '/find'
+    url = '/mws/' + res_id + '/db/' + collection + '/find'
     data = json.dumps({'query': query, 'projection': projection})
     return app.get(url, data=data, content_type='application/json')
 
+
 def _make_insert_request(app, res_id, collection, document):
-    url = '/mws/' + res_id +'/db/' + collection + '/insert'
+    url = '/mws/' + res_id + '/db/' + collection + '/insert'
     data = json.dumps({'document': document})
     return app.post(url, data=data, content_type='application/json')
