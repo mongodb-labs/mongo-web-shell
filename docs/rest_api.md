@@ -43,7 +43,8 @@ db.collection
         * *query*: (Optional) Specifies the selection criteria using
         [query operators][].
         * *projection*: (Optional) Controls the fields to return, or the
-        projection.
+          projection.
+        * *cursor\_methods*: (Optional) A `cursor_methods` object.
     * __Returns__:
         * *status_code*: The code describing the status of the given query.
         * *result*: The result of running the given query on the specified mws
@@ -54,6 +55,7 @@ db.collection
         * Split result into result and error?
         * Should we return a cursor like the mongo js api does?
         * Provide linked "projection" resources.
+        * Anyway to link cursor_methods to the heading?
 
 * `POST mws/:res_id/db/:collection_name/insert` ::
   [`db.collection.insert(document)`][.insert()] ::
@@ -72,11 +74,31 @@ db.collection
         * Move repetition from find() into a generic section under 'Queries'.
         * Provide linked "document" resources.
 
+cursor_methods object
+---------------------
+This object enumerates the methods that will be applied to the cursor before
+the query's result set is returned. The keys of this object are method names
+from the [JavaScript cursor API][] and the associated values are objects
+representing the arguments to those functions. The keys of this argument object
+are parameter names and the values are the parameters' values. Methods for
+missing keys will not be called. Supported operations are as follows
+(each bullet point is a key):
+
+* __`sort`__ :: [`cursor.sort(sort)`][.sort()] :: Control the order that the
+  query returns matching documents.
+    * *sort*: A document whose fields specify the attributes on which to sort
+      the result set.
+
 TODO
 ----
 * Add types to params/return values?
+* The documentation style for cursor_methods object is unintuitive. Fix it!
+  Should we just display a JSON object?
 
 [.find()]: http://docs.mongodb.org/manual/reference/method/db.collection.find/
 [.insert()]: http://docs.mongodb.org/manual/reference/method/db.collection.insert/
 
 [query operators]: http://docs.mongodb.org/manual/reference/operators/
+
+[JavaScript cursor API]: http://docs.mongodb.org/manual/reference/javascript/#cursor-methods
+[.sort()]: http://docs.mongodb.org/manual/reference/method/cursor.sort/#cursor.sort
