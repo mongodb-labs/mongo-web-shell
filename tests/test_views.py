@@ -30,7 +30,8 @@ class ViewsUnitTestCase(MongoWSTestCase):
         # be done once we add more functionality to find() and decide what
         # we are going to return to the front end.
         document = {'name': 'Mongo'}
-        rv = _make_find_request(self, 'test_db', 'test_collection', document)
+        rv = _make_find_request(self.app, 'test_db', 'test_collection',
+                                document)
         json_rv_data = json.loads(rv.data)
         self.assertEqual(json_rv_data['status'], 0)
         self.assertGreater(len(json_rv_data['result']), 0)
@@ -39,14 +40,16 @@ class ViewsUnitTestCase(MongoWSTestCase):
     def test_db_collection_insert(self):
         # TODO: Make sure these rows are deleted in the tearDown
         document = {'name': 'Mongo'}
-        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
+        rv = _make_insert_request(self.app, 'test_db', 'test_collection',
+                                  document)
         json_rv_data = json.loads(rv.data)
         self.assertEqual(json_rv_data['status'], 0)
         self.assertIn('$oid', json_rv_data['result'])
 
         # Test insert() with multiple documents
         document = [{'name': 'Mongo'}, {'name': '10gen'}]
-        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
+        rv = _make_insert_request(self.app, 'test_db', 'test_collection',
+                                  document)
         json_rv_data = json.loads(rv.data)
         self.assertEqual(json_rv_data['status'], 0)
         self.assertEqual(len(json_rv_data['result']), 2)
@@ -66,23 +69,27 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
         # Currently, I am just looking for presence of OBJECT_ID in the
         # return value of each call.
         document = {'name': 'Mongo'}
-        rv = _make_insert_request(self, 'test_db', 'test_collection', document)
+        rv = _make_insert_request(self.app, 'test_db', 'test_collection',
+                                  document)
         json_rv_data = json.loads(rv.data)
         self.assertEqual(json_rv_data['status'], 0)
         self.assertIn('$oid', json_rv_data['result'])
 
-        rv = _make_find_request(self, 'test_db', 'test_collection', document)
+        rv = _make_find_request(self.app, 'test_db', 'test_collection',
+                                document)
         json_rv_data = json.loads(rv.data)
         self.assertEqual(json_rv_data['status'], 0)
         self.assertGreater(len(json_rv_data['result']), 0)
         self.assertIn('_id', json_rv_data['result'][0])
 
-def _make_find_request(self, res_id, collection, query=None, projection=None):
+def _make_find_request(app, res_id, collection, query=None, projection=None):
+    # TODO: Should we be passing in None for query and projection here? The
+    # frontend should never pass 'None' so it might be incorrect.
     url = '/mws/' + res_id +'/db/' + collection + '/find'
     data = json.dumps({'query': query, 'projection': projection})
-    return self.app.get(url, data=data, content_type='application/json')
+    return app.get(url, data=data, content_type='application/json')
 
-def _make_insert_request(self, res_id, collection, document):
+def _make_insert_request(app, res_id, collection, document):
     url = '/mws/' + res_id +'/db/' + collection + '/insert'
     data = json.dumps({'document': document})
-    return self.app.post(url, data=data, content_type='application/json')
+    return app.post(url, data=data, content_type='application/json')
