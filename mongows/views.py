@@ -1,5 +1,6 @@
 from datetime import timedelta
 from functools import update_wrapper
+import json
 
 from bson.json_util import dumps
 from flask import current_app, make_response, request
@@ -83,15 +84,17 @@ def keep_mws_alive(res_id):
 @app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_find(res_id, collection_name):
-    if 'query' in request.json:
-        query = request.json['query']
-    else:
-        query = {}
-
-    if 'projection' in request.json:
-        projection = request.json['projection']
-    else:
-        projection = {}
+    # TODO: Should we specify a content type? Then we have to use an options
+    # header, and we should probably get the return type from the content-type
+    # header.
+    # TODO: Is there an easier way to convert these JSON args?
+    try:
+        query = json.loads(request.args.get('query', '{}'))
+        projection = json.loads(request.args.get('projection', '{}'))
+    except ValueError:
+        # TODO: Return proper error to client.
+        error = 'Error parsing JSON parameters.'
+        return {'status': -1, 'result': error}
 
     mongo_cursor = db.collection_find(res_id, collection_name, query,
                                       projection)
@@ -112,6 +115,7 @@ def db_collection_find(res_id, collection_name):
 @app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
+    # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
     else:

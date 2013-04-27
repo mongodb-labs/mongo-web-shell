@@ -246,6 +246,11 @@ mongo.request = (function () {
       projection: args.projection
     };
     pruneKeys(params, ['query', 'projection']);
+    // For a GET request, jQuery divides each key in a JSON object into params
+    // (i.e. var obj = {one: 1, two: 2} => ?obj[one]=1&obj[two]=2 ), which is
+    // harder to reconstruct on the backend than just stringifying the values
+    // individually, which is what we do here.
+    stringifyKeys(params);
 
     console.debug('find() request:', url, params);
     $.getJSON(url, params, function (data, textStatus, jqXHR) {
@@ -274,11 +279,20 @@ mongo.request = (function () {
     });
   }
 
+  function stringifyKeys(obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        obj[key] = JSON.stringify(obj[key]);
+      }
+    }
+  }
+
   return {
     db_collection_find: db_collection_find,
 
     _getResURL: getResURL,
-    _pruneKeys: pruneKeys
+    _pruneKeys: pruneKeys,
+    _stringifyKeys: stringifyKeys
   };
 }());
 
