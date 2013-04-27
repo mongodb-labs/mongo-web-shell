@@ -237,7 +237,7 @@ mongo.Readline.prototype.submit = function (line) {
 mongo.request = (function () {
   function db_collection_find(cursor) {
     var resID = cursor.shell.mwsResourceID;
-    var args = cursor.remoteQueryArgs;
+    var args = cursor.query.args;
 
     var url = getResURL(resID, cursor.collection) + '/find';
     var params = {
@@ -357,8 +357,13 @@ MWShell.prototype.handleInput = function () {
       var statement = mutatedSrc.substring(srcIndices[0], srcIndices[1]);
       console.debug('MWShell.handleInput(): Evaling', i, statement);
       var out = eval(statement);
+      // TODO: Since the result is returned asynchronously, multiple JS
+      // statements entered on one line in the shell may have their results
+      // printed out of order. Fix this.
       if (out instanceof MWSCursor) {
-        out.executeRemoteQuery();
+        // We execute the query lazily so result set modification methods (such
+        // as sort()) can be called before the query's execution.
+        out.executeQuery();
       } else {
         // TODO: Print out to shell.
         console.debug('MWShell.handleInput(): shell output:', out.toString(),
@@ -380,10 +385,9 @@ MWShell.prototype.enableInput = function (bool) {
 };
 
 /**
- * Handles a query of the form "db.collection.method()." Each method on this
- * object will return an MWSCursor which is expected to continue the query
- * lifecycle by propagating the request to the remote mongo web service and
- * associated database.
+ * Handles a query of the form "db.collection.method()." Some methods on this
+ * object will execute the query immediately while others will return an
+ * MWSCursor instance which is expected to continue the query lifespan.
  */
 var MWSQuery = function (shell, collection) {
   this.shell = shell;
@@ -399,46 +403,48 @@ MWSQuery.prototype.find = function (query, projection) {
 };
 
 /**
- * Provides a user with methods to modify the query result format, propagates
- * this request to the remote mongo web service and associated database, and
- * provides methods so a user can iterate through the results.
- *
- * The remote request is handled lazily - the query will only execute after all
- * of the expressions in the statement containing the cursor are evaluated.
- * After the request is sent, methods that modify the query result (e.g. sort)
- * can no longer be called and result iteration methods are enabled.
+ * A wrapper over the result set of a query, that users can iterate through to
+ * retrieve results. Before the query is executed, users may modify the query
+ * result set format through various methods such as sort().
  */
-var MWSCursor = function (mwsQuery, remoteQueryFunction, remoteQueryArgs) {
+var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
   this.shell = mwsQuery.shell;
   this.database = mwsQuery.database;
   this.collection = mwsQuery.collection;
-
-  this.executed = false;
-  this.remoteQuery = remoteQueryFunction;
-  this.remoteQueryArgs = remoteQueryArgs;
+  this.query = {
+    wasExecuted: false,
+    func: queryFunction,
+    args: queryArgs
+  };
   console.debug('Created MWSCursor:', this);
 };
 
-MWSCursor.prototype.executeRemoteQuery = function () {
-  console.debug('Executing remote query:', this);
-  this.remoteQuery(this);
-  this.executed = true;
+/**
+ * Executes the stored query function, disabling result set format modification
+ * methods such as sort() and enabling result set iteration methods such as
+ * next().
+ */
+MWSCursor.prototype.executeQuery = function () {
+  console.debug('Executing query:', this);
+  this.query.func(this);
+  this.query.wasExecuted = true;
 };
 
 /**
- * If a remote request has been made from this cursor, prints an error message
- * and returns true. Otherwise returns false.
+ * If a query has been executed from this cursor, prints an error message and
+ * returns true. Otherwise returns false.
  */
-MWSCursor.prototype._warnIfExecuted = function () {
-  if (this.executed) {
+MWSCursor.prototype._warnIfExecuted = function (methodName) {
+  if (this.query.wasExecuted) {
     // TODO: Print warning to the shell.
-    console.warn('Cannot call sort on already executed MWSCursor.', this);
+    console.warn('Cannot call', methodName, 'on already executed MWSCursor.',
+        this);
   }
-  return this.executed;
+  return this.query.wasExecuted;
 };
 
 MWSCursor.prototype.sort = function (sort) {
-  if (this._warnIfExecuted()) { return this; }
+  if (this._warnIfExecuted('sort')) { return this; }
   console.debug('MWSCursor would be sorted.', this);
   return this;
 };
