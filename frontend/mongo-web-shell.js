@@ -495,6 +495,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
+  this.insertLine(userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
@@ -569,6 +570,18 @@ mongo.Shell.prototype.evalStatements = function (statements) {
 
 mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
+};
+
+mongo.Shell.prototype.insertResponseArray = function (data) {
+  for (var i = 0; i < data.length; i++){
+    this.insertResponseLine(data[i]);
+  }
+}
+
+mongo.Shell.prototype.insertResponseLine = function (data) {
+  var li = document.createElement('li');
+  li.innerHTML = data;
+  this.$rootElement.find('ul')[0].appendChild(li);
 };
 
 
