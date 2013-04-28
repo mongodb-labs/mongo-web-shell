@@ -37,6 +37,21 @@ mongo.init = function () {
   });
 };
 
+mongo.const = (function () {
+  var KEYCODES = {
+    enter: 13,
+
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40
+  };
+
+  return {
+    keycodes: KEYCODES
+  };
+}());
+
 mongo.dom = (function () {
   // TODO: Document these data attributes.
   // TODO: Should each shell be able to have its own host?
@@ -69,10 +84,64 @@ mongo.dom = (function () {
   };
 }());
 
+mongo.Readline = function ($input) {
+  this.$input = $input;
+  this.history = []; // Newest entries at Array.length.
+  this.historyIndex = history.length;
+
+  var readline = this;
+  this.$input.keydown(function (event) { readline.keydown(event); });
+};
+
+mongo.Readline.prototype.keydown = function (event) {
+  var key = mongo.const.keycodes;
+  var line;
+  switch (event.keyCode) {
+  case key.up:
+    line = this.getOlderHistoryEntry();
+    break;
+  case key.down:
+    line = this.getNewerHistoryEntry();
+    break;
+  case key.enter:
+    this.submit(this.$input.val());
+    break;
+  default:
+    return;
+  }
+
+  if (line !== undefined && line !== null) {
+    this.$input.val(line);
+  }
+};
+
+mongo.Readline.prototype.getNewerHistoryEntry = function () {
+  var old = this.historyIndex;
+  this.historyIndex = Math.min(this.historyIndex + 1, this.history.length);
+  if (this.historyIndex === this.history.length && old !== this.historyIndex) {
+    // TODO: Restore command first being written (you may be able to remove the
+    // old check, depending on how it's done).
+    return '';
+  }
+  return this.history[this.historyIndex];
+};
+
+mongo.Readline.prototype.getOlderHistoryEntry = function () {
+  this.historyIndex = Math.max(this.historyIndex - 1, 0);
+  return this.history[this.historyIndex];
+};
+
+mongo.Readline.prototype.submit = function (line) {
+  // TODO: Remove old entries if we've hit the limit.
+  this.history.push(line);
+  this.historyIndex = this.history.length;
+};
+
 var MWShell = function (rootElement) {
   this.$rootElement = $(rootElement);
   this.$input = null;
   this.mwsResourceID = null;
+  this.readline = null;
 };
 
 MWShell.prototype.injectHTML = function () {
@@ -100,6 +169,7 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
     shell.handleInput();
     shell.$input.val('');
   });
+  this.readline = new mongo.Readline(this.$input);
 };
 
 MWShell.prototype.enableInput = function (bool) {
