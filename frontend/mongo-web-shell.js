@@ -321,6 +321,25 @@ mongo.request = (function () {
   };
 }());
 
+mongo.util = (function () {
+  /**
+   * Uses the range indices in the given AST to divide the given source into
+   * individual statements and returns each statement as an entry in an array.
+   */
+  function sourceToStatements(src, ast) {
+    var statements = [];
+    ast.body.forEach(function (statementNode, index, array) {
+      var srcIndices = statementNode.range;
+      statements.push(src.substring(srcIndices[0], srcIndices[1]));
+    });
+    return statements;
+  }
+
+  return {
+    sourceToStatements: sourceToStatements
+  };
+}());
+
 var MWShell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
@@ -390,33 +409,49 @@ MWShell.prototype.handleInput = function () {
     return;
   }
 
+  var statements = mongo.util.sourceToStatements(mutatedSrc, ast);
   try {
-    for (var i = 0; i < ast.body.length; i++) {
-      var srcIndices = ast.body[i].range;
-      var statement = mutatedSrc.substring(srcIndices[0], srcIndices[1]);
-      console.debug('MWShell.handleInput(): Evaling', i, statement);
-      var out = eval(statement);
-      // TODO: Since the result is returned asynchronously, multiple JS
-      // statements entered on one line in the shell may have their results
-      // printed out of order. Fix this.
-      if (out instanceof MWSCursor) {
-        // We execute the query lazily so result set modification methods (such
-        // as sort()) can be called before the query's execution.
-        out.executeQuery();
-      } else if (out !== undefined) {
-        // TODO: Print out to shell.
-        console.debug('MWShell.handleInput(): shell output:', out.toString(),
-            out);
-      }
-    }
+    this.evalStatements(statements);
   } catch (err) {
     // TODO: Print out to shell.
     // TODO: This is probably an unknown identifier error. We should be hiding
     // the identifiers from the global object by hand (to be implemented
     // later) so so this is likely our fault. Figure out how to handle.
     // TODO: "var i = 1;" throws a TypeError here. Find out why.
-    console.error('MWShell.handleInput(): eval error:', err);
+    console.error('MWShell.handleInput(): eval error on:', err.statement, err);
   }
+};
+
+/**
+ * Calls eval on the given array of javascript statements. This method will
+ * throw any exceptions eval throws with an added exception.statement attribute
+ * that is equivalent to the statement eval failed on.
+ */
+MWShell.prototype.evalStatements = function (statements) {
+  statements.forEach(function (statement, index, array) {
+    console.debug('MWShell.handleInput(): Evaling', index, statement);
+    var out;
+    try {
+      out = eval(statement);
+    } catch (err) {
+      // eval does not mention which statement it failed on so we append that
+      // information ourselves and rethrow.
+      err.statement = statement;
+      throw err;
+    }
+    // TODO: Since the result is returned asynchronously, multiple JS
+    // statements entered on one line in the shell may have their results
+    // printed out of order. Fix this.
+    if (out instanceof MWSCursor) {
+      // We execute the query lazily so result set modification methods (such
+      // as sort()) can be called before the query's execution.
+      out.executeQuery();
+    } else if (out !== undefined) {
+      // TODO: Print out to shell.
+      console.debug('MWShell.handleInput(): shell output:', out.toString(),
+          out);
+    }
+  });
 };
 
 MWShell.prototype.enableInput = function (bool) {
