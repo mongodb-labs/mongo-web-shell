@@ -1,5 +1,4 @@
-/* TODO: Why are there ids here? */
-#mws-border {
+.mws-border {
   height: 640px;
   text-align: left;
   border: 2px solid;
@@ -9,7 +8,7 @@
   margin-bottom: 10px;
 }
 
-#mws-response {
+.mws-area {
   height: 560px;
   margin-top: 20px;
   overflow-y: auto;
@@ -22,26 +21,22 @@
   list-style-type: none;
   margin-top: 0;
   margin-bottom: 0;
+  height: 560px;
 }
 
 .mws-in-shell-response li {
   margin-top: 3px;
 }
 
-#mws-input {
-  height: 60px;
-  margin-top: 0px;
-  text-align: center;
-}
-
 .mws-input {
   width: 98%;
-  height: 60px;
+  height: 40px;
   border: none;
   background-color: #000000;
   color: #00e500;
   font-size: 20px;
   font-family: Terminal, monospace;
+  margin-left: 15px;
 }
 
 .mws-input:focus {

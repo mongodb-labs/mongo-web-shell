@@ -466,16 +466,13 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // TODO: Why is there a border class? Can it be done with CSS border (or
-  // be renamed to be more descriptive)?
-  // TODO: .mshell not defined in CSS; change it.
   var html = '<div class="mws-border">' +
-               '<div class="mshell">' +
+               '<div class="mws-area">' +
                  '<ul class="mws-in-shell-response"></ul>' +
-                 '<form>' +
-                   '<input type="text" class="mws-input" disabled="true">' +
-                 '</form>' +
                '</div>' +
+               '<form>' +
+                 '<input type="text" class="mws-input" disabled="true">' +
+               '</form>' +
              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
