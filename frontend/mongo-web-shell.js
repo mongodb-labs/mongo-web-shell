@@ -47,10 +47,11 @@ mongo.dom = (function () {
 
   function retrieveConfig() {
     var $curScript = $('script').last();
+    var mwsHost = $curScript.data('mws-host') || MWS_HOST;
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,
-      mwsHost: $curScript.data('mws-host') || MWS_HOST,
-      baseUrl: MWS_HOST + '/mws'
+      mwsHost: mwsHost,
+      baseUrl: mwsHost + '/mws'
     };
   }
 
