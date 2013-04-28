@@ -22,6 +22,7 @@
   margin-top: 0;
   margin-bottom: 0;
   height: 560px;
+  padding-left: 20px
 }
 
 .mws-in-shell-response li {
@@ -36,7 +37,7 @@
   color: #00e500;
   font-size: 20px;
   font-family: Terminal, monospace;
-  margin-left: 15px;
+  margin-left: 20px;
 }
 
 .mws-input:focus {

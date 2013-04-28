@@ -104,10 +104,24 @@ MWShell.prototype.enableInput = function (bool) {
 
 MWShell.prototype.handleInput = function () {
   var data = this.$input.val();
+  //insert what the user input back into the DOM so they can see what they've typed
+  this.insertResponseLine(data);
   console.debug('Received text:', data, this.mwsResourceID);
   // TODO: Merge #25: Parse <input> content; Make AJAX request based on
   // parsed input. On success/error, return output to console, at class
   // mws-in-shell-response.
+};
+
+MWShell.prototype.insertResponseArray = function (data) {
+  for (var i = 0; i < data.length; i++){
+    this.insertResponseLine(data[i]);
+  }
+}
+
+MWShell.prototype.insertResponseLine = function (data) {
+  var li = document.createElement('li');
+  li.innerHTML = data;
+  this.$rootElement.find('ul')[0].appendChild(li);
 };
 
 $(document).ready(mongo.init);
