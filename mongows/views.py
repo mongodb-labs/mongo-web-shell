@@ -54,11 +54,6 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
-@app.route('/')
-def hello():
-    return 'Hello World!'
-
-
 @app.route('/mws', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
