@@ -2,6 +2,7 @@ from unittest import defaultTestLoader, TestCase
 
 from mongows import app
 
+
 class MongoWSTestCase(TestCase):
     """A generic test case for the mongows package."""
 
@@ -11,6 +12,7 @@ class MongoWSTestCase(TestCase):
 
     def tearDown(self):
         pass
+
 
 def load_tests(loader, tests, pattern):
     """Returns the test modules for the mongows package.
