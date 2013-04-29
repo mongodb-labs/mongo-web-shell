@@ -145,16 +145,14 @@ var MWShell = function (rootElement) {
 
 MWShell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // TODO: Why is there a border class? Can it be done with CSS border (or
-  // be renamed to be more descriptive)?
-  // TODO: .mshell not defined in CSS; change it.
-  var html = '<div class="mws-border">' +
-               '<div class="mshell">' +
-                 '<ul class="mws-in-shell-response"></ul>' +
-                 '<form>' +
-                   '<input type="text" class="mws-input" disabled="true">' +
-                 '</form>' +
-               '</div>' +
+  var html = '<div class="mws-body">' +
+               '<ul class="mws-response-list">' +
+                 '<li>' +
+                   '<form>' +
+                     '<input type="text" class="mws-input" disabled="true">' +
+                   '</form>' +
+                 '</li>' +
+               '</ul>' +
              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
@@ -177,10 +175,28 @@ MWShell.prototype.enableInput = function (bool) {
 
 MWShell.prototype.handleInput = function () {
   var data = this.$input.val();
+  // Display input in shell output
+  this.insertResponseLine(data);
   console.debug('Received text:', data, this.mwsResourceID);
   // TODO: Merge #25: Parse <input> content; Make AJAX request based on
   // parsed input. On success/error, return output to console, at class
-  // mws-in-shell-response.
+  // mws-response-list.
+};
+
+MWShell.prototype.insertResponseArray = function (data) {
+  for (var i = 0; i < data.length; i++) {
+    this.insertResponseLine(data[i]);
+  }
+};
+
+MWShell.prototype.insertResponseLine = function (data) {
+  var li = document.createElement('li');
+  li.innerHTML = data;
+  this.$input.before(li);
+
+  // scrolling
+  var scrollArea = this.$rootElement.find('.mws-body').get(0);
+  scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
 $(document).ready(mongo.init);
