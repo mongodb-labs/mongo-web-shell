@@ -88,10 +88,12 @@ mongo.dom = (function () {
 }());
 
 mongo.keyword = (function () {
+  var ERR_TOO_MANY = 'Too many parameters to';
+
   function evaluate(shellID, keyword, arg, arg2, unusedArg) {
     if (unusedArg) {
       // TODO: Print to shell.
-      console.debug('Too many parameters to', keyword + '.');
+      console.debug(ERR_TOO_MANY, keyword + '.');
       return;
     }
     var shell = mongo.shells[shellID];
@@ -108,9 +110,19 @@ mongo.keyword = (function () {
     console.debug('keyword.show called.');
   }
 
-  function use(shell, arg) {
-    // TODO: Implement.
-    console.debug('keyword.use called.');
+  function use(shell, arg, arg2) {
+    var output;
+    if (arg2) {
+      output = ERR_TOO_MANY + ' use.';
+    } else if (!arg) {
+      output = 'No use parameter given.';
+    } else {
+      // TODO: Ensure arg is a valid database name.
+      shell.database = arg;
+      output = 'switched to db ' + arg;
+    }
+    // TODO: Print to shell.
+    console.debug(output);
   }
 
   return {
