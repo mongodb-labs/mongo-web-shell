@@ -40,7 +40,6 @@ mongo.init = function () {
 mongo.const = (function () {
   var KEYCODES = {
     enter: 13,
-
     left: 37,
     up: 38,
     right: 39,
