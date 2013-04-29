@@ -7,7 +7,7 @@ that doesn't involve scrollbars */
   margin-top: 20px;
   margin-bottom: 10px;
   resize: both;
-  overflow: auto;
+  overflow: hidden;
   background-color: #000000;
 }
 
