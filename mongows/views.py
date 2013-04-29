@@ -1,5 +1,6 @@
 from datetime import timedelta
 from functools import update_wrapper
+import json
 
 from bson.json_util import dumps
 from flask import current_app, make_response, request
@@ -53,15 +54,6 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
-@app.route('/')
-def hello():
-    db_name = config.path.rpartition('/')[2]
-    mongo_client = db.get_connection()
-    db = mongo_client[db_name]
-    emptyset = db.some_collection.find()
-    return 'Hello World! {0}'.format(emptyset.count())
-
-
 @app.route('/mws', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
@@ -83,22 +75,21 @@ def keep_mws_alive(res_id):
 @app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_find(res_id, collection_name):
-    if 'query' in request.json:
-        query = request.json['query']
-    else:
-        query = {}
+    # TODO: Should we specify a content type? Then we have to use an options
+    # header, and we should probably get the return type from the content-type
+    # header.
+    # TODO: Is there an easier way to convert these JSON args? Automatically?
+    try:
+        query = json.loads(request.args.get('query', '{}')) or None
+        projection = json.loads(request.args.get('projection', '{}')) or None
+    except ValueError:
+        # TODO: Return proper error to client.
+        error = 'Error parsing JSON parameters.'
+        return {'status': -1, 'result': error}
 
-    if 'projection' in request.json:
-        projection = request.json['projection']
-    else:
-        projection = {}
-
-    mongo_cursor = db.collection_find(res_id, collection_name, query,
-                                      projection)
-    # Get the results from the cursor and convert it to JSON format before
-    # returning
-    rows = list(mongo_cursor)
-    result = {'status': 0, 'result': rows}
+    cursor = db.collection_find(res_id, collection_name, query, projection)
+    documents = list(cursor)
+    result = {'status': 0, 'result': documents}
     try:
         result = dumps(result)
     except ValueError:
@@ -109,9 +100,11 @@ def db_collection_find(res_id, collection_name):
     return result
 
 
-@app.route('/mws/<res_id>/db/<collection_name>/insert', methods=['POST'])
-@crossdomain(origin=REQUEST_ORIGIN)
+@app.route('/mws/<res_id>/db/<collection_name>/insert',
+           methods=['POST', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
+    # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
     else:
