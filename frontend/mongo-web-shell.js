@@ -87,6 +87,41 @@ mongo.dom = (function () {
   };
 }());
 
+mongo.keyword = (function () {
+  function evaluate(shellID, keyword, arg, arg2, unusedArg) {
+    if (unusedArg) {
+      // TODO: Print to shell.
+      console.debug('Too many parameters to', keyword + '.');
+      return;
+    }
+    var shell = mongo.shells[shellID];
+    mongo.keyword[keyword](shell, arg, arg2);
+  }
+
+  function help(shell, arg, arg2) {
+    // TODO: Implement.
+    console.debug('keyword.help called.');
+  }
+
+  function show(shell, arg) {
+    // TODO: Implement.
+    console.debug('keyword.show called.');
+  }
+
+  function use(shell, arg) {
+    // TODO: Implement.
+    console.debug('keyword.use called.');
+  }
+
+  return {
+    evaluate: evaluate,
+    help: help,
+    show: show,
+    use: use
+  };
+}());
+
+
 mongo.mutateSource = (function () {
   var NODE_TYPE_HANDLERS = {
     'MemberExpression': mutateMemberExpression
@@ -147,10 +182,43 @@ mongo.mutateSource = (function () {
     return output.toString();
   }
 
+  /**
+   * Replaces mongo shell specific keywords (such as "help") in the given
+   * source with a valid JavaScript function call that may be evaled and
+   * returns this mutated source.
+   */
+  function swapKeywords(src, shellID) {
+    var statements = src.split(/\s*;\s*/);
+    statements.forEach(function (statement, index, arr) {
+      var tokens = statement.split(/\s+/).filter(function (str) {
+        return str.length !== 0;
+      });
+      if (/help|show|use/.test(tokens[0])) {
+        arr[index] = convertTokensToKeywordCall(shellID, tokens);
+      }
+    });
+    return statements.join('; ');
+  }
+
+  /**
+   * Takes an array of tokens and a shellID and returns a string that contains
+   * a mongo.keyword call that can be evaled.
+   */
+  function convertTokensToKeywordCall(shellID, tokens) {
+    var tokensAsArgs = tokens.map(function (str) {
+      return '\'' + str + '\''; // Pad as string literals.
+    });
+    var args = [shellID].concat(tokensAsArgs).join(', ');
+    var func = 'mongo.keyword.evaluate';
+    return func + '(' + args + ')';
+  }
+
   return {
     swapMongoCalls: swapMongoCalls,
+    swapKeywords: swapKeywords,
 
-    _mutateMemberExpression: mutateMemberExpression
+    _mutateMemberExpression: mutateMemberExpression,
+    _convertTokensToKeywordCall: convertTokensToKeywordCall
   };
 }());
 
@@ -356,10 +424,11 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 MWShell.prototype.handleInput = function () {
-  var mutatedSrc, userInput = this.$input.val();
+  var userInput = this.$input.val();
   this.$input.val('');
+  var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
-    mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput, this.id);
+    mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
     // TODO: Print falafel parse error to shell.
     console.error('MWShell.handleInput(): falafel/esprima parse error:', err);
