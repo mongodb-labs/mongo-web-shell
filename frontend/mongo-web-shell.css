@@ -1,35 +1,36 @@
-.mws-border {
+/*TODO: allow chrome users to resize smaller than declared height/width,
+Make a more elegant solution to resizing smaller than declared height/width
+that doesn't involve scrollbars */
+.mws-body {
+  border-radius: 10px;
   height: 640px;
-  text-align: left;
-  border: 2px solid;
-  border-radius: 25px;
-  background-color: #000000;
-  margin-top: 10px;
+  margin-top: 20px;
   margin-bottom: 10px;
   resize: both;
   overflow: auto;
+  background-color: #000000;
 }
 
-.mws-body {
-  resize: none;
-  height: 87%;
-  margin-top: 20px;
-  overflow-y: auto;
+.mws-body * {
+  background-color: #000000;
   color: #00e500;
   font-size: 20px;
   font-family: Terminal, monospace;
 }
 
 .mws-response-list {
+  resize: none;
   list-style-type: none;
-  margin-top: 0;
-  margin-bottom: 0;
-  height: 100%;
-  padding-left: 20px
+  margin-top: 5px;
+  margin-bottom: 5px;
+  height: 97%;
+  padding-left: 20px;
+  overflow-y: auto;
 }
 
 .mws-in-shell-response li {
   margin-top: 3px;
+  margin-bottom: 3px;
 }
 
 .mws-input {
@@ -37,12 +38,6 @@
   width: 98%;
   height: 40px;
   border: none;
-  background-color: #000000;
-  color: #00e500;
-  font-size: 20px;
-  font-family: Terminal, monospace;
-  margin-left: 20px;
-  margin-bottom: 10px;
 }
 
 .mws-input:focus {
