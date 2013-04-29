@@ -19,7 +19,7 @@ mongo.init = function () {
   $('.mongo-web-shell').each(function (index, shellElement) {
     var shell = new MWShell(shellElement);
     shell.injectHTML();
-
+    
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
@@ -122,6 +122,10 @@ MWShell.prototype.insertResponseLine = function (data) {
   var li = document.createElement('li');
   li.innerHTML = data;
   this.$rootElement.find('ul')[0].appendChild(li);
+  
+  //scrolling
+  var scrollArea = this.$rootElement.find(".mws-area")[0];
+  scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
 $(document).ready(mongo.init);
