@@ -8,7 +8,7 @@
   margin-bottom: 10px;
 }
 
-.mws-area {
+.mws-body {
   height: 560px;
   margin-top: 20px;
   overflow-y: auto;
@@ -17,7 +17,7 @@
   font-family: Terminal, monospace;
 }
 
-.mws-in-shell-response {
+.mws-response-list {
   list-style-type: none;
   margin-top: 0;
   margin-bottom: 0;

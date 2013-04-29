@@ -19,7 +19,7 @@ mongo.init = function () {
   $('.mongo-web-shell').each(function (index, shellElement) {
     var shell = new MWShell(shellElement);
     shell.injectHTML();
-    
+
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
@@ -71,14 +71,15 @@ mongo.dom = (function () {
 var MWShell = function (rootElement) {
   this.$rootElement = $(rootElement);
   this.$input = null;
+  this.$responseList = null;
   this.mwsResourceID = null;
 };
 
 MWShell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
   var html = '<div class="mws-border">' +
-               '<div class="mws-area">' +
-                 '<ul class="mws-in-shell-response"></ul>' +
+               '<div class="mws-body">' +
+                 '<ul class="mws-response-list"></ul>' +
                '</div>' +
                '<form>' +
                  '<input type="text" class="mws-input" disabled="true">' +
@@ -86,6 +87,7 @@ MWShell.prototype.injectHTML = function () {
              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
+  this.$responseList = this.$rootElement.find('.mws-response-list');
 };
 
 MWShell.prototype.attachInputHandler = function (mwsResourceID) {
@@ -104,27 +106,27 @@ MWShell.prototype.enableInput = function (bool) {
 
 MWShell.prototype.handleInput = function () {
   var data = this.$input.val();
-  //insert what the user input back into the DOM so they can see what they've typed
+  // Display input in shell output
   this.insertResponseLine(data);
   console.debug('Received text:', data, this.mwsResourceID);
   // TODO: Merge #25: Parse <input> content; Make AJAX request based on
   // parsed input. On success/error, return output to console, at class
-  // mws-in-shell-response.
+  // mws-response-list.
 };
 
 MWShell.prototype.insertResponseArray = function (data) {
-  for (var i = 0; i < data.length; i++){
+  for (var i = 0; i < data.length; i++) {
     this.insertResponseLine(data[i]);
   }
-}
+};
 
 MWShell.prototype.insertResponseLine = function (data) {
   var li = document.createElement('li');
   li.innerHTML = data;
-  this.$rootElement.find('ul')[0].appendChild(li);
-  
+  this.$responseList.append(li);
+
   //scrolling
-  var scrollArea = this.$rootElement.find(".mws-area")[0];
+  var scrollArea = this.$rootElement.find('.mws-body').get(0);
   scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
