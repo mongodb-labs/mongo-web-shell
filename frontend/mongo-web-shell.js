@@ -24,7 +24,7 @@ mongo.init = function () {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
-    
+
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
@@ -458,7 +458,7 @@ mongo.request = (function () {
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
-
+  this.$responseList = null;
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
@@ -467,8 +467,8 @@ mongo.Shell = function (rootElement, shellID) {
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
   var html = '<div class="mws-border">' +
-               '<div class="mws-area">' +
-                 '<ul class="mws-in-shell-response"></ul>' +
+               '<div class="mws-body">' +
+                 '<ul class="mws-response-list"></ul>' +
                '</div>' +
                '<form>' +
                  '<input type="text" class="mws-input" disabled="true">' +
@@ -476,6 +476,7 @@ mongo.Shell.prototype.injectHTML = function () {
              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
+  this.$responseList = this.$rootElement.find('.mws-response-list');
 };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
@@ -495,7 +496,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
-  this.insertLine(userInput);
+  this.insertResponseLine(userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
@@ -573,18 +574,18 @@ mongo.Shell.prototype.enableInput = function (bool) {
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
-  for (var i = 0; i < data.length; i++){
+  for (var i = 0; i < data.length; i++) {
     this.insertResponseLine(data[i]);
   }
-}
+};
 
 mongo.Shell.prototype.insertResponseLine = function (data) {
   var li = document.createElement('li');
   li.innerHTML = data;
-  this.$rootElement.find('ul')[0].appendChild(li);
-  
+  this.$responseList.append(li);
+
   //scrolling
-  var scrollArea = this.$rootElement.find(".mws-area")[0];
+  var scrollArea = this.$rootElement.find('.mws-body').get(0);
   scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
