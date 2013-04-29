@@ -88,16 +88,8 @@ mongo.dom = (function () {
 }());
 
 mongo.mutateSource = (function () {
-  var KEYWORDS = {
-    help: true,
-    show: true,
-    use: true
-  };
-  function isKeyword(id) { return KEYWORDS[id]; }
-
   var NODE_TYPE_HANDLERS = {
-    'MemberExpression': mutateMemberExpression,
-    'UnaryExpression': mutateUnaryExpression
+    'MemberExpression': mutateMemberExpression
   };
 
   function mutateMemberExpression(node, shellID) {
@@ -138,32 +130,16 @@ mongo.mutateSource = (function () {
         node.source());
   }
 
-  function mutateUnaryExpression(node) {
-    switch (node.operator) {
-    case 'help':
-    case 'show':
-    case 'use':
-      console.warn('mutateUnaryExpression(): mutation of keyword "' +
-          node.operator + '" not yet implemented. Removing node source to ' +
-          'prevent parser errors.');
-      node.update('');
-      break;
-    default:
-      console.debug('mutateUnaryExpression(): keyword "' + node.operator +
-          '" is not mongo specific. Ignoring.');
-    }
-  }
-
   /**
-   * Replaces mongo shell specific input (such as the `show` keyword or * `db.`
-   * methods) in the given javascript source with the equivalent mongo web
-   * shell calls and returns this mutated source. This transformation allows
-   * the code to be interpretted as standard javascript in the context of this
-   * html document. Also takes the ID of the shell making the call so the
-   * returned code can reference the shell.
+   * Replaces mongo shell specific input (such as the `db.` methods) in the
+   * given javascript source with the equivalent mongo web shell calls and
+   * returns this mutated source. This transformation allows the code to be
+   * interpretted as standard javascript in the context of this html document.
+   * Also takes the ID of the shell making the call so the returned code can
+   * reference the shell.
    */
   function swapMongoCalls(src, shellID) {
-    var output = falafel(src, {isKeyword: isKeyword}, function (node) {
+    var output = falafel(src, function (node) {
       if (NODE_TYPE_HANDLERS[node.type]) {
         NODE_TYPE_HANDLERS[node.type](node, shellID);
       }
@@ -174,9 +150,7 @@ mongo.mutateSource = (function () {
   return {
     swapMongoCalls: swapMongoCalls,
 
-    _isKeyword: isKeyword,
-    _mutateMemberExpression: mutateMemberExpression,
-    _mutateUnaryExpression: mutateUnaryExpression
+    _mutateMemberExpression: mutateMemberExpression
   };
 }());
 
