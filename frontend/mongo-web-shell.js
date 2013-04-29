@@ -584,7 +584,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   li.innerHTML = data;
   this.$responseList.append(li);
 
-  //scrolling
+  // scrolling
   var scrollArea = this.$rootElement.find('.mws-body').get(0);
   scrollArea.scrollTop = scrollArea.scrollHeight;
 };
