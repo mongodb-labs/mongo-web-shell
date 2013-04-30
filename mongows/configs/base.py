@@ -11,3 +11,5 @@ HOST = '0.0.0.0'
 PORT = 5000
 
 MONGO_URL = 'http://localhost:27017/db'
+
+LOGGING_CONF = 'mongows/configs/logging.yaml'
