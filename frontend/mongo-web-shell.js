@@ -62,7 +62,6 @@ mongo.dom = (function () {
   // Default config values.
   var CSS_PATH = 'mongo-web-shell.css';
   var MWS_HOST = 'http://localhost:5000';
-  var BASE_URL = MWS_HOST + '/mws';
 
   function retrieveConfig() {
     var $curScript = $('script').last();
@@ -70,7 +69,7 @@ mongo.dom = (function () {
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,
       mwsHost: mwsHost,
-      baseUrl: mwsHost + '/mws'
+      baseUrl: mwsHost + '/mws/'
     };
   }
 
@@ -239,7 +238,7 @@ mongo.request = (function () {
     var resID = cursor.shell.mwsResourceID;
     var args = cursor.query.args;
 
-    var url = getResURL(resID, cursor.collection) + '/find';
+    var url = getResURL(resID, cursor.collection) + 'find';
     var params = {
       db: resID,
       query: args.query,
@@ -264,7 +263,7 @@ mongo.request = (function () {
 
   function db_collection_insert(query, document_) {
     var resID = query.shell.mwsResourceID;
-    var url = getResURL(resID, query.collection) + '/insert';
+    var url = getResURL(resID, query.collection) + 'insert';
     var params = {
       db: resID,
       document: document_
@@ -287,7 +286,7 @@ mongo.request = (function () {
   }
 
   function getResURL(resID, collection) {
-    return mongo.config.baseUrl + '/' + resID + '/db/' + collection;
+    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
   }
 
   /**
