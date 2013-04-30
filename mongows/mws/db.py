@@ -1,8 +1,7 @@
 from urlparse import urlparse
 
+from flask import current_app
 import pymongo
-
-from mongows import app
 
 client = None
 
@@ -11,7 +10,7 @@ def get_connection():
     global client
     if client:
         return client
-    config = urlparse(app.config['MONGO_URL'])
+    config = urlparse(current_app.config['MONGO_URL'])
     db_name = config.path.rpartition('/')[2]
     try:
         client = pymongo.MongoClient(config.hostname, config.port)

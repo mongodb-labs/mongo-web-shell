@@ -4,7 +4,7 @@ app configuration by default.
 
 """
 # flask.config settings.
-DEBUG = True
+DEBUG = False
 
 # Misc settings.
 HOST = '0.0.0.0'
