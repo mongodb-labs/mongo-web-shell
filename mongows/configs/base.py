@@ -8,8 +8,7 @@ DEBUG = False
 
 # Misc settings.
 HOST = '0.0.0.0'
-PORT = 5000
-
-MONGOHQ_URL = 'http://localhost:27017/db'
-
 LOGGING_CONF = 'mongows/configs/logging.yaml'
+MONGOHQ_URL = 'http://localhost:27017/db'
+NO_SAMPLE = False
+PORT = 5000

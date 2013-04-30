@@ -15,6 +15,7 @@ _ENVVAR = [
     'HOST',
     'LOGGING_CONF',
     'MONGOHQ_URL',
+    'NO_SAMPLE',
     'PORT'
 ]
 
@@ -36,6 +37,7 @@ def override_config_from_envvar(app):
 
     # Correct data types.
     app.config['DEBUG'] = True if app.config['DEBUG'] else False
+    app.config['NO_SAMPLE'] = True if app.config['NO_SAMPLE'] else False
     app.config['PORT'] = int(app.config['PORT'])
 
 
@@ -71,4 +73,5 @@ def configure_logging(app):
 
 def register_blueprints(app):
     app.register_blueprint(mws)
-    app.register_blueprint(sample)
+    if not app.config['NO_SAMPLE']:
+        app.register_blueprint(sample)
