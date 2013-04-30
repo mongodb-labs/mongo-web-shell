@@ -11,6 +11,8 @@ from .mws import mws
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
     'DEBUG',
+    'HOST',
+    'LOGGING_CONF',
     'MONGOHQ_URL',
     'PORT'
 ]
