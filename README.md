@@ -1,6 +1,5 @@
 mongo-web-shell
 ===============
-
 BU Student project
 
 Brown CS Department Specific Notes
@@ -31,6 +30,7 @@ After the above requirements are installed:
 5. Download the project dependencies: `pip install -r requirements.txt`
    "pip" is a Python package manager and "requirements.txt" is a text file
    containing a list of the dependencies needed.
+6. Check out git submodules: run `git submodule init && git submodule update`
 
 Running
 -------
@@ -43,7 +43,7 @@ environment (see Installation #4):
 
 1. Run the server: `python run.py`
 
-By default, the server runs at [server][].
+By default, you can connect to the sample at <http://localhost:5000/sample/>.
 
 Testing
 -------
@@ -57,5 +57,3 @@ TODO
 * The "Brown CS Department" section should be removed before this is released.
 * The above text explains more than it probably should in a prod environment.
   Considering removing some of it for brevity's sake.
-
-[server]: http://localhost:5000
