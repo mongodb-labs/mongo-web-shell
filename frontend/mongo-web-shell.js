@@ -61,7 +61,7 @@ mongo.dom = (function () {
   // TODO: Should each shell be able to have its own host?
   // Default config values.
   var CSS_PATH = 'mongo-web-shell.css';
-  var MWS_HOST = 'http://localhost:5000';
+  var MWS_HOST = '';
 
   function retrieveConfig() {
     var $curScript = $('script').last();

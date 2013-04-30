@@ -7,6 +7,7 @@ from flask import Flask
 import yaml
 
 from .mws import mws
+from .sample import sample
 
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
@@ -70,3 +71,4 @@ def configure_logging(app):
 
 def register_blueprints(app):
     app.register_blueprint(mws)
+    app.register_blueprint(sample)
