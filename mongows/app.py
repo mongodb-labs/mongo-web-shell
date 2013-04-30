@@ -8,11 +8,11 @@ import yaml
 
 from .mws import mws
 
-# Array of (key in app.config[key], envvar).
+# The environment variable name and the key in app.config[key].
 _ENVVAR = [
-    ('DEBUG',) * 2,
-    ('MONGO_URL', 'MONGOHQ_URL'),
-    ('PORT',) * 2
+    'DEBUG',
+    'MONGOHQ_URL',
+    'PORT'
 ]
 
 
@@ -28,8 +28,8 @@ def create_app():
 
 def override_config_from_envvar(app):
     """Overrides the flask app's configuration with envvar where applicable."""
-    for key, envvar in _ENVVAR:
-        app.config[key] = os.environ.get(envvar, app.config[key])
+    for envvar in _ENVVAR:
+        app.config[envvar] = os.environ.get(envvar, app.config[envvar])
 
     # Correct data types.
     app.config['DEBUG'] = True if app.config['DEBUG'] else False

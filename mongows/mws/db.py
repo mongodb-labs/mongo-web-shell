@@ -10,7 +10,7 @@ def get_connection():
     global client
     if client:
         return client
-    config = urlparse(current_app.config['MONGO_URL'])
+    config = urlparse(current_app.config['MONGOHQ_URL'])
     db_name = config.path.rpartition('/')[2]
     try:
         client = pymongo.MongoClient(config.hostname, config.port)
