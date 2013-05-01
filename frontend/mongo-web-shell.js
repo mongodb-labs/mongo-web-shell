@@ -88,16 +88,28 @@ mongo.dom = (function () {
 }());
 
 mongo.keyword = (function () {
-  var ERR_TOO_MANY = 'Too many parameters to';
-
   function evaluate(shellID, keyword, arg, arg2, unusedArg) {
-    if (unusedArg) {
-      // TODO: Print to shell.
-      console.debug(ERR_TOO_MANY, keyword + '.');
-      return;
-    }
     var shell = mongo.shells[shellID];
-    mongo.keyword[keyword](shell, arg, arg2);
+    switch (keyword) {
+    case 'use':
+      // Since use is disabled, we don't care how many args so call right away.
+      mongo.keyword.use(shell, arg, arg2, unusedArg);
+      break;
+
+    case 'help':
+    case 'show':
+      if (unusedArg) {
+        // TODO: Print to shell.
+        console.debug('Too many parameters to', keyword + '.');
+        return;
+      }
+      mongo.keyword[keyword](shell, arg, arg2);
+      break;
+
+    default:
+      // TODO: Print to shell.
+      console.debug('Unknown keyword', keyword);
+    }
   }
 
   function help(shell, arg, arg2) {
@@ -111,18 +123,8 @@ mongo.keyword = (function () {
   }
 
   function use(shell, arg, arg2) {
-    var output;
-    if (arg2) {
-      output = ERR_TOO_MANY + ' use.';
-    } else if (!arg) {
-      output = 'No use parameter given.';
-    } else {
-      // TODO: Ensure arg is a valid database name.
-      shell.database = arg;
-      output = 'switched to db ' + arg;
-    }
     // TODO: Print to shell.
-    console.debug(output);
+    console.debug('cannot change db: functionality disabled.');
   }
 
   return {
@@ -294,6 +296,7 @@ mongo.request = (function () {
 
     var url = getResURL(resID, cursor.collection) + 'find';
     var params = {
+      // TODO: This shouldn't be resID but will probably get removed anyway.
       db: resID,
       query: args.query,
       projection: args.projection
@@ -319,6 +322,7 @@ mongo.request = (function () {
     var resID = query.shell.mwsResourceID;
     var url = getResURL(resID, query.collection) + 'insert';
     var params = {
+      // TODO: This shouldn't be resID but will probably get removed anyway.
       db: resID,
       document: document_
     };
@@ -400,8 +404,6 @@ var MWShell = function (rootElement, shellID) {
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
-
-  this.database = 'test'; // The name of the active mongo database.
 };
 
 MWShell.prototype.injectHTML = function () {
@@ -520,8 +522,6 @@ MWShell.prototype.enableInput = function (bool) {
 var MWSQuery = function (shell, collection) {
   this.shell = shell;
   this.collection = collection;
-  // The shell can change the active DB but a query's DB should be static.
-  this.database = this.shell.database;
   console.debug('Create MWSQuery', this);
 };
 
@@ -541,7 +541,6 @@ MWSQuery.prototype.insert = function (document_) {
  */
 var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
   this.shell = mwsQuery.shell;
-  this.database = mwsQuery.database;
   this.collection = mwsQuery.collection;
   this.query = {
     wasExecuted: false,
