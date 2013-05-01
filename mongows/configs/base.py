@@ -9,6 +9,6 @@ DEBUG = False
 # Misc settings.
 HOST = '0.0.0.0'
 LOGGING_CONF = 'mongows/configs/logging.yaml'
-MONGOHQ_URL = 'http://localhost:27017/db'
+MONGOHQ_URL = 'http://localhost:27017/mws'
 NO_SAMPLE = False
 PORT = 5000
