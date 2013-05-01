@@ -1,7 +1,7 @@
 /* jshint camelcase: false, evil: true, unused: false */
 /* global esprima, falafel */
 var mongo = {
-  config: {},
+  config: null,
   shells: {} // {shellID: mongo.Shell}
 };
 
