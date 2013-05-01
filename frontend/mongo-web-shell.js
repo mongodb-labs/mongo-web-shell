@@ -64,10 +64,10 @@ mongo.const = (function () {
  * result set format through various methods such as sort().
  */
 mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
-  this.shell = mwsQuery.shell;
-  this.database = mwsQuery.database;
-  this.collection = mwsQuery.collection;
-  this.query = {
+  this._shell = mwsQuery.shell;
+  this._database = mwsQuery.database;
+  this._collection = mwsQuery.collection;
+  this._query = {
     wasExecuted: false,
     func: queryFunction,
     args: queryArgs
@@ -80,10 +80,10 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
  * methods such as sort() and enabling result set iteration methods such as
  * next().
  */
-mongo.Cursor.prototype.executeQuery = function () {
+mongo.Cursor.prototype._executeQuery = function () {
   console.debug('Executing query:', this);
-  this.query.func(this);
-  this.query.wasExecuted = true;
+  this._query.func(this);
+  this._query.wasExecuted = true;
 };
 
 /**
@@ -91,12 +91,12 @@ mongo.Cursor.prototype.executeQuery = function () {
  * returns true. Otherwise returns false.
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
-  if (this.query.wasExecuted) {
+  if (this._query.wasExecuted) {
     // TODO: Print warning to the shell.
     console.warn('Cannot call', methodName, 'on already executed ' +
         'mongo.Cursor.', this);
   }
-  return this.query.wasExecuted;
+  return this._query.wasExecuted;
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
@@ -367,10 +367,10 @@ mongo.Readline.prototype.submit = function (line) {
 
 mongo.request = (function () {
   function db_collection_find(cursor) {
-    var resID = cursor.shell.mwsResourceID;
-    var args = cursor.query.args;
+    var resID = cursor._shell.mwsResourceID;
+    var args = cursor._query.args;
 
-    var url = getResURL(resID, cursor.collection) + 'find';
+    var url = getResURL(resID, cursor._collection) + 'find';
     var params = {
       query: args.query,
       projection: args.projection
@@ -557,7 +557,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
     if (out instanceof mongo.Cursor) {
       // We execute the query lazily so result set modification methods (such
       // as sort()) can be called before the query's execution.
-      out.executeQuery();
+      out._executeQuery();
     } else if (out !== undefined) {
       // TODO: Print out to shell.
       console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
