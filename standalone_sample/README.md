@@ -1,5 +1,5 @@
-mongo web shell sample_server
-=============================
+mongo web shell standalone_sample
+=================================
 Note: This is not fleshed out yet.
 
 Environment Variables
