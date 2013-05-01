@@ -1,13 +1,15 @@
 from unittest import defaultTestLoader, TestCase
 
-from mongows import app
+from mongows import create_app
+
+app = create_app()
+app.testing = True
 
 
 class MongoWSTestCase(TestCase):
     """A generic test case for the mongows package."""
 
     def setUp(self):
-        app.testing = True
         self.app = app.test_client()
 
     def tearDown(self):

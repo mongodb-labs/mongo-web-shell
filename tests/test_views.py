@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from mongows import views
+from mongows.mws import views
 from tests import MongoWSTestCase
 
 
@@ -16,7 +16,7 @@ class ViewsUnitTestCase(MongoWSTestCase):
         # TODO: Once we have finalized the behavior of creating MWS resource,
         # this test case should be improved to make the JSON object of the
         # returned value to check for appropriate contents
-        url = '/mws'
+        url = '/mws/'
         rv = self.app.post(url)
         self.assertIn('{"res_id": "test"}', rv.data)
 
