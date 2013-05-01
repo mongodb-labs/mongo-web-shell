@@ -2,7 +2,7 @@
 /* global esprima, falafel */
 var mongo = {
   config: {},
-  shells: {} // {shellID: MWShell}
+  shells: {} // {shellID: mongo.Shell}
 };
 
 // Protect older browsers from an absent console.
@@ -21,7 +21,7 @@ mongo.init = function () {
   var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
   $('.mongo-web-shell').each(function (index, shellElement) {
-    var shell = new MWShell(shellElement, index);
+    var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
 
@@ -174,7 +174,7 @@ mongo.mutateSource = (function () {
 
     var args = ['mongo.shells[' + shellID + ']', collectionArg].join(', ');
     var oldSrc = node.source();
-    node.update('new MWSQuery(' + args + ')');
+    node.update('new mongo.Query(' + args + ')');
     console.debug('mutateMemberExpression(): mutated', oldSrc, 'to',
         node.source());
   }
@@ -397,7 +397,7 @@ mongo.util = (function () {
   };
 }());
 
-var MWShell = function (rootElement, shellID) {
+mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
 
@@ -406,7 +406,7 @@ var MWShell = function (rootElement, shellID) {
   this.readline = null;
 };
 
-MWShell.prototype.injectHTML = function () {
+mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
   // TODO: Why is there a border class? Can it be done with CSS border (or
   // be renamed to be more descriptive)?
@@ -423,7 +423,7 @@ MWShell.prototype.injectHTML = function () {
   this.$input = this.$rootElement.find('.mws-input');
 };
 
-MWShell.prototype.attachInputHandler = function (mwsResourceID) {
+mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   var shell = this;
   this.mwsResourceID = mwsResourceID;
   this.$rootElement.find('form').submit(function (e) {
@@ -437,15 +437,16 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
  * Retrieves the input from the mongo web shell, evaluates it, handles the
  * responses (indirectly via callbacks), and clears the input field.
  */
-MWShell.prototype.handleInput = function () {
-  var userInput = this.$input.val();
+mongo.Shell.prototype.handleInput = function () {
+  var mutatedSrc, userInput = this.$input.val();
   this.$input.val('');
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
     // TODO: Print falafel parse error to shell.
-    console.error('MWShell.handleInput(): falafel/esprima parse error:', err);
+    console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',
+        err);
     return;
   }
 
@@ -460,8 +461,8 @@ MWShell.prototype.handleInput = function () {
     // already passed parsing once before and we were the ones to make the
     // changes to the source. Figure out how to handle this error.
     // TODO: Print esprima parse error to shell.
-    console.debug('MWShell.handleInput(): esprima parse error on mutated ' +
-        'source:', err, mutatedSrc);
+    console.debug('mongo.Shell.handleInput(): esprima parse error on ' +
+        'mutated source:', err, mutatedSrc);
     return;
   }
 
@@ -474,7 +475,8 @@ MWShell.prototype.handleInput = function () {
     // the identifiers from the global object by hand (to be implemented
     // later) so so this is likely our fault. Figure out how to handle.
     // TODO: "var i = 1;" throws a TypeError here. Find out why.
-    console.error('MWShell.handleInput(): eval error on:', err.statement, err);
+    console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
+        err);
   }
 };
 
@@ -483,9 +485,9 @@ MWShell.prototype.handleInput = function () {
  * throw any exceptions eval throws with an added exception.statement attribute
  * that is equivalent to the statement eval failed on.
  */
-MWShell.prototype.evalStatements = function (statements) {
+mongo.Shell.prototype.evalStatements = function (statements) {
   statements.forEach(function (statement, index, array) {
-    console.debug('MWShell.handleInput(): Evaling', index, statement);
+    console.debug('mongo.Shell.handleInput(): Evaling', index, statement);
     var out;
     try {
       out = eval(statement);
@@ -498,39 +500,39 @@ MWShell.prototype.evalStatements = function (statements) {
     // TODO: Since the result is returned asynchronously, multiple JS
     // statements entered on one line in the shell may have their results
     // printed out of order. Fix this.
-    if (out instanceof MWSCursor) {
+    if (out instanceof mongo.Cursor) {
       // We execute the query lazily so result set modification methods (such
       // as sort()) can be called before the query's execution.
       out.executeQuery();
     } else if (out !== undefined) {
       // TODO: Print out to shell.
-      console.debug('MWShell.handleInput(): shell output:', out.toString(),
+      console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
           out);
     }
   });
 };
 
-MWShell.prototype.enableInput = function (bool) {
+mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
 };
 
 /**
  * Handles a query of the form "db.collection.method()." Some methods on this
  * object will execute the query immediately while others will return an
- * MWSCursor instance which is expected to continue the query lifespan.
+ * mongo.Cursor instance which is expected to continue the query lifespan.
  */
-var MWSQuery = function (shell, collection) {
+mongo.Query = function (shell, collection) {
   this.shell = shell;
   this.collection = collection;
-  console.debug('Create MWSQuery', this);
+  console.debug('Create mongo.Query', this);
 };
 
-MWSQuery.prototype.find = function (query, projection) {
+mongo.Query.prototype.find = function (query, projection) {
   var args = {query: query, projection: projection};
-  return new MWSCursor(this, mongo.request.db_collection_find, args);
+  return new mongo.Cursor(this, mongo.request.db_collection_find, args);
 };
 
-MWSQuery.prototype.insert = function (document_) {
+mongo.Query.prototype.insert = function (document_) {
   mongo.request.db_collection_insert(this, document_);
 };
 
@@ -539,7 +541,7 @@ MWSQuery.prototype.insert = function (document_) {
  * retrieve results. Before the query is executed, users may modify the query
  * result set format through various methods such as sort().
  */
-var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
+mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
   this.shell = mwsQuery.shell;
   this.collection = mwsQuery.collection;
   this.query = {
@@ -547,7 +549,7 @@ var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
     func: queryFunction,
     args: queryArgs
   };
-  console.debug('Created MWSCursor:', this);
+  console.debug('Created mongo.Cursor:', this);
 };
 
 /**
@@ -555,7 +557,7 @@ var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
  * methods such as sort() and enabling result set iteration methods such as
  * next().
  */
-MWSCursor.prototype.executeQuery = function () {
+mongo.Cursor.prototype.executeQuery = function () {
   console.debug('Executing query:', this);
   this.query.func(this);
   this.query.wasExecuted = true;
@@ -565,18 +567,18 @@ MWSCursor.prototype.executeQuery = function () {
  * If a query has been executed from this cursor, prints an error message and
  * returns true. Otherwise returns false.
  */
-MWSCursor.prototype._warnIfExecuted = function (methodName) {
+mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
   if (this.query.wasExecuted) {
     // TODO: Print warning to the shell.
-    console.warn('Cannot call', methodName, 'on already executed MWSCursor.',
-        this);
+    console.warn('Cannot call', methodName, 'on already executed ' +
+        'mongo.Cursor.', this);
   }
   return this.query.wasExecuted;
 };
 
-MWSCursor.prototype.sort = function (sort) {
+mongo.Cursor.prototype.sort = function (sort) {
   if (this._warnIfExecuted('sort')) { return this; }
-  console.debug('MWSCursor would be sorted.', this);
+  console.debug('mongo.Cursor would be sorted.', this);
   return this;
 };
 
