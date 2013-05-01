@@ -70,7 +70,8 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
   this._query = {
     wasExecuted: false,
     func: queryFunction,
-    args: queryArgs
+    args: queryArgs,
+    result: null
   };
   console.debug('Created mongo.Cursor:', this);
 };
@@ -78,12 +79,48 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
 /**
  * Executes the stored query function, disabling result set format modification
  * methods such as sort() and enabling result set iteration methods such as
- * next().
+ * next(). Will execute onSuccess on query success, or instantly if the query
+ * was previously successful.
  */
-mongo.Cursor.prototype._executeQuery = function () {
-  console.debug('Executing query:', this);
-  this._query.func(this);
-  this._query.wasExecuted = true;
+mongo.Cursor.prototype._executeQuery = function (onSuccess) {
+  if (!this._query.wasExecuted) {
+    console.debug('Executing query:', this);
+    this._query.func(this, onSuccess);
+    this._query.wasExecuted = true;
+  } else {
+    onSuccess();
+  }
+};
+
+mongo.Cursor.prototype._printBatch = function () {
+  var cursor = this;
+  if (!this._query.wasExecuted) {
+    this._executeQuery(function () { cursor._printBatch(); });
+    return;
+  }
+
+  var setSize = 4; // TODO: Get query size from DBQuery.setBatchSize.
+  var batch = [];
+  for (var i = 0; i < setSize; i++) {
+    // pop() setSize times rather than splice(-setSize) to preserve order.
+    var document_ = this._query.result.pop();
+    if (document_ === undefined) {
+      break;
+    }
+    batch.push(document_);
+  }
+
+  if (batch.length !== 0) {
+    // TODO: Print to shell.
+    console.debug('_printBatch() results:', batch);
+  }
+};
+
+mongo.Cursor.prototype._storeQueryResult = function (result) {
+  // For efficiency, we reverse the result. This allows us to pop() as we
+  // iterate over the result set, both freeing the reference and preventing a
+  // reindexing on each removal from the array as with unshift/splice().
+  this._query.result = result.reverse();
 };
 
 /**
@@ -366,7 +403,7 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
-  function db_collection_find(cursor) {
+  function db_collection_find(cursor, onSuccess) {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
@@ -384,8 +421,9 @@ mongo.request = (function () {
 
     console.debug('find() request:', url, params);
     $.getJSON(url, params, function (data, textStatus, jqXHR) {
-      // TODO: Insert response into shell.
-      console.debug('db_collection_find success:', data);
+      console.debug('db_collection_find success');
+      cursor._storeQueryResult(data.result);
+      onSuccess();
     }).fail(function (jqXHR, textStatus, errorThrown) {
       // TODO: Print error into shell.
       console.error('db_collection_find fail:', textStatus, errorThrown);
@@ -557,7 +595,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
     if (out instanceof mongo.Cursor) {
       // We execute the query lazily so result set modification methods (such
       // as sort()) can be called before the query's execution.
-      out._executeQuery();
+      out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
       // TODO: Print out to shell.
       console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
