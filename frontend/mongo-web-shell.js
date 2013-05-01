@@ -56,6 +56,53 @@ mongo.const = (function () {
   };
 }());
 
+/**
+ * A wrapper over the result set of a query, that users can iterate through to
+ * retrieve results. Before the query is executed, users may modify the query
+ * result set format through various methods such as sort().
+ */
+mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
+  this.shell = mwsQuery.shell;
+  this.database = mwsQuery.database;
+  this.collection = mwsQuery.collection;
+  this.query = {
+    wasExecuted: false,
+    func: queryFunction,
+    args: queryArgs
+  };
+  console.debug('Created mongo.Cursor:', this);
+};
+
+/**
+ * Executes the stored query function, disabling result set format modification
+ * methods such as sort() and enabling result set iteration methods such as
+ * next().
+ */
+mongo.Cursor.prototype.executeQuery = function () {
+  console.debug('Executing query:', this);
+  this.query.func(this);
+  this.query.wasExecuted = true;
+};
+
+/**
+ * If a query has been executed from this cursor, prints an error message and
+ * returns true. Otherwise returns false.
+ */
+mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
+  if (this.query.wasExecuted) {
+    // TODO: Print warning to the shell.
+    console.warn('Cannot call', methodName, 'on already executed ' +
+        'mongo.Cursor.', this);
+  }
+  return this.query.wasExecuted;
+};
+
+mongo.Cursor.prototype.sort = function (sort) {
+  if (this._warnIfExecuted('sort')) { return this; }
+  console.debug('mongo.Cursor would be sorted.', this);
+  return this;
+};
+
 mongo.dom = (function () {
   // TODO: Document these data attributes.
   // TODO: Should each shell be able to have its own host?
@@ -236,6 +283,28 @@ mongo.mutateSource = (function () {
   };
 }());
 
+/**
+ * Handles a query of the form "db.collection.method()." Some methods on this
+ * object will execute the query immediately while others will return an
+ * mongo.Cursor instance which is expected to continue the query lifespan.
+ */
+mongo.Query = function (shell, collection) {
+  this.shell = shell;
+  this.collection = collection;
+  // The shell can change the active DB but a query's DB should be static.
+  this.database = this.shell.database;
+  console.debug('Create mongo.Query', this);
+};
+
+mongo.Query.prototype.find = function (query, projection) {
+  var args = {query: query, projection: projection};
+  return new mongo.Cursor(this, mongo.request.db_collection_find, args);
+};
+
+mongo.Query.prototype.insert = function (document_) {
+  mongo.request.db_collection_insert(this, document_);
+};
+
 mongo.Readline = function ($input) {
   this.$input = $input;
   this.history = []; // Newest entries at Array.length.
@@ -378,25 +447,6 @@ mongo.request = (function () {
   };
 }());
 
-mongo.util = (function () {
-  /**
-   * Uses the range indices in the given AST to divide the given source into
-   * individual statements and returns each statement as an entry in an array.
-   */
-  function sourceToStatements(src, ast) {
-    var statements = [];
-    ast.body.forEach(function (statementNode, index, array) {
-      var srcIndices = statementNode.range;
-      statements.push(src.substring(srcIndices[0], srcIndices[1]));
-    });
-    return statements;
-  }
-
-  return {
-    sourceToStatements: sourceToStatements
-  };
-}());
-
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
@@ -516,70 +566,23 @@ mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
 };
 
-/**
- * Handles a query of the form "db.collection.method()." Some methods on this
- * object will execute the query immediately while others will return an
- * mongo.Cursor instance which is expected to continue the query lifespan.
- */
-mongo.Query = function (shell, collection) {
-  this.shell = shell;
-  this.collection = collection;
-  console.debug('Create mongo.Query', this);
-};
-
-mongo.Query.prototype.find = function (query, projection) {
-  var args = {query: query, projection: projection};
-  return new mongo.Cursor(this, mongo.request.db_collection_find, args);
-};
-
-mongo.Query.prototype.insert = function (document_) {
-  mongo.request.db_collection_insert(this, document_);
-};
-
-/**
- * A wrapper over the result set of a query, that users can iterate through to
- * retrieve results. Before the query is executed, users may modify the query
- * result set format through various methods such as sort().
- */
-mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
-  this.shell = mwsQuery.shell;
-  this.collection = mwsQuery.collection;
-  this.query = {
-    wasExecuted: false,
-    func: queryFunction,
-    args: queryArgs
-  };
-  console.debug('Created mongo.Cursor:', this);
-};
-
-/**
- * Executes the stored query function, disabling result set format modification
- * methods such as sort() and enabling result set iteration methods such as
- * next().
- */
-mongo.Cursor.prototype.executeQuery = function () {
-  console.debug('Executing query:', this);
-  this.query.func(this);
-  this.query.wasExecuted = true;
-};
-
-/**
- * If a query has been executed from this cursor, prints an error message and
- * returns true. Otherwise returns false.
- */
-mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
-  if (this.query.wasExecuted) {
-    // TODO: Print warning to the shell.
-    console.warn('Cannot call', methodName, 'on already executed ' +
-        'mongo.Cursor.', this);
+mongo.util = (function () {
+  /**
+   * Uses the range indices in the given AST to divide the given source into
+   * individual statements and returns each statement as an entry in an array.
+   */
+  function sourceToStatements(src, ast) {
+    var statements = [];
+    ast.body.forEach(function (statementNode, index, array) {
+      var srcIndices = statementNode.range;
+      statements.push(src.substring(srcIndices[0], srcIndices[1]));
+    });
+    return statements;
   }
-  return this.query.wasExecuted;
-};
 
-mongo.Cursor.prototype.sort = function (sort) {
-  if (this._warnIfExecuted('sort')) { return this; }
-  console.debug('mongo.Cursor would be sorted.', this);
-  return this;
-};
+  return {
+    sourceToStatements: sourceToStatements
+  };
+}());
 
 $(document).ready(mongo.init);
