@@ -1,0 +1,6 @@
+[submodule "frontend/lib/falafel"]
+	path = frontend/lib/falafel
+	url = git://github.com/mcomella/node-falafel.git
+[submodule "frontend/lib/esprima"]
+	path = frontend/lib/esprima
+	url = git://github.com/ariya/esprima
