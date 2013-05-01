@@ -26,6 +26,8 @@ def get_db():
         # TODO: Propogate the exception
     else:
         db = client[db_name]
+        if config.username:
+            db.authenticate(config.username, config.password)
         return db
     return None
 
