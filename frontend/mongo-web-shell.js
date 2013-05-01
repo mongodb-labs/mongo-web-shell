@@ -42,6 +42,7 @@ mongo.init = function () {
   });
 };
 
+
 mongo.const = (function () {
   var KEYCODES = {
     enter: 13,
@@ -55,6 +56,7 @@ mongo.const = (function () {
     keycodes: KEYCODES
   };
 }());
+
 
 /**
  * A wrapper over the result set of a query, that users can iterate through to
@@ -103,6 +105,7 @@ mongo.Cursor.prototype.sort = function (sort) {
   return this;
 };
 
+
 mongo.dom = (function () {
   // TODO: Document these data attributes.
   // TODO: Should each shell be able to have its own host?
@@ -133,6 +136,7 @@ mongo.dom = (function () {
     injectStylesheet: injectStylesheet
   };
 }());
+
 
 mongo.keyword = (function () {
   function evaluate(shellID, keyword, arg, arg2, unusedArg) {
@@ -283,6 +287,7 @@ mongo.mutateSource = (function () {
   };
 }());
 
+
 /**
  * Handles a query of the form "db.collection.method()." Some methods on this
  * object will execute the query immediately while others will return an
@@ -304,6 +309,7 @@ mongo.Query.prototype.find = function (query, projection) {
 mongo.Query.prototype.insert = function (document_) {
   mongo.request.db_collection_insert(this, document_);
 };
+
 
 mongo.Readline = function ($input) {
   this.$input = $input;
@@ -357,6 +363,7 @@ mongo.Readline.prototype.submit = function (line) {
   this.history.push(line);
   this.historyIndex = this.history.length;
 };
+
 
 mongo.request = (function () {
   function db_collection_find(cursor) {
@@ -446,6 +453,7 @@ mongo.request = (function () {
     _stringifyKeys: stringifyKeys
   };
 }());
+
 
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
@@ -565,6 +573,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
 mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
 };
+
 
 mongo.util = (function () {
   /**
