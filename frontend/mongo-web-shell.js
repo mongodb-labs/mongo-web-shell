@@ -372,8 +372,6 @@ mongo.request = (function () {
 
     var url = getResURL(resID, cursor.collection) + 'find';
     var params = {
-      // TODO: This shouldn't be resID but will probably get removed anyway.
-      db: resID,
       query: args.query,
       projection: args.projection
     };
@@ -398,8 +396,6 @@ mongo.request = (function () {
     var resID = query.shell.mwsResourceID;
     var url = getResURL(resID, query.collection) + 'insert';
     var params = {
-      // TODO: This shouldn't be resID but will probably get removed anyway.
-      db: resID,
       document: document_
     };
 
