@@ -39,6 +39,11 @@ mongo.init = function () {
       // TODO: Display error message in the mongo web shell.
       console.error('AJAX request failed:', textStatus, errorThrown);
     });
+    
+    //focus on input on click
+    jQuery(shell.$rootElement.find('.mws-body').get(0)).click(function() {
+      jQuery(shell.$input).focus();
+    });
   });
 };
 
