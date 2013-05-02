@@ -1,6 +1,6 @@
 .mws-body {
   border-radius: 10px;
-  height: 640px;
+  height: 400px;
   margin-top: 20px;
   margin-bottom: 10px;
   resize: both;
@@ -33,12 +33,15 @@
 .mws-form {
   display: inline-block;
   margin-left: 5px;
+  width: 95%
 }
 
 .mws-input {
   resize: none;
-  height: 40px;
   border: none;
+  width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
 .mws-input:focus {
