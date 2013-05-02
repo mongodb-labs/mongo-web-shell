@@ -471,12 +471,15 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  var html = '<div class="mws-body">' +
+  var html = '<div class="mws-body">' +s
                '<ul class="mws-response-list">' +
                  '<li>' +
+                   this.$rootElement.get(0).innerHTML +
+                 '<\li>' +
+                 '<li class="input-li">' +
                    '>' +
                    '<form class="mws-form">' +
-                     '<input type="text" class="mws-input" disabled="true">' +
+                     '<input type="textarea" class="mws-input" disabled="true">' +
                    '</form>' +
                  '</li>' +
                '</ul>' +
@@ -588,7 +591,7 @@ mongo.Shell.prototype.insertResponseArray = function (data) {
 mongo.Shell.prototype.insertResponseLine = function (data) {
   var li = document.createElement('li');
   li.innerHTML = data;
-  this.$input.before(li);
+  this.$rootElement.find('.input-li').before(li);
 
   // scrolling
   var scrollArea = this.$rootElement.find('.mws-response-list').get(0);
