@@ -469,7 +469,8 @@ mongo.Shell.prototype.injectHTML = function () {
   var html = '<div class="mws-body">' +
                '<ul class="mws-response-list">' +
                  '<li>' +
-                   '<form>' +
+                   '>' +
+                   '<form class="mws-form">' +
                      '<input type="text" class="mws-input" disabled="true">' +
                    '</form>' +
                  '</li>' +
@@ -585,7 +586,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   this.$input.before(li);
 
   // scrolling
-  var scrollArea = this.$rootElement.find('.mws-body').get(0);
+  var scrollArea = this.$rootElement.find('.mws-response-list').get(0);
   scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
