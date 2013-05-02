@@ -28,16 +28,14 @@ mongo.init = function () {
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
-        // TODO: Print error in shell. Improve error below.
-        console.warn('No res_id received! Shell disabled.', data);
+        shell.prototype.insertResponseLine('ERROR: No res_id recieved! Shell disabled. ' + data);
         return;
       }
       console.info('/mws/' + data.res_id, 'was created succssfully.');
       shell.attachInputHandler(data.res_id);
       shell.enableInput(true);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      // TODO: Display error message in the mongo web shell.
-      console.error('AJAX request failed:', textStatus, errorThrown);
+      shell.prototype.insertResponseLine('AJAX request failed: ' + textStatus + ' ' + errorThrown);
     });
 
     //focus on input on click
@@ -97,9 +95,7 @@ mongo.Cursor.prototype.executeQuery = function () {
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
   if (this.query.wasExecuted) {
-    // TODO: Print warning to the shell.
-    console.warn('Cannot call', methodName, 'on already executed ' +
-        'mongo.Cursor.', this);
+    this.shell.prototype.insertResponseLine('Warning: Cannot call ' + methodName + ' on already executed mongo.Cursor.' + this);
   }
   return this.query.wasExecuted;
 };
@@ -155,15 +151,14 @@ mongo.keyword = (function () {
     case 'help':
     case 'show':
       if (unusedArg) {
-        // TODO: Print to shell.
-        console.debug('Too many parameters to', keyword + '.');
+        this.Shell.prototype.insertResponseLine('Too many parameters to ' + keyword + '.');
         return;
       }
       mongo.keyword[keyword](shell, arg, arg2);
       break;
 
     default:
-      // TODO: Print to shell.
+      this.Shell.prototype.insertResponseLine('Unknown keyword: ' + keyword + '.');
       console.debug('Unknown keyword', keyword);
     }
   }
@@ -179,8 +174,7 @@ mongo.keyword = (function () {
   }
 
   function use(shell, arg, arg2) {
-    // TODO: Print to shell.
-    console.debug('cannot change db: functionality disabled.');
+    this.Shell.prototype.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
   return {
@@ -371,6 +365,7 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
+  var me = this;
   function db_collection_find(cursor) {
     var resID = cursor.shell.mwsResourceID;
     var args = cursor.query.args;
@@ -419,8 +414,7 @@ mongo.request = (function () {
         console.info('Insertion successful:', data);
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      // TODO: Print error into shell.
-      console.error('db_collection_insert fail:', textStatus, errorThrown);
+      me.Shell.prototype.insertResponseLine('ERROR: db_collection_insert fail: ' + textStatus + ' ' + errorThrown);
     });
   }
 
@@ -510,9 +504,8 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
-    // TODO: Print falafel parse error to shell.
-    console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',
-        err);
+    this.insertResponseLine('mongo.Shell.handleInput(): falafel/esprima parse error on: ' +
+    err.statement);
     return;
   }
 
@@ -526,9 +519,8 @@ mongo.Shell.prototype.handleInput = function () {
     // TODO: This is an error on the mws front since the original source
     // already passed parsing once before and we were the ones to make the
     // changes to the source. Figure out how to handle this error.
-    // TODO: Print esprima parse error to shell.
-    console.debug('mongo.Shell.handleInput(): esprima parse error on ' +
-        'mutated source:', err, mutatedSrc);
+    this.insertResponseLine('mongo.Shell.handleInput(): esprima parse error on: ' +
+    mutatedSrc);
     return;
   }
 
@@ -536,13 +528,11 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     this.evalStatements(statements);
   } catch (err) {
-    // TODO: Print out to shell.
     // TODO: This is probably an unknown identifier error. We should be hiding
     // the identifiers from the global object by hand (to be implemented
     // later) so so this is likely our fault. Figure out how to handle.
     // TODO: "var i = 1;" throws a TypeError here. Find out why.
-    console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
-        err);
+    this.insertResponseLine('mongo.Shell.handleInput(): eval error on: ' + err.statement);
   }
 };
 
@@ -552,6 +542,7 @@ mongo.Shell.prototype.handleInput = function () {
  * that is equivalent to the statement eval failed on.
  */
 mongo.Shell.prototype.evalStatements = function (statements) {
+  var me = this;
   statements.forEach(function (statement, index, array) {
     console.debug('mongo.Shell.handleInput(): Evaling', index, statement);
     var out;
@@ -571,9 +562,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out.executeQuery();
     } else if (out !== undefined) {
-      // TODO: Print out to shell.
-      console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
-          out);
+      me.insertResponseLine(out);
     }
   });
 };
