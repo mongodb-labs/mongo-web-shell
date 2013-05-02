@@ -99,7 +99,13 @@ mongo.Cursor.prototype._printBatch = function () {
     return;
   }
 
-  var setSize = 4; // TODO: Get query size from DBQuery.setBatchSize.
+  var setSize = DBQuery.shellBatchSize;
+  if (!mongo.util.isNumeric(setSize)) {
+    // TODO: Print to shell.
+    console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
+        'value.');
+    return;
+  }
   var batch = [];
   for (var i = 0; i < setSize; i++) {
     // pop() setSize times rather than splice(-setSize) to preserve order.
@@ -610,6 +616,10 @@ mongo.Shell.prototype.enableInput = function (bool) {
 
 
 mongo.util = (function () {
+  function isNumeric(val) {
+    return typeof val === 'number' && !isNaN(val);
+  }
+
   /**
    * Uses the range indices in the given AST to divide the given source into
    * individual statements and returns each statement as an entry in an array.
@@ -624,8 +634,16 @@ mongo.util = (function () {
   }
 
   return {
+    isNumeric: isNumeric,
     sourceToStatements: sourceToStatements
   };
 }());
+
+// TODO: Move this into the shell's local variables when implemented. This will
+// allow both multiple shells to have different values and reduce the global
+// variable use back to just "mongo".
+var DBQuery = {
+  shellBatchSize: 20
+};
 
 $(document).ready(mongo.init);
