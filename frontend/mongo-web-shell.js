@@ -496,7 +496,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 mongo.Shell.prototype.handleInput = function () {
-  var mutatedSrc, userInput = this.$input.val();
+  var userInput = this.$input.val();
   this.$input.val('');
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
