@@ -39,7 +39,6 @@ db.collection
     * __Params__:
         * *:res_id*: The id of the desired mws resource.
         * *:collection_name*: The mongo "collection" on which to run the query.
-        * *db*: The mongo "database" on which to run the query.
         * *query*: (Optional) Specifies the selection criteria using
         [query operators][].
         * *projection*: (Optional) Controls the fields to return, or the
@@ -65,7 +64,6 @@ db.collection
         * *:res_id*: The id of the desired mws resource.
         * *:collection_name*: The mongo "collection" in which to insert the
         document.
-        * *db*: The mongo "database" in which to insert the document.
         * *document*: A mongo "document" to insert into the collection.
     * __Returns__:
         * *status_code*: The code describing the status of the given insertion.
