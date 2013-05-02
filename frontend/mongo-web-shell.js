@@ -39,6 +39,11 @@ mongo.init = function () {
       // TODO: Display error message in the mongo web shell.
       console.error('AJAX request failed:', textStatus, errorThrown);
     });
+
+    //focus on input on click
+    jQuery(shell.$rootElement.find('.mws-body').get(0)).click(function() {
+      jQuery(shell.$input).focus();
+    });
   });
 };
 
@@ -458,7 +463,7 @@ mongo.request = (function () {
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
-
+  this.$responseList = null;
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
@@ -466,16 +471,18 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // TODO: Why is there a border class? Can it be done with CSS border (or
-  // be renamed to be more descriptive)?
-  // TODO: .mshell not defined in CSS; change it.
-  var html = '<div class="mws-border">' +
-               '<div class="mshell">' +
-                 '<ul class="mws-in-shell-response"></ul>' +
-                 '<form>' +
-                   '<input type="text" class="mws-input" disabled="true">' +
-                 '</form>' +
-               '</div>' +
+  var html = '<div class="mws-body">' +
+               '<ul class="mws-response-list">' +
+                 '<li>' +
+                   this.$rootElement.get(0).innerHTML +
+                 '</li>' +
+                 '<li class="input-li">' +
+                   '>' +
+                   '<form class="mws-form">' +
+                     '<input type="text" class="mws-input" disabled="true">' +
+                   '</form>' +
+                 '</li>' +
+               '</ul>' +
              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
@@ -498,6 +505,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
+  this.insertResponseLine(userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
@@ -572,6 +580,22 @@ mongo.Shell.prototype.evalStatements = function (statements) {
 
 mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
+};
+
+mongo.Shell.prototype.insertResponseArray = function (data) {
+  for (var i = 0; i < data.length; i++) {
+    this.insertResponseLine(data[i]);
+  }
+};
+
+mongo.Shell.prototype.insertResponseLine = function (data) {
+  var li = document.createElement('li');
+  li.innerHTML = data;
+  this.$rootElement.find('.input-li').before(li);
+
+  // scrolling
+  var scrollArea = this.$rootElement.find('.mws-response-list').get(0);
+  scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
 
