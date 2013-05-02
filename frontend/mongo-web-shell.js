@@ -24,7 +24,10 @@ mongo.init = function () {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
-
+    $(shell.$rootElement).click(function() {
+      $(shell.$input).focus();
+    });
+    
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
@@ -36,11 +39,6 @@ mongo.init = function () {
       shell.enableInput(true);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
       shell.prototype.insertResponseLine('AJAX request failed: ' + textStatus + ' ' + errorThrown);
-    });
-
-    //focus on input on click
-    jQuery(shell.$rootElement.find('.mws-body').get(0)).click(function() {
-      jQuery(shell.$input).focus();
     });
   });
 };
@@ -505,7 +503,7 @@ mongo.Shell.prototype.handleInput = function () {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
     this.insertResponseLine('mongo.Shell.handleInput(): falafel/esprima parse error on: ' +
-    err.statement);
+    err);
     return;
   }
 
