@@ -481,7 +481,7 @@ mongo.Shell.prototype.injectHTML = function () {
                    this.$rootElement.html() +
                  '</li>' +
                  '<li class="input-li">' +
-                   '>' +
+                   '&gt;' +
                    '<form class="mws-form">' +
                      '<input type="text" class="mws-input" disabled="true">' +
                    '</form>' +
