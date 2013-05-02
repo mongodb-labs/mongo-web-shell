@@ -39,7 +39,6 @@ mongo.init = function () {
       // TODO: Display error message in the mongo web shell.
       console.error('AJAX request failed:', textStatus, errorThrown);
     });
-    
     //focus on input on click
     jQuery(shell.$rootElement.find('.mws-body').get(0)).click(function() {
       jQuery(shell.$input).focus();
@@ -471,15 +470,15 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  var html = '<div class="mws-body">' +s
+  var html = '<div class="mws-body">' +
                '<ul class="mws-response-list">' +
                  '<li>' +
                    this.$rootElement.get(0).innerHTML +
-                 '<\li>' +
+                 '</li>' +
                  '<li class="input-li">' +
                    '>' +
                    '<form class="mws-form">' +
-                     '<input type="textarea" class="mws-input" disabled="true">' +
+                     '<input type="text" class="mws-input" disabled="true">' +
                    '</form>' +
                  '</li>' +
                '</ul>' +
