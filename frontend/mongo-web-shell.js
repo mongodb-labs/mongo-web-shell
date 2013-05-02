@@ -87,17 +87,58 @@ mongo.dom = (function () {
   };
 }());
 
-mongo.mutateSource = (function () {
-  var KEYWORDS = {
-    help: true,
-    show: true,
-    use: true
-  };
-  function isKeyword(id) { return KEYWORDS[id]; }
+mongo.keyword = (function () {
+  function evaluate(shellID, keyword, arg, arg2, unusedArg) {
+    var shell = mongo.shells[shellID];
+    switch (keyword) {
+    case 'use':
+      // Since use is disabled, we don't care how many args so call right away.
+      mongo.keyword.use(shell, arg, arg2, unusedArg);
+      break;
 
+    case 'help':
+    case 'show':
+      if (unusedArg) {
+        // TODO: Print to shell.
+        console.debug('Too many parameters to', keyword + '.');
+        return;
+      }
+      mongo.keyword[keyword](shell, arg, arg2);
+      break;
+
+    default:
+      // TODO: Print to shell.
+      console.debug('Unknown keyword', keyword);
+    }
+  }
+
+  function help(shell, arg, arg2) {
+    // TODO: Implement.
+    console.debug('keyword.help called.');
+  }
+
+  function show(shell, arg) {
+    // TODO: Implement.
+    console.debug('keyword.show called.');
+  }
+
+  function use(shell, arg, arg2) {
+    // TODO: Print to shell.
+    console.debug('cannot change db: functionality disabled.');
+  }
+
+  return {
+    evaluate: evaluate,
+    help: help,
+    show: show,
+    use: use
+  };
+}());
+
+
+mongo.mutateSource = (function () {
   var NODE_TYPE_HANDLERS = {
-    'MemberExpression': mutateMemberExpression,
-    'UnaryExpression': mutateUnaryExpression
+    'MemberExpression': mutateMemberExpression
   };
 
   function mutateMemberExpression(node, shellID) {
@@ -138,32 +179,16 @@ mongo.mutateSource = (function () {
         node.source());
   }
 
-  function mutateUnaryExpression(node) {
-    switch (node.operator) {
-    case 'help':
-    case 'show':
-    case 'use':
-      console.warn('mutateUnaryExpression(): mutation of keyword "' +
-          node.operator + '" not yet implemented. Removing node source to ' +
-          'prevent parser errors.');
-      node.update('');
-      break;
-    default:
-      console.debug('mutateUnaryExpression(): keyword "' + node.operator +
-          '" is not mongo specific. Ignoring.');
-    }
-  }
-
   /**
-   * Replaces mongo shell specific input (such as the `show` keyword or * `db.`
-   * methods) in the given javascript source with the equivalent mongo web
-   * shell calls and returns this mutated source. This transformation allows
-   * the code to be interpretted as standard javascript in the context of this
-   * html document. Also takes the ID of the shell making the call so the
-   * returned code can reference the shell.
+   * Replaces mongo shell specific input (such as the `db.` methods) in the
+   * given javascript source with the equivalent mongo web shell calls and
+   * returns this mutated source. This transformation allows the code to be
+   * interpretted as standard javascript in the context of this html document.
+   * Also takes the ID of the shell making the call so the returned code can
+   * reference the shell.
    */
   function swapMongoCalls(src, shellID) {
-    var output = falafel(src, {isKeyword: isKeyword}, function (node) {
+    var output = falafel(src, function (node) {
       if (NODE_TYPE_HANDLERS[node.type]) {
         NODE_TYPE_HANDLERS[node.type](node, shellID);
       }
@@ -171,12 +196,43 @@ mongo.mutateSource = (function () {
     return output.toString();
   }
 
+  /**
+   * Replaces mongo shell specific keywords (such as "help") in the given
+   * source with a valid JavaScript function call that may be evaled and
+   * returns this mutated source.
+   */
+  function swapKeywords(src, shellID) {
+    var statements = src.split(/\s*;\s*/);
+    statements.forEach(function (statement, index, arr) {
+      var tokens = statement.split(/\s+/).filter(function (str) {
+        return str.length !== 0;
+      });
+      if (/help|show|use/.test(tokens[0])) {
+        arr[index] = convertTokensToKeywordCall(shellID, tokens);
+      }
+    });
+    return statements.join('; ');
+  }
+
+  /**
+   * Takes an array of tokens and a shellID and returns a string that contains
+   * a mongo.keyword call that can be evaled.
+   */
+  function convertTokensToKeywordCall(shellID, tokens) {
+    var tokensAsArgs = tokens.map(function (str) {
+      return '\'' + str + '\''; // Pad as string literals.
+    });
+    var args = [shellID].concat(tokensAsArgs).join(', ');
+    var func = 'mongo.keyword.evaluate';
+    return func + '(' + args + ')';
+  }
+
   return {
     swapMongoCalls: swapMongoCalls,
+    swapKeywords: swapKeywords,
 
-    _isKeyword: isKeyword,
     _mutateMemberExpression: mutateMemberExpression,
-    _mutateUnaryExpression: mutateUnaryExpression
+    _convertTokensToKeywordCall: convertTokensToKeywordCall
   };
 }());
 
@@ -240,6 +296,7 @@ mongo.request = (function () {
 
     var url = getResURL(resID, cursor.collection) + 'find';
     var params = {
+      // TODO: This shouldn't be resID but will probably get removed anyway.
       db: resID,
       query: args.query,
       projection: args.projection
@@ -265,6 +322,7 @@ mongo.request = (function () {
     var resID = query.shell.mwsResourceID;
     var url = getResURL(resID, query.collection) + 'insert';
     var params = {
+      // TODO: This shouldn't be resID but will probably get removed anyway.
       db: resID,
       document: document_
     };
@@ -346,8 +404,6 @@ var MWShell = function (rootElement, shellID) {
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
-
-  this.database = 'test'; // The name of the active mongo database.
 };
 
 MWShell.prototype.injectHTML = function () {
@@ -382,10 +438,11 @@ MWShell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 MWShell.prototype.handleInput = function () {
-  var mutatedSrc, userInput = this.$input.val();
+  var userInput = this.$input.val();
   this.$input.val('');
+  var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
-    mutatedSrc = mongo.mutateSource.swapMongoCalls(userInput, this.id);
+    mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
     // TODO: Print falafel parse error to shell.
     console.error('MWShell.handleInput(): falafel/esprima parse error:', err);
@@ -465,8 +522,6 @@ MWShell.prototype.enableInput = function (bool) {
 var MWSQuery = function (shell, collection) {
   this.shell = shell;
   this.collection = collection;
-  // The shell can change the active DB but a query's DB should be static.
-  this.database = this.shell.database;
   console.debug('Create MWSQuery', this);
 };
 
@@ -486,7 +541,6 @@ MWSQuery.prototype.insert = function (document_) {
  */
 var MWSCursor = function (mwsQuery, queryFunction, queryArgs) {
   this.shell = mwsQuery.shell;
-  this.database = mwsQuery.database;
   this.collection = mwsQuery.collection;
   this.query = {
     wasExecuted: false,
