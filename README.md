@@ -41,7 +41,7 @@ After following the installation directions above:
 Run the following from a shell that has been activated with your virtual
 environment (see Installation #4):
 
-1. Run the server: `python run.py`
+1. Run the server: `python run.py` (or `DEBUG=1 python run.py` for debug mode).
 
 By default, you can connect to the sample at <http://localhost:5000/sample/>.
 
