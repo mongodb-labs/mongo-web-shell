@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-from flask import request, redirect
-
-from mongows import app
-from mongows.db import get_connection
-=======
 from datetime import timedelta
 from functools import update_wrapper
 import json
@@ -58,18 +52,11 @@ def crossdomain(origin=None, methods=None, headers=None,
         f.provide_automatic_options = False
         return update_wrapper(wrapped_function, f)
     return decorator
->>>>>>> upstream/master
 
 
 @app.route('/mws', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-<<<<<<< HEAD
-    # TODO: Create resource and return its associated id.
-    # Call method to create resource
-    id = 0 # get id from 
-    return '/mws/: Not yet implemented.'
-=======
     # For now, the rest of the code uses resource ID as the name of the
     # database to be queried. So I am hardconding it to test. It is yet to be
     # decided how and where to maintain the relationship between the user,
@@ -77,32 +64,15 @@ def create_mws_resource():
     result = {'res_id': 'test'}
     return dumps(result)
 
->>>>>>> upstream/master
-
 @app.route('/mws/<res_id>/keep-alive', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def keep_mws_alive(res_id):
     # TODO: Reset timeout period on mws resource with the given id.
-<<<<<<< HEAD
-    # find.extend(res_id) 
-    return '/mws/:id/keep-alive: Not yet implemented.'
-=======
     return '{}'
-
->>>>>>> upstream/master
 
 @app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_find(res_id, collection_name):
-<<<<<<< HEAD
-    # TODO: Call find() on the specified params and return results.
-    cookie_id = request.cookies.get(id)
-    collection_cookie = None # Get cookie id from collection name
-    if (cookie_id != collection_cookie):
-        error_type = 'Bad_Request'
-        return redirect(url_for('/mws/<res_id>/<error_type>', % res_id, error_type))
-    return '/mws/:id/db/:collection/find: Not yet implemented.'
-=======
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
@@ -126,25 +96,12 @@ def db_collection_find(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
     return result
->>>>>>> upstream/master
 
 
 @app.route('/mws/<res_id>/db/<collection_name>/insert',
            methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
-<<<<<<< HEAD
-    # TODO: Call insert() on the specified params, return status.
-    cookie_id = request.cookies.get(id)
-    collection_cookie = None # Get cookie id from collection name
-    if (cookie_id != collection_cookie):
-        error_type = 'Bad_Request'
-    return '/mws/:id/db/:collection/insert: Not yet implemented.'
-
-@app.route('/mws/<res_id>/<error_type>' methods=['GET', 'POST'])
-def db_bad_query(res_id, error_type):
-    return '/mws/<res_id>/<error_type>' % res_id, error_type
-=======
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
@@ -164,4 +121,3 @@ def db_bad_query(res_id, error_type):
         result = {'status': -1, 'result': error}
         result = dumps(result)
     return result
->>>>>>> upstream/master
