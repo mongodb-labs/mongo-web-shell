@@ -69,14 +69,13 @@ def crossdomain(origin=None, methods=None, headers=None,
 def create_mws_resource():
     # For now, the return will list the db name as the appended name that we
     # gave it.
-    '''
+    
     ID = generate_id()
     result = {'res_id': ID}
-    print('create mws resource res_id: ' + res_id)
+    print('create mws resource res_id: ' + ID)
     db.collection_insert(client_collection, client_collection, result)
-    '''
-    result = {'res_id': 'test'}
-    # return dumps(result)
+    
+    # result = {'res_id': 'test'}
     return dumps(result)
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -148,6 +147,6 @@ def generate_id():
     ID = ''
     while(count != 0): 
         ID = ID.join([chars[int(random.random() * len(chars))] for i in range(12)])
-        exists = db.collection_find(client_db, client_collection, {'db_id': ID}, None)
+        exists = db.collection_find(0, client_collection, {'db_id': ID}, None)
         count = exists.count()
     return ID
