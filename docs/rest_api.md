@@ -87,7 +87,6 @@ missing keys will not be called. Supported operations are as follows
     * *sort*: A document whose fields specify the attributes on which to sort
       the result set.
 
-
 TODO
 ----
 * Add types to params/return values?
