@@ -1,14 +1,16 @@
+import random
 from datetime import timedelta
 from functools import update_wrapper
 import json
 
 from bson.json_util import dumps
+from bson.objectid import ObjectId
 from flask import current_app, make_response, request
 
 from mongows import app, db
 
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
-
+client_db = 
 
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
 # via http://flask.pocoo.org/snippets/56/
@@ -61,7 +63,26 @@ def create_mws_resource():
     # database to be queried. So I am hardconding it to test. It is yet to be
     # decided how and where to maintain the relationship between the user,
     # her resource ID and the database she can query.
-    result = {'res_id': 'test'}
+    # result = {'res_id': 'test'}
+
+    if 'db_name' in request.json:
+        db_name = request.json['document']
+    else:
+        error = '\'db_name\' argument not found in the creation request.'
+        result = {'status': -1, 'result': error}
+        result = dumps(result)
+        return result
+
+    objIDs = db.collection_insert(res_id, collection_name, document)
+    result = {'status': 0, 'result': objIDs}
+    try:
+        result = dumps(result)
+    except ValueError:
+        error = 'Error in insert function while trying to convert the ' + \
+            'results to JSON format.'
+        result = {'status': -1, 'result': error}
+        result = dumps(result)
+    return result
     return dumps(result)
 
 @app.route('/mws/<res_id>/keep-alive', methods=['POST'])
@@ -121,3 +142,8 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
     return result
+
+def generateId():
+    # we're intentionally excluding 0, O, I, and 1 for readability
+    chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    return ''.join([chars[int(random.random() * len(chars))] for i in range(12)])
