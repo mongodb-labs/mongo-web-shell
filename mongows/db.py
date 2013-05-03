@@ -57,11 +57,4 @@ def collection_insert(res_id, collection, document):
               'Collection name: ' + collection
     return db[collection].insert(document)
 
-def database_create(db_name):
-    mongo_client = get_connection()
-    database = mongo_client[db_name]
-    if hasattr(database, 'db_name'):
-        return True
-    else:
-        # TODO: Throw an exception
-        print 'ERROR: Could not create database. DB name: ' + db_name
+
