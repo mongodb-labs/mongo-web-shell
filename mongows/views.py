@@ -10,7 +10,14 @@ from flask import current_app, make_response, request
 from mongows import app, db
 
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
-client_db = 
+client_db = db.get_connection().['client_db']
+client_collection = client_db['client_collection']
+
+
+# Set up the multiplexing db
+# Not sure if we should do that here or in the init
+# Probably on the init side
+
 
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
 # via http://flask.pocoo.org/snippets/56/
@@ -59,26 +66,26 @@ def crossdomain(origin=None, methods=None, headers=None,
 @app.route('/mws', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-    # For now, the rest of the code uses resource ID as the name of the
-    # database to be queried. So I am hardconding it to test. It is yet to be
-    # decided how and where to maintain the relationship between the user,
-    # her resource ID and the database she can query.
-    # result = {'res_id': 'test'}
+    # For now, the return will list the db name as the appended name that we
+    # gave it.
 
     if 'db_name' in request.json:
-        db_name = request.json['document']
+        db_name = request.json['db_name']
     else:
         error = '\'db_name\' argument not found in the creation request.'
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
-
-    objIDs = db.collection_insert(res_id, collection_name, document)
-    result = {'status': 0, 'result': objIDs}
+    ID = generate_id()
+    db_name_internal = db_name + ID
+    document = {'res_id': db_id, 'db_display_name': db_name, 'db_name_internal': db_name_internal}
+    db_id = db.collection_insert(client_db, client_collection, document)
+    db.database_create(db_name_internal)
+    result = {'status': 0, 'result': db_id}
     try:
         result = dumps(result)
     except ValueError:
-        error = 'Error in insert function while trying to convert the ' + \
+        error = 'Error in db creation function while trying to convert the ' + \
             'results to JSON format.'
         result = {'status': -1, 'result': error}
         result = dumps(result)
@@ -105,8 +112,11 @@ def db_collection_find(res_id, collection_name):
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
-
-    cursor = db.collection_find(res_id, collection_name, query, projection)
+    db_name = get_internal_name(res_id, db)
+    if(db_name == None):
+        error = 'Database not found'
+        return {'status': -1, 'result': error}
+    cursor = db.collection_find(db_name, collection_name, query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
     try:
@@ -131,8 +141,11 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
-
-    objIDs = db.collection_insert(res_id, collection_name, document)
+    db_name = get_internal_name(res_id, db)
+    if(db_name == None):
+        error = 'Database not found'
+        return {'status': -1, 'result': error}
+    objIDs = db.collection_insert(db_name, collection_name, document)
     result = {'status': 0, 'result': objIDs}
     try:
         result = dumps(result)
@@ -143,7 +156,18 @@ def db_collection_insert(res_id, collection_name):
         result = dumps(result)
     return result
 
-def generateId():
+def get_internal_name(res_id, db_name):
+    query = {'res_id': res_id, 'db_display_name': db_name}
+    cursor = db.collection_find(client_db, client_collection, query, None)
+    db_name_internal = cursor.get('db_name_internal')
+    return db_name_internal
+
+def generate_id():
     # we're intentionally excluding 0, O, I, and 1 for readability
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    return ''.join([chars[int(random.random() * len(chars))] for i in range(12)])
+    exists = {}
+    ID = ''
+    while(exists != None): 
+        ID = ID.join([chars[int(random.random() * len(chars))] for i in range(12)])
+        exists = client_collection.find_one(ID)
+    return ID
