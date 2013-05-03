@@ -5,9 +5,11 @@ import json
 
 from bson.json_util import dumps
 from bson.objectid import ObjectId
-from flask import current_app, make_response, request
+from flask import Blueprint, current_app, make_response, request
 
-from mongows import app, db
+from . import db
+
+mws = Blueprint('mws', __name__, url_prefix='/mws')
 
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
 client_collection = 'client_collection'
@@ -62,7 +64,7 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
-@app.route('/mws', methods=['POST'])
+@mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
     # For now, the return will list the db name as the appended name that we
@@ -77,13 +79,14 @@ def create_mws_resource():
     # return dumps(result)
     return dumps(result)
 
-@app.route('/mws/<res_id>/keep-alive', methods=['POST'])
+@mws.route('/<res_id>/keep-alive', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def keep_mws_alive(res_id):
     # TODO: Reset timeout period on mws resource with the given id.
     return '{}'
 
-@app.route('/mws/<res_id>/db/<collection_name>/find', methods=['GET'])
+
+@mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
@@ -112,7 +115,7 @@ def db_collection_find(res_id, collection_name):
     return result
 
 
-@app.route('/mws/<res_id>/db/<collection_name>/insert',
+@mws.route('/<res_id>/db/<collection_name>/insert',
            methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 def db_collection_insert(res_id, collection_name):
