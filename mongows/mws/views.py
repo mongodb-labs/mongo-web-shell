@@ -67,16 +67,11 @@ def crossdomain(origin=None, methods=None, headers=None,
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-    # For now, the return will list the db name as the appended name that we
-    # gave it.
-    
     ID = generate_id()
     result = {'res_id': ID}
-    print('create mws resource res_id: ' + ID)
     db.collection_insert(client_collection, client_collection, result)
-    
-    # result = {'res_id': 'test'}
     return dumps(result)
+
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -99,8 +94,7 @@ def db_collection_find(res_id, collection_name):
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
-    print('res_id ' + res_id)
-    internal_collection_name = collection_name + res_id
+    internal_collection_name = find_collection_name(res_id, collection_name)
     cursor = db.collection_find(res_id, internal_collection_name, query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
@@ -126,8 +120,7 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
-    print('res_id ' + res_id)
-    internal_collection_name = collection_name + res_id
+    internal_collection_name = find_collection_name(res_id, collection_name)
     objIDs = db.collection_insert(res_id, internal_collection_name, document)
     result = {'status': 0, 'result': objIDs}
     try:
@@ -140,12 +133,16 @@ def db_collection_insert(res_id, collection_name):
     return result
 
 
+def find_collection_name(res_id, collection_name):
+    return res_id + collection_name
+
+
 def generate_id():
     # we're intentionally excluding 0, O, I, and 1 for readability
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     count = 1
     ID = ''
-    while(count != 0): 
+    while(count != 0):
         ID = ID.join([chars[int(random.random() * len(chars))] for i in range(12)])
         exists = db.collection_find(0, client_collection, {'db_id': ID}, None)
         count = exists.count()
