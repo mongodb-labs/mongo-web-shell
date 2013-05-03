@@ -78,7 +78,7 @@ def create_mws_resource():
         return result
     ID = generate_id()
     db_name_internal = db_name + ID
-    document = {'res_id': db_id, 'db_display_name': db_name, 'db_name_internal': db_name_internal}
+    document = {'res_id': db_id, 'db_display_name': db_name, 'db_name_internal': db_name_internal, 'db_id': ID}
     db_id = db.collection_insert(client_db, client_collection, document)
     db.database_create(db_name_internal)
     result = {'status': 0, 'result': db_id}
@@ -169,5 +169,5 @@ def generate_id():
     ID = ''
     while(exists != None): 
         ID = ID.join([chars[int(random.random() * len(chars))] for i in range(12)])
-        exists = client_collection.find_one(ID)
+        exists = db.collection_find(client_db, client_collection, {'db_id': ID}, None)
     return ID
