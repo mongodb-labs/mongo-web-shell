@@ -160,7 +160,9 @@ describe('The request module', function () {
 
 
 describe('A Shell', function () {
-  it('injects HTML', function () {
+  // TODO: Test untested methods.
+  it('injects its HTML into the DOM', function () {
+    // TODO: Clean this up.
     var mwsBorder = $('.mws-border');
     expect(mwsBorder.length).toEqual(0);
     var shell = new mongo.Shell($('.mongo-web-shell'));
@@ -174,26 +176,26 @@ describe('A Shell', function () {
 
 
 describe('The util module', function () {
-  it('uses indices to divide source returns statements as an array',
-    function () {
-      var ast = new Object();
-      var str0 = 'db.inventory.find( { qty: 50 } )';
-      var str1 = 'db.collection.totalSize()';
-      var str2 = 'db.products.update( { item: "book", qty: { $gt: 5 } } )';
-      var src  = str0 + str1 + str2;
-      var params  = new Object();
-      var params1 = new Object();
-      var params2 = new Object();
-      ast.body = [];
-      params.range  = {0:0, 1:str0.length};
-      params1.range = {0:str0.length, 1:str0.length+str1.length};
-      params2.range = {0:str0.length+str1.length, 1:(src.length)};
-      ast.body.push(params);
-      ast.body.push(params1);
-      ast.body.push(params2);
-      var statements = mongo.util.sourceToStatements(src, ast);
-      expect(statements[0]).toEqual(str0);
-      expect(statements[1]).toEqual(str1);
-      expect(statements[2]).toEqual(str2);
-    });
+  it('divides source code into statements', function () {
+    // TODO: Clean this up.
+    var ast = {};
+    var str0 = 'db.inventory.find( { qty: 50 } )';
+    var str1 = 'db.collection.totalSize()';
+    var str2 = 'db.products.update( { item: "book", qty: { $gt: 5 } } )';
+    var src  = str0 + str1 + str2;
+    var params  = {};
+    var params1 = {};
+    var params2 = {};
+    ast.body = [];
+    params.range  = {0:0, 1:str0.length};
+    params1.range = {0:str0.length, 1:str0.length+str1.length};
+    params2.range = {0:str0.length+str1.length, 1:(src.length)};
+    ast.body.push(params);
+    ast.body.push(params1);
+    ast.body.push(params2);
+    var statements = mongo.util.sourceToStatements(src, ast);
+    expect(statements[0]).toEqual(str0);
+    expect(statements[1]).toEqual(str1);
+    expect(statements[2]).toEqual(str2);
+  });
 });
