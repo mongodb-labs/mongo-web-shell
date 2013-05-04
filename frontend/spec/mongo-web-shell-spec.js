@@ -129,22 +129,55 @@ describe('The request module', function () {
 
   it('prunes the given keys from the given object if undefined or null',
       function () {
-    // TODO: Clean this up.
-    function Param (db, query, projection) {
-      this.db = db;
-      this.query = query;
-      this.projection = projection;
+    function Parent() {
+      this.a = 'a';
+      this.b = null;
     }
-    var param = [new Param(0, null, 0), new Param(0, 0, undefined),
-                 new Param(0, undefined, null), new Param(0, 0, 0)];
-    var keys = ['query', 'projection'];
-    for (var i in param) {
-      mongo.request._pruneKeys(param[i], keys);
+    function Child(y, z) {
+      this.y = y;
+      this.z = z;
     }
-    expect(Object.keys(param[0]).length).toBe(2);
-    expect(Object.keys(param[1]).length).toBe(2);
-    expect(Object.keys(param[2]).length).toBe(1);
-    expect(Object.keys(param[3]).length).toBe(3);
+    Child.prototype = Parent;
+
+    var keysToDelete = ['b', 'z'];
+    var actual = [
+      {b: 'b', z: 'z'}, // 0
+      {a: 'a', b: undefined, y: undefined, z: null}, // 1
+      {a: 'a'}, // 2
+      {}, // 3
+      new Parent(), // 4
+      new Child('y', 'z'), // 5
+      new Child('y') // 6
+    ];
+    var expected = [
+      {b: 'b', z: 'z'}, // 0
+      {a: 'a', y: undefined}, // 1
+      {a: 'a'}, // 2
+      {} // 3
+    ];
+    var tmp = new Parent();
+    delete tmp.b;
+    expected.push(tmp);  // 4
+    expected.push(new Child('y', 'z')); // 5
+    tmp = new Child('y');
+    delete tmp.z;
+    expected.push(tmp); // 6
+
+    actual.forEach(function (obj, i) {
+      mongo.request._pruneKeys(obj, keysToDelete);
+      expect(obj).toEqual(expected[i]);
+    });
+    actual = {a: 'a', b: 'b'};
+    mongo.request._pruneKeys(actual, []);
+    expect(actual).toEqual({a: 'a', b: 'b'});
+
+    var throwerFunc = [
+      function () { mongo.request._pruneKeys(null, ['key']); },
+      function () { mongo.request._pruneKeys({}, null); }
+    ];
+    throwerFunc.forEach(function (func) {
+      expect(func).toThrow();
+    });
   });
 
   it('stringifies the keys of the given object', function () {
