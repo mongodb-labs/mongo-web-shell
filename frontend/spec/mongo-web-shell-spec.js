@@ -1,3 +1,4 @@
+/* global afterEach, beforeEach, describe, expect, it, mongo, sinon */
 $.ready = function () {}; // Prevent mongo.init() from running.
 
 describe('Mongo Const Module', function () {
