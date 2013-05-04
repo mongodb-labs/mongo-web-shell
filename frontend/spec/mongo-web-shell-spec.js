@@ -1,5 +1,31 @@
 /* global afterEach, beforeEach, describe, expect, it, mongo, sinon */
+/* global xdescribe */
 $.ready = function () {}; // Prevent mongo.init() from running.
+
+
+xdescribe('The init function', function () {
+  // TODO: The calls made in mongo.init() need to be stubbed; there should be
+  // no side effects to the page (alternatively, have side effects but restore
+  // the page to the initial state on afterEach()).
+  var xhr, requests;
+
+  beforeEach(function () {
+    xhr = sinon.useFakeXMLHttpRequest();
+    requests = [];
+    xhr.onCreate = function (req) { requests.push(req); };
+  });
+
+  afterEach(function () {
+    xhr.restore();
+  });
+
+  it('makes a post request for todo items', function () {
+    mongo.init(sinon.spy());
+    expect(requests.length).toBe(1);
+    expect(requests[0].url).toBe('/mws/');
+  });
+});
+
 
 describe('The const module', function () {
   it('stores keycode constants', function () {
@@ -12,7 +38,13 @@ describe('The const module', function () {
   });
 });
 
-describe('Mongo Dom Module', function () {
+
+describe('A Cursor', function () {
+  // TODO: Test.
+});
+
+
+describe('The dom module', function () {
   it('retrives config', function () {
     var config = mongo.dom.retrieveConfig();
     expect(config.cssPath).toEqual('mongo-web-shell.css');
@@ -43,20 +75,27 @@ describe('Mongo Dom Module', function () {
 });
 
 
-describe('Mwshell module', function () {
-  it('injects HTML', function () {
-    var mwsBorder = $('.mws-border');
-    expect(mwsBorder.length).toEqual(0);
-    var shell = new mongo.Shell($('.mongo-web-shell'));
-    shell.injectHTML();
-    mwsBorder = $('.mws-border');
-    expect(mwsBorder.length).toEqual(1);
-    expect(mwsBorder.find('.mshell').length).toEqual(1);
-    expect(mwsBorder.find('.mshell').find('.mws-input').length).toEqual(1);
-  });
+describe('The keyword module', function () {
+  // TODO: Test.
 });
 
-describe('MONGO request', function () {
+
+describe('The mutateSource module', function () {
+  // TODO: Test.
+});
+
+
+describe('A Query', function () {
+  // TODO: Test.
+});
+
+
+describe('A Readline instance', function () {
+  // TODO: Test.
+});
+
+
+describe('The request module', function () {
   it('get result url with parameters resID and collection', function () {
     mongo.config = {baseUrl: '/mws/'};
     expect(mongo.request._getResURL(30, 2)).toEqual('/mws/30/db/2/');
@@ -88,7 +127,22 @@ describe('MONGO request', function () {
   });
 });
 
-describe('mongo util module', function () {
+
+describe('A Shell', function () {
+  it('injects HTML', function () {
+    var mwsBorder = $('.mws-border');
+    expect(mwsBorder.length).toEqual(0);
+    var shell = new mongo.Shell($('.mongo-web-shell'));
+    shell.injectHTML();
+    mwsBorder = $('.mws-border');
+    expect(mwsBorder.length).toEqual(1);
+    expect(mwsBorder.find('.mshell').length).toEqual(1);
+    expect(mwsBorder.find('.mshell').find('.mws-input').length).toEqual(1);
+  });
+});
+
+
+describe('The util module', function () {
   it('uses indices to divide source returns statements as an array',
     function () {
       var ast = new Object();
@@ -111,24 +165,4 @@ describe('mongo util module', function () {
       expect(statements[1]).toEqual(str1);
       expect(statements[2]).toEqual(str2);
     });
-});
-
-describe('MONGO init', function () {
-  var xhr, requests;
-
-  beforeEach(function () {
-    xhr = sinon.useFakeXMLHttpRequest();
-    requests = [];
-    xhr.onCreate = function (req) { requests.push(req); };
-  });
-
-  afterEach(function () {
-    xhr.restore();
-  });
-
-  it('makes a post request for todo items', function () {
-    mongo.init(sinon.spy());
-    expect(requests.length).toEqual(1);
-    expect(requests[0].url).toEqual('/mws/');
-  });
 });
