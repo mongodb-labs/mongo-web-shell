@@ -3,7 +3,18 @@
 $.ready = function () {}; // Prevent mongo.init() from running.
 
 var CONST = {
-  cssFile: 'mongo-web-shell.css'
+  css: {
+    file: 'mongo-web-shell.css',
+    classes: {
+      root: '.mongo-web-shell',
+      internal: [
+        '.mws-border',
+        '.mshell',
+        '.mws-in-shell-response',
+        '.mws-input'
+      ]
+    }
+  }
 };
 
 
@@ -53,7 +64,7 @@ describe('The dom module', function () {
     // TODO: Test more than the default values.
     var config = mongo.dom.retrieveConfig();
     // Default values.
-    expect(config.cssPath).toBe(CONST.cssFile);
+    expect(config.cssPath).toBe(CONST.css.file);
     expect(config.mwsHost).toBe('');
     expect(config.baseUrl).toBe('/mws/');
   });
@@ -66,17 +77,17 @@ describe('The dom module', function () {
     }
 
     // TODO: Should the dom methods be stubbed instead?
-    expectAbsentCSS(CONST.cssFile);
-    mongo.dom.injectStylesheet(CONST.cssFile);
+    expectAbsentCSS(CONST.css.file);
+    mongo.dom.injectStylesheet(CONST.css.file);
     var injected = $('head').children().get(0); // Expect to be prepended.
     expect(injected.tagName).toBe('LINK');
-    expect(injected.href).toMatch(CONST.cssFile + '$');
+    expect(injected.href).toMatch(CONST.css.file + '$');
     expect(injected.rel).toBe('stylesheet');
     expect(injected.type).toBe('text/css');
 
     // Clean up.
     injected.parentNode.removeChild(injected);
-    expectAbsentCSS(CONST.cssFile);
+    expectAbsentCSS(CONST.css.file);
   });
 });
 
