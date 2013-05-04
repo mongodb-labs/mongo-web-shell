@@ -203,16 +203,45 @@ describe('The request module', function () {
 
 describe('A Shell', function () {
   // TODO: Test untested methods.
+  // TODO: Embed a describe that injects for multiple shells in setup.
+  var shells;
+  var rootElements;
+  var SHELL_COUNT = 2;
+
+  beforeEach(function () {
+    shells = [];
+    rootElements = [];
+    for (var i = 0; i < SHELL_COUNT; i++) {
+      var div = document.createElement('div');
+      div.className = CONST.css.classes.root;
+      document.body.appendChild(div);
+      shells.push(new mongo.Shell(div, i));
+      rootElements.push(div);
+    }
+  });
+
+  afterEach(function () {
+    while (rootElements.length > 0) {
+      var element = rootElements.pop();
+      element.parentNode.removeChild(element);
+    }
+    shells = null;
+    rootElements = null;
+  });
+
   it('injects its HTML into the DOM', function () {
-    // TODO: Clean this up.
-    var mwsBorder = $('.mws-border');
-    expect(mwsBorder.length).toEqual(0);
-    var shell = new mongo.Shell($('.mongo-web-shell'));
-    shell.injectHTML();
-    mwsBorder = $('.mws-border');
-    expect(mwsBorder.length).toEqual(1);
-    expect(mwsBorder.find('.mshell').length).toEqual(1);
-    expect(mwsBorder.find('.mshell').find('.mws-input').length).toEqual(1);
+    function expectInternalLength(len) {
+      CONST.css.classes.internal.forEach(function (cssClass) {
+        var $element = $(cssClass);
+        expect($element.length).toBe(len);
+      });
+    }
+
+    expectInternalLength(0);
+    shells.forEach(function (shell, i) {
+      shell.injectHTML();
+      expectInternalLength(i + 1);
+    });
   });
 });
 
