@@ -1,23 +1,19 @@
-import random
 from datetime import timedelta
 from functools import update_wrapper
 import json
+import random
 
 from bson.json_util import dumps
-from bson.objectid import ObjectId
-from flask import Blueprint, current_app, make_response, request
+from flask import Blueprint, current_app, make_response, request, session
 
 from . import db
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
+CLIENTS_COLLECTION = 'clients'
+#DB = db.get_db()
+ID_SIZE = 12
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
-client_collection = 'client_collection'
-
-
-# Set up the multiplexing db
-# Not sure if we should do that here or in the init
-# Probably on the init side
 
 
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
@@ -67,9 +63,15 @@ def crossdomain(origin=None, methods=None, headers=None,
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-    ID = generate_id()
-    result = {'res_id': ID}
-    db.collection_insert(client_collection, client_collection, result)
+    res_id = generate_res_id()
+    session_id = ''
+    if 'session_id' in session:
+        session_id = session['session_id']
+    else:
+        session_id = generate_id()
+        session['session_id'] = session_id
+    result = {'res_id': res_id, 'session_id': session_id}
+    db.get_db()[CLIENTS_COLLECTION].insert(result)
     return dumps(result)
 
 
@@ -94,8 +96,13 @@ def db_collection_find(res_id, collection_name):
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
-    internal_collection_name = find_collection_name(res_id, collection_name)
-    cursor = db.collection_find(res_id, internal_collection_name, query, projection)
+    session_id = session['session_id']
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    if(check_session_validity(res_id, session_id) is False):
+        error = 'Session error. User does not have access to res_id'
+        return {'status': -1, 'result': error}
+    cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
     try:
@@ -120,8 +127,13 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
-    internal_collection_name = find_collection_name(res_id, collection_name)
-    objIDs = db.collection_insert(res_id, internal_collection_name, document)
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    session_id = session['session_id']
+    if(check_session_validity(res_id, session_id) is False):
+        error = 'Session error. User does not have access to res_id'
+        return {'status': -1, 'result': error}
+    objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
     try:
         result = dumps(result)
@@ -133,17 +145,27 @@ def db_collection_insert(res_id, collection_name):
     return result
 
 
-def find_collection_name(res_id, collection_name):
+def get_internal_collection_name(res_id, collection_name):
     return res_id + collection_name
+
+
+def generate_res_id():
+    res_id = ''
+    exists = ''
+    while(exists is not None):
+        res_id = generate_id()
+        exists = db.get_db()[CLIENTS_COLLECTION].find_one({'res_id': res_id})
+    return res_id
 
 
 def generate_id():
     # we're intentionally excluding 0, O, I, and 1 for readability
     chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    count = 1
-    ID = ''
-    while(count != 0):
-        ID = ID.join([chars[int(random.random() * len(chars))] for i in range(12)])
-        exists = db.collection_find(0, client_collection, {'db_id': ID}, None)
-        count = exists.count()
-    return ID
+    return ''.join([chars[int(random.random() * len(chars))] for i in
+                    range(ID_SIZE)])
+
+
+def check_session_validity(res_id, session_id):
+    query = {'res_id': res_id, 'session_id': session_id}
+    return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
+    return False if return_value is None else True

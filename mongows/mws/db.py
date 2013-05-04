@@ -30,15 +30,3 @@ def get_db():
             db.authenticate(config.username, config.password)
         return db
     return None
-
-
-def collection_find(res_id, collection, query, projection):
-    db = get_db()
-    # TODO: Check collection is a valid collection name or catch the exception.
-    return db[collection].find(query, projection)
-
-
-def collection_insert(res_id, collection, document):
-    db = get_db()
-    # TODO: Check collection is a valid collection name or catch the exception.
-    return db[collection].insert(document)
