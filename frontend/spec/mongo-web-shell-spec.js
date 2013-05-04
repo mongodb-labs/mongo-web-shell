@@ -170,14 +170,6 @@ describe('The request module', function () {
     actual = {a: 'a', b: 'b'};
     mongo.request._pruneKeys(actual, []);
     expect(actual).toEqual({a: 'a', b: 'b'});
-
-    var throwerFunc = [
-      function () { mongo.request._pruneKeys(null, ['key']); },
-      function () { mongo.request._pruneKeys({}, null); }
-    ];
-    throwerFunc.forEach(function (func) {
-      expect(func).toThrow();
-    });
   });
 
   it('stringifies the keys of the given object', function () {
