@@ -139,6 +139,22 @@ mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
   return this._query.wasExecuted;
 };
 
+mongo.Cursor.prototype.hasNext = function () {
+  var retval, cursor = this;
+  this._executeQuery(function () { retval = cursor._query.result.length; });
+  return retval === 0 ? false : true;
+};
+
+mongo.Cursor.prototype.next = function () {
+  var retval, cursor = this;
+  this._executeQuery(function () { retval = cursor._query.result.pop(); });
+  if (retval === undefined) {
+    // TODO: Print to shell.
+    console.warn('Cursor error hasNext: false', this);
+  }
+  return retval;
+};
+
 mongo.Cursor.prototype.sort = function (sort) {
   if (this._warnIfExecuted('sort')) { return this; }
   console.debug('mongo.Cursor would be sorted.', this);
