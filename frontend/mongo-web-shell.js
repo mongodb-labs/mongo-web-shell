@@ -94,32 +94,29 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess) {
 
 mongo.Cursor.prototype._printBatch = function () {
   var cursor = this;
-  if (!this._query.wasExecuted) {
-    this._executeQuery(function () { cursor._printBatch(); });
-    return;
-  }
-
-  var setSize = DBQuery.shellBatchSize;
-  if (!mongo.util.isNumeric(setSize)) {
-    // TODO: Print to shell.
-    console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
-        'value.');
-    return;
-  }
-  var batch = [];
-  for (var i = 0; i < setSize; i++) {
-    // pop() setSize times rather than splice(-setSize) to preserve order.
-    var document_ = this._query.result.pop();
-    if (document_ === undefined) {
-      break;
+  this._executeQuery(function () {
+    var setSize = DBQuery.shellBatchSize;
+    if (!mongo.util.isNumeric(setSize)) {
+      // TODO: Print to shell.
+      console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
+          'value.');
+      return;
     }
-    batch.push(document_);
-  }
+    var batch = [];
+    for (var i = 0; i < setSize; i++) {
+      // pop() setSize times rather than splice(-setSize) to preserve order.
+      var document_ = cursor._query.result.pop();
+      if (document_ === undefined) {
+        break;
+      }
+      batch.push(document_);
+    }
 
-  if (batch.length !== 0) {
-    // TODO: Print to shell.
-    console.debug('_printBatch() results:', batch);
-  }
+    if (batch.length !== 0) {
+      // TODO: Print to shell.
+      console.debug('_printBatch() results:', batch);
+    }
+  });
 };
 
 mongo.Cursor.prototype._storeQueryResult = function (result) {
