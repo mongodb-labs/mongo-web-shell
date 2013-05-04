@@ -24,8 +24,8 @@ mongo.init = function () {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
-    $(shell.$rootElement).click(function() {
-      $(shell.$input).focus();
+    shell.$rootElement.click(function() {
+      shell.$input.focus();
     });
 
     // Attempt to create MWS resource on remote server.
@@ -38,7 +38,7 @@ mongo.init = function () {
       console.info('/mws/' + data.res_id, 'was created succssfully.');
       shell.attachInputHandler(data.res_id);
       shell.enableInput(true);
-      setInterval(function () { shell.keepAlive(); }, 30000);
+      setInterval(function () { shell.keepAlive(); }, mongo.const.KEEPALIVE);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
       shell.insertResponseLine('Failed to create resources on DB on server');
       console.error('AJAX request failed:', textStatus, errorThrown);
@@ -57,7 +57,8 @@ mongo.const = (function () {
   };
 
   return {
-    keycodes: KEYCODES
+    keycodes: KEYCODES,
+    keepAlive: 30000
   };
 }());
 
@@ -395,8 +396,7 @@ mongo.request = (function () {
       // TODO: Insert response into shell.
       console.debug('db_collection_find success:', data);
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      cursor.shell.insertResponseLine(
-          'ERROR: db_collection_find failed because ' + errorThrown);
+      cursor.shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_find fail:', textStatus, errorThrown);
     });
   }
@@ -421,8 +421,7 @@ mongo.request = (function () {
         console.info('Insertion successful:', data);
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      query.shell.insertResponseLine(
-          'ERROR: db_collection_insert failed because ' + errorThrown);
+      query.shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_insert fail:', textStatus, errorThrown);
     });
   }
@@ -452,13 +451,32 @@ mongo.request = (function () {
     }
   }
 
+  function keepAlive(shell){
+    var resID = this.mwsResourceID;
+    $.ajax({
+      type: 'POST',
+      url: mongo.config.baseUrl + resID + '/keep-alive',
+      data: {},
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        console.info('Keep-alive succesful');
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      console.err('ERROR: keep alive failed: ' + errorThrown +
+          ' STATUS: ' + textStatus);
+    });
+  }
+
   return {
     db_collection_find: db_collection_find,
     db_collection_insert: db_collection_insert,
 
     _getResURL: getResURL,
     _pruneKeys: pruneKeys,
-    _stringifyKeys: stringifyKeys
+    _stringifyKeys: stringifyKeys,
+
+    keepAlive: keepAlive
   };
 }());
 
@@ -603,21 +621,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
 };
 
 mongo.Shell.prototype.keepAlive = function() {
-  var shell = this;
-  var resID = this.mwsResourceID;
-  var url = mongo.config.baseUrl + resID + '/keep-alive';
-  $.ajax({
-    type: 'POST',
-    url: url,
-    data: {res_id: resID},
-    dataType: 'json',
-    contentType: 'application/json',
-    success: function (data, textStatus, jqXHR) {
-      console.info('Kept Alive');
-    }
-  }).fail(function (jqXHR, textStatus, errorThrown) {
-    shell.insertResponseLine('ERROR: Failed to send keep alive');
-  });
+  mongo.request.keepAlive(this);
 };
 
 mongo.util = (function () {
