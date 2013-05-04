@@ -173,13 +173,19 @@ describe('The request module', function () {
   });
 
   it('stringifies the keys of the given object', function () {
-    // TODO: Use stringify rather than creating the output by hand.
-    // TODO: Pass in an object with a prototype.
-    // TODO: In general, more tests.
-    var a = {'a':{1:2}};
-    var res = {'a':'{"1":2}'};
-    mongo.request._stringifyKeys(a);
-    expect(a).toEqual(res);
+    var js = JSON.stringify;
+    var actual =  [
+      {str: 'a', number: 0, obj: {key: 'val'}},
+      {}
+    ];
+    var expected = [
+      {str: js('a'), number: js(0), obj: JSON.stringify({key: 'val'})},
+      {}
+    ];
+    actual.forEach(function (obj, i) {
+      mongo.request._stringifyKeys(obj);
+      expect(obj).toEqual(expected[i]);
+    });
   });
 });
 
