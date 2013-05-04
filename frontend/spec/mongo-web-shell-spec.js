@@ -247,26 +247,27 @@ describe('A Shell', function () {
 
 
 describe('The util module', function () {
-  it('divides source code into statements', function () {
-    // TODO: Clean this up.
-    var ast = {};
-    var str0 = 'db.inventory.find( { qty: 50 } )';
-    var str1 = 'db.collection.totalSize()';
-    var str2 = 'db.products.update( { item: "book", qty: { $gt: 5 } } )';
-    var src  = str0 + str1 + str2;
-    var params  = {};
-    var params1 = {};
-    var params2 = {};
-    ast.body = [];
-    params.range  = {0:0, 1:str0.length};
-    params1.range = {0:str0.length, 1:str0.length+str1.length};
-    params2.range = {0:str0.length+str1.length, 1:(src.length)};
-    ast.body.push(params);
-    ast.body.push(params1);
-    ast.body.push(params2);
-    var statements = mongo.util.sourceToStatements(src, ast);
-    expect(statements[0]).toEqual(str0);
-    expect(statements[1]).toEqual(str1);
-    expect(statements[2]).toEqual(str2);
+  it('divides source code into statements based on range indicies',
+      function () {
+    var expected, sourceArr;
+    expected = sourceArr = [
+      'db.inventory.find({qty: 50});',
+      'note that this does not need to be syntactically valid',
+      ''
+    ];
+    var source = sourceArr.join('');
+
+    var ast = {body: []};
+    var startInd = 0, endInd;
+    sourceArr.forEach(function (statement) {
+      endInd = startInd + statement.length;
+      ast.body.push({range: [startInd, endInd]});
+      startInd = endInd;
+    });
+
+    var statements = mongo.util.sourceToStatements(source, ast);
+    statements.forEach(function (statement, i) {
+      expect(statement).toBe(expected[i]);
+    });
   });
 });
