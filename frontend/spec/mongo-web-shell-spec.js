@@ -51,7 +51,7 @@ describe('Mwshell module', function () {
   it('injects HTML', function () {
     var mwsBorder = $('.mws-border');
     expect(mwsBorder.length).toEqual(0);
-    var shell = new MWShell($('.mongo-web-shell'));
+    var shell = new mongo.Shell($('.mongo-web-shell'));
     shell.injectHTML();
     mwsBorder = $('.mws-border');
     expect(mwsBorder.length).toEqual(1);
@@ -60,18 +60,9 @@ describe('Mwshell module', function () {
   });
 });
 
-describe('MONGO mutateSource', function () {
-  it('check keywords', function () {
-    expect(mongo.mutateSource._isKeyword('help')).toEqual(true);
-    expect(mongo.mutateSource._isKeyword('show')).toEqual(true);
-    expect(mongo.mutateSource._isKeyword('use')).toEqual(true);
-    expect(mongo.mutateSource._isKeyword('flase')).not.toBeDefined();
-  });
-});
-
 describe('MONGO request', function () {
   it('get result url with parameters resID and collection', function () {
-    mongo.config.baseUrl = '/mws/';
+    mongo.config = {baseUrl: '/mws/'};
     expect(mongo.request._getResURL(30, 2)).toEqual('/mws/30/db/2/');
   });
 
