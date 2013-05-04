@@ -72,20 +72,20 @@ describe('MONGO mutateSource', function () {
 describe('MONGO request', function () {
   it('get result url with parameters resID and collection', function () {
     mongo.config.baseUrl = '/mws/';
-    expect(mongo.request._getResURL(30,2)).toEqual('/mws/30/db/2/');
+    expect(mongo.request._getResURL(30, 2)).toEqual('/mws/30/db/2/');
   });
 
   it('pruneKeys', function () {
-    function Param (db,query,projection) {
+    function Param (db, query, projection) {
       this.db = db;
       this.query = query;
       this.projection = projection;
     }
-    var param = [new Param(0,null,0),new Param(0,0,undefined),
-                 new Param(0,undefined,null),new Param(0,0,0)];
-    var keys = ['query','projection'];
+    var param = [new Param(0, null, 0), new Param(0, 0, undefined),
+                 new Param(0, undefined, null), new Param(0, 0, 0)];
+    var keys = ['query', 'projection'];
     for (var i in param) {
-      mongo.request._pruneKeys(param[i],keys);
+      mongo.request._pruneKeys(param[i], keys);
     }
     expect(Object.keys(param[0]).length).toBe(2);
     expect(Object.keys(param[1]).length).toBe(2);
@@ -113,13 +113,13 @@ describe('mongo util module', function () {
       var params1 = new Object();
       var params2 = new Object();
       ast.body = [];
-      params.range  = {0:0,1:str0.length};
-      params1.range = {0:str0.length,1:str0.length+str1.length};
-      params2.range = {0:str0.length+str1.length,1:(src.length)};
+      params.range  = {0:0, 1:str0.length};
+      params1.range = {0:str0.length, 1:str0.length+str1.length};
+      params2.range = {0:str0.length+str1.length, 1:(src.length)};
       ast.body.push(params);
       ast.body.push(params1);
       ast.body.push(params2);
-      var statements = mongo.util.sourceToStatements(src,ast);
+      var statements = mongo.util.sourceToStatements(src, ast);
       expect(statements[0]).toEqual(str0);
       expect(statements[1]).toEqual(str1);
       expect(statements[2]).toEqual(str2);
