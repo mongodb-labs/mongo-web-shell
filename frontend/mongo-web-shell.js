@@ -269,13 +269,10 @@ mongo.mutateSource = (function () {
   };
 
   function mutateMemberExpression(node, shellID) {
-    // Search for an expression of the form "db.collection.method()",
-    // attempting to match from the "db.collection" MemberExpression node as
-    // this is the one that will be modified.
-    var dbNode = node.object, collectionNode = node.property,
-        methodNode = node.parent;
-    // TODO: Resolve db reference from a CallExpression.
-    // TODO: Resolve db.collection reference from a CallExpression.
+    // Search for an expression of the form "db.collection", attempting to
+    // match from the "db.collection" MemberExpression node as this is the one
+    // that will be modified.
+    var dbNode = node.object, collectionNode = node.property;
     if (dbNode.type !== 'Identifier') { return; }
     // TODO: Resolve db reference in other identifiers.
     if (dbNode.name !== 'db') { return; }
@@ -284,8 +281,6 @@ mongo.mutateSource = (function () {
       console.debug('collectionNode not of type Identifier.', collectionNode);
       return;
     }
-    // As long as this AST is deeper than "db.collection", continue.
-    if (methodNode.type === 'ExpressionStatement') { return; }
 
     var collectionArg = collectionNode.source();
     if (node.computed) {
