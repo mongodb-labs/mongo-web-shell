@@ -95,6 +95,8 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess) {
 mongo.Cursor.prototype._printBatch = function () {
   var cursor = this;
   this._executeQuery(function () {
+    cursor._shell.lastUsedCursor = cursor;
+
     var setSize = DBQuery.shellBatchSize;
     if (!mongo.util.isNumeric(setSize)) {
       // TODO: Print to shell.
@@ -115,6 +117,9 @@ mongo.Cursor.prototype._printBatch = function () {
     if (batch.length !== 0) {
       // TODO: Print to shell.
       console.debug('_printBatch() results:', batch);
+    }
+    if (cursor.hasNext()) {
+      console.debug('Type "it" for more');
     }
   });
 };
@@ -203,6 +208,10 @@ mongo.keyword = (function () {
       mongo.keyword.use(shell, arg, arg2, unusedArg);
       break;
 
+    case 'it':
+      mongo.keyword.it(shell); // it ignores other arguments.
+      break;
+
     case 'help':
     case 'show':
       if (unusedArg) {
@@ -224,6 +233,16 @@ mongo.keyword = (function () {
     console.debug('keyword.help called.');
   }
 
+  function it(shell) {
+    var cursor = shell.lastUsedCursor;
+    if (cursor && cursor.hasNext()) {
+      cursor._printBatch();
+      return;
+    }
+    // TODO: Print to shell.
+    console.warn('no cursor');
+  }
+
   function show(shell, arg) {
     // TODO: Implement.
     console.debug('keyword.show called.');
@@ -237,6 +256,7 @@ mongo.keyword = (function () {
   return {
     evaluate: evaluate,
     help: help,
+    it: it,
     show: show,
     use: use
   };
@@ -314,7 +334,7 @@ mongo.mutateSource = (function () {
       var tokens = statement.split(/\s+/).filter(function (str) {
         return str.length !== 0;
       });
-      if (/help|show|use/.test(tokens[0])) {
+      if (/help|it|show|use/.test(tokens[0])) {
         arr[index] = convertTokensToKeywordCall(shellID, tokens);
       }
     });
@@ -515,6 +535,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
+  this.lastUsedCursor = null;
 };
 
 mongo.Shell.prototype.injectHTML = function () {
