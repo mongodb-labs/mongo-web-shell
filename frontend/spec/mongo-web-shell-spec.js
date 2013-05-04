@@ -1,5 +1,5 @@
 /* global afterEach, beforeEach, describe, expect, it, mongo, sinon */
-/* global xdescribe */
+/* global xdescribe, xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 
 var CONST = {
@@ -34,7 +34,7 @@ xdescribe('The init function', function () {
     xhr.restore();
   });
 
-  it('makes a post request for todo items', function () {
+  xit('makes a post request for todo items', function () {
     mongo.init(sinon.spy());
     expect(requests.length).toBe(1);
     expect(requests[0].url).toBe('/mws/');
