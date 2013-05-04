@@ -2,11 +2,15 @@
 /* global xdescribe */
 $.ready = function () {}; // Prevent mongo.init() from running.
 
+var CONST = {
+  cssFile: 'mongo-web-shell.css'
+};
+
 
 xdescribe('The init function', function () {
   // TODO: The calls made in mongo.init() need to be stubbed; there should be
   // no side effects to the page (alternatively, have side effects but restore
-  // the page to the initial state on afterEach()).
+  // the page to the initial state on afterEach()). Then re-enable this.
   var xhr, requests;
 
   beforeEach(function () {
@@ -45,32 +49,34 @@ describe('A Cursor', function () {
 
 
 describe('The dom module', function () {
-  it('retrives config', function () {
+  it('retrives the shell configuration from the DOM', function () {
+    // TODO: Test more than the default values.
     var config = mongo.dom.retrieveConfig();
-    expect(config.cssPath).toEqual('mongo-web-shell.css');
-    expect(config.mwsHost).toEqual('');
-    expect(config.baseUrl).toEqual('/mws/');
+    // Default values.
+    expect(config.cssPath).toBe(CONST.cssFile);
+    expect(config.mwsHost).toBe('');
+    expect(config.baseUrl).toBe('/mws/');
   });
 
-  it('inject CSS', function () {
-    var link = document.getElementsByTagName('link');
-    var linkElement;
-    var href;
-
-    if (link.length !== 0) {
-      linkElement = document.getElementsByTagName('link')[0];
-      href = linkElement.getAttribute('href');
-      expect(href).toNotEqual('mongo-web-shell.css');
+  it('injects a stylesheet into the DOM', function () {
+    function expectAbsentCSS(cssFile) {
+      $('link').each(function (index, linkElement) {
+        expect(linkElement.href).not.toBe(cssFile);
+      });
     }
 
-    mongo.dom.injectStylesheet('mongo-web-shell.css');
-    linkElement = document.getElementsByTagName('link')[0];
-    href = linkElement.getAttribute('href');
-    var rel = linkElement.getAttribute('rel');
-    var type = linkElement.getAttribute('type');
-    expect(href).toEqual('mongo-web-shell.css');
-    expect(rel).toEqual('stylesheet');
-    expect(type).toEqual('text/css');
+    // TODO: Should the dom methods be stubbed instead?
+    expectAbsentCSS(CONST.cssFile);
+    mongo.dom.injectStylesheet(CONST.cssFile);
+    var injected = $('head').children().get(0); // Expect to be prepended.
+    expect(injected.tagName).toBe('LINK');
+    expect(injected.href).toMatch(CONST.cssFile + '$');
+    expect(injected.rel).toBe('stylesheet');
+    expect(injected.type).toBe('text/css');
+
+    // Clean up.
+    injected.parentNode.removeChild(injected);
+    expectAbsentCSS(CONST.cssFile);
   });
 });
 
