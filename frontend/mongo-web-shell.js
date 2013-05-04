@@ -38,7 +38,7 @@ mongo.init = function () {
       console.info('/mws/' + data.res_id, 'was created succssfully.');
       shell.attachInputHandler(data.res_id);
       shell.enableInput(true);
-      setInterval(function () { shell.keepAlive(); }, mongo.const.KEEPALIVE);
+      setInterval(function () { shell.keepAlive(); }, config.keepAliveTime);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
       shell.insertResponseLine('Failed to create resources on DB on server');
       console.error('AJAX request failed:', textStatus, errorThrown);
@@ -57,8 +57,7 @@ mongo.const = (function () {
   };
 
   return {
-    keycodes: KEYCODES,
-    keepAlive: 30000
+    keycodes: KEYCODES
   };
 }());
 
@@ -125,7 +124,8 @@ mongo.dom = (function () {
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,
       mwsHost: mwsHost,
-      baseUrl: mwsHost + '/mws/'
+      baseUrl: mwsHost + '/mws/',
+      keepAliveTime: 30000
     };
   }
 
