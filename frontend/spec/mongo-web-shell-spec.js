@@ -102,12 +102,34 @@ describe('A Readline instance', function () {
 
 
 describe('The request module', function () {
-  it('get result url with parameters resID and collection', function () {
-    mongo.config = {baseUrl: '/mws/'};
-    expect(mongo.request._getResURL(30, 2)).toEqual('/mws/30/db/2/');
+  // TODO: Test untested methods.
+  describe('relying on mongo.config', function () {
+    var configStore;
+
+    beforeEach(function () {
+      configStore = mongo.config;
+      mongo.config = {};
+    });
+
+    afterEach(function () {
+      mongo.config = configStore;
+    });
+
+    it('creates a resource URL from the given parameters', function () {
+      var gru = mongo.request._getResURL;
+      mongo.config = {baseUrl: '/kpop/'};
+      expect(gru('iu', 'jjang')).toBe('/kpop/iu/db/jjang/');
+      mongo.config = {baseUrl: 'mws/'};
+      expect(gru(30, 2)).toBe('mws/30/db/2/');
+      expect(gru(null)).toBe('mws/null/db/undefined/');
+      mongo.config = {baseUrl: 123};
+      expect(gru('a', 'b')).toBe('123a/db/b/');
+    });
   });
 
-  it('pruneKeys', function () {
+  it('prunes the given keys from the given object if undefined or null',
+      function () {
+    // TODO: Clean this up.
     function Param (db, query, projection) {
       this.db = db;
       this.query = query;
@@ -125,7 +147,10 @@ describe('The request module', function () {
     expect(Object.keys(param[3]).length).toBe(3);
   });
 
-  it('stringifyKeys', function () {
+  it('stringifies the keys of the given object', function () {
+    // TODO: Use stringify rather than creating the output by hand.
+    // TODO: Pass in an object with a prototype.
+    // TODO: In general, more tests.
     var a = {'a':{1:2}};
     var res = {'a':'{"1":2}'};
     mongo.request._stringifyKeys(a);
