@@ -1,46 +1,20 @@
 .mws-wrapper {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  height: 510px;
   resize: both;
   overflow: hidden;
-}
-
-.mws-wrapper * {
-  font-family: Terminal, monospace;
-}
-
-.mws-topbar-wrapper {
-  resize: none;
-  overflow:hidden;
-  height: 50px;
+  height: 400px;
 }
 
 .mws-topbar {
-  background-image: linear-gradient(bottom, rgb(71,71,71) 48%, rgb(133,133,133) 84%);
-  background-image: -o-linear-gradient(bottom, rgb(71,71,71) 48%, rgb(133,133,133) 84%);
-  background-image: -moz-linear-gradient(bottom, rgb(71,71,71) 48%, rgb(133,133,133) 84%);
-  background-image: -webkit-linear-gradient(bottom, rgb(71,71,71) 48%, rgb(133,133,133) 84%);
-  background-image: -ms-linear-gradient(bottom, rgb(71,71,71) 48%, rgb(133,133,133) 84%);
-
-  background-image: -webkit-gradient(
-    linear,
-    left bottom,
-    left top,
-    color-stop(0.48, rgb(71,71,71)),
-    color-stop(0.84, rgb(133,133,133))
-  );
+  background-color: transparent;
   border-radius: 10px;
-  height: 70px;
-  margin: 0;
-  padding: 0;
-  color: #FFFFFF;
+  height: 50px;
+  color: #00000;
+  font-family: Terminal, monospace;
 }
 
 .mws-topbar span {
   display: inline-block;
   line-height: 50px;
-  margin-left: 20px;
   font-size: 35px;
   width: 90%;
 }
@@ -49,7 +23,6 @@
   display: inline-block;
   background-color: transparent;
   border: none;
-  color: #FFFFFF;
   padding: 0;
 }
 
@@ -60,29 +33,47 @@
 .mws-body {
   resize: none;
   border-radius: 10px;
-  height: calc(100% - 55px);
-  height: -moz-calc(100% - 55px);
-  height: -webkit-calc(100% - 55px);
-  height: -o-calc(100% - 55px);
+  /* Firefox */
+  height: -moz-calc(100% - 50px);
+  /* WebKit */
+  height: -webkit-calc(100% - 50px);
+  /* Opera */
+  height: -o-calc(100% - 50px);
+  /* Standard */
+  height: calc(100% - 50px);
 }
 
 .mws-body, .mws-body * {
   background-color: #000000;
   color: #00e500;
-  font-size: 20px;
+  font-size: 15px;
+}
+
+.mws-body p {
+  padding: 0px;
+  margin: 0px;
 }
 
 .mws-scrollbar-spacer {
-  height: 10px;
+  height: 20px;
+  border-radius: 10px;
 }
 
 .mws-response-list {
   resize: none;
   list-style-type: none;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  height: 95%;
+  /* Firefox */
+  height: -moz-calc(100% - 40px);
+  /* WebKit */
+  height: -webkit-calc(100% - 40px);
+  /* Opera */
+  height: -o-calc(100% - 40px);
+  /* Standard */
+  height: calc(100% - 40px);
   padding-left: 20px;
+  padding-bottom: 0;
+  padding-top: 0;
+  margin: 0;
   overflow-y: auto;
 }
 
