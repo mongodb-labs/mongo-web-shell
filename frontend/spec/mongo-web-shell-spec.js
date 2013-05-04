@@ -1,18 +1,14 @@
 /* global afterEach, beforeEach, describe, expect, it, mongo, sinon */
 $.ready = function () {}; // Prevent mongo.init() from running.
 
-describe('Mongo Const Module', function () {
-  it('set const keycodes', function () {
-    var enter = mongo.const.keycodes.enter;
-    var left = mongo.const.keycodes.left;
-    var up = mongo.const.keycodes.up;
-    var right = mongo.const.keycodes.right;
-    var down = mongo.const.keycodes.down;
-    expect(enter).toEqual(13);
-    expect(left).toEqual(37);
-    expect(up).toEqual(38);
-    expect(right).toEqual(39);
-    expect(down).toEqual(40);
+describe('The const module', function () {
+  it('stores keycode constants', function () {
+    var key = mongo.const.keycodes;
+    expect(key.enter).toBe(13);
+    expect(key.left).toBe(37);
+    expect(key.up).toBe(38);
+    expect(key.right).toBe(39);
+    expect(key.down).toBe(40);
   });
 });
 
