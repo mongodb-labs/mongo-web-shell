@@ -39,7 +39,7 @@ mongo.init = function () {
       shell.attachInputHandler(data.res_id);
       shell.attachHideButtonHandler(shell.id);
       shell.enableInput(true);
-      setInterval(function () { shell.keepAlive(); }, config.keepAliveTime);
+      setInterval(function () { shell.keepAlive(); }, mongo.const.keepAliveTime);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
       shell.insertResponseLine('Failed to create resources on DB on server');
       console.error('AJAX request failed:', textStatus, errorThrown);
@@ -58,7 +58,8 @@ mongo.const = (function () {
   };
 
   return {
-    keycodes: KEYCODES
+    keycodes: KEYCODES,
+    keepAliveTime: 30000
   };
 }());
 
@@ -125,8 +126,7 @@ mongo.dom = (function () {
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,
       mwsHost: mwsHost,
-      baseUrl: mwsHost + '/mws/',
-      keepAliveTime: 30000
+      baseUrl: mwsHost + '/mws/'
     };
   }
 
@@ -467,16 +467,9 @@ mongo.request = (function () {
 
   function keepAlive(shell){
     var resID = this.mwsResourceID;
-    $.ajax({
-      type: 'POST',
-      url: mongo.config.baseUrl + resID + '/keep-alive',
-      data: {},
-      dataType: 'json',
-      contentType: 'application/json',
-      success: function (data, textStatus, jqXHR) {
-        console.info('Keep-alive succesful');
-      }
-    }).fail(function (jqXHR, textStatus, errorThrown) {
+    $.post(mongo.config.baseUrl + resID + '/keep-alive', null, function (data, textStatus, jqXHR) {
+       console.info('Keep-alive succesful');
+    },'json').fail(function (jqXHR, textStatus, errorThrown) {
       console.err('ERROR: keep alive failed: ' + errorThrown +
           ' STATUS: ' + textStatus);
     });
@@ -485,12 +478,11 @@ mongo.request = (function () {
   return {
     db_collection_find: db_collection_find,
     db_collection_insert: db_collection_insert,
+    keepAlive: keepAlive,
 
     _getResURL: getResURL,
     _pruneKeys: pruneKeys,
-    _stringifyKeys: stringifyKeys,
-
-    keepAlive: keepAlive
+    _stringifyKeys: stringifyKeys
   };
 }());
 
