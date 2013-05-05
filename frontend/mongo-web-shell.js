@@ -299,6 +299,25 @@ mongo.mutateSource = (function () {
         parent.type === 'FunctionExpression') {
       return;
     }
+    // XXX: Match any expression not of the form 'mongo.keyword.evaluate(...)'.
+    // The keywords are swapped into the source before the AST walk and are
+    // considered to be normal user input during the AST walk. Thus, the call
+    // would be replaced as any other but to prevent that, we explicitly
+    // reserve the specific CallExpression below.
+    if (parent.type === 'MemberExpression' && parent.computed === false) {
+      var keywordNode = parent.property;
+      var evaluateNode = parent.parent;
+      var callNode = evaluateNode.parent;
+      if (keywordNode.type === 'Identifier' &&
+          keywordNode.name === 'keyword' &&
+          evaluateNode.type === 'MemberExpression' &&
+          evaluateNode.computed === false &&
+          evaluateNode.property.type === 'Identifier' &&
+          evaluateNode.property.name === 'evaluate' &&
+          callNode.type === 'CallExpression') {
+        return;
+      }
+    }
 
     node.update('mongo.shells[' + shellID + '].vars.' + node.name);
   }
