@@ -294,6 +294,11 @@ mongo.mutateSource = (function () {
     }
     // Match any expression not of the form '...{iden: a}...'.
     if (parent.type === 'Property' && parent.key === node) { return; }
+    // Match any expression not of the form 'function iden()...'.
+    if (parent.type === 'FunctionDeclaration' ||
+        parent.type === 'FunctionExpression') {
+      return;
+    }
 
     node.update('mongo.shells[' + shellID + '].vars.' + node.name);
   }
@@ -357,11 +362,13 @@ mongo.mutateSource = (function () {
    * parameters to, and variables declared, within the containing functions.
    */
   function getLocalVariableIdentifiers(node) {
-    // TODO: Handle function ID?
     var mergeObjects = mongo.util.mergeObjects;
     var identifiers = {};
     var functionNode = getContainingFunctionNode(node);
     while (functionNode !== null) {
+      if (functionNode.id !== null) {
+        identifiers[functionNode.id.name] = true;
+      }
       var paramIdentifiers = extractParamsIdentifiers(functionNode.params);
       identifiers = mergeObjects(identifiers, paramIdentifiers);
       var bodyIdentifiers = extractBodyIdentifiers(functionNode.body);
