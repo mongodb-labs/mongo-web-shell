@@ -67,7 +67,7 @@ def create_mws_resource():
     session['session_id'] = session_id
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
-    logging.warning('res_id = %s', res_id)
+    logging.debug('res_id = %s', res_id)
     return dumps({'res_id': res_id})
 
 
