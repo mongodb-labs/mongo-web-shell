@@ -4,3 +4,6 @@
 [submodule "frontend/lib/esprima"]
 	path = frontend/lib/esprima
 	url = git://github.com/ariya/esprima
+[submodule "frontend/lib/jasmine"]
+	path = frontend/lib/jasmine
+	url = https://github.com/pivotal/jasmine
