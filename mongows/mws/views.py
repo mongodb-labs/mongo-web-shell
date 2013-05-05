@@ -1,7 +1,6 @@
 from datetime import timedelta
 from functools import update_wrapper
 import json
-import logging
 import uuid
 
 from bson.json_util import dumps
