@@ -24,19 +24,25 @@ mongo.init = function () {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
+    $(shell.$rootElement.find('.mws-body')).click(function() {
+      shell.$input.focus();
+    });
 
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
       if (!data.res_id) {
-        // TODO: Print error in shell. Improve error below.
+        shell.insertResponseLine('ERROR: No res_id recieved! Shell disabled.');
         console.warn('No res_id received! Shell disabled.', data);
         return;
       }
       console.info('/mws/' + data.res_id, 'was created succssfully.');
       shell.attachInputHandler(data.res_id);
+      shell.attachHideButtonHandler(shell);
       shell.enableInput(true);
+      setInterval(function () { shell.keepAlive(); },
+          mongo.const.keepAliveTime);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      // TODO: Display error message in the mongo web shell.
+      shell.insertResponseLine('Failed to create resources on DB on server');
       console.error('AJAX request failed:', textStatus, errorThrown);
     });
   });
@@ -53,7 +59,8 @@ mongo.const = (function () {
   };
 
   return {
-    keycodes: KEYCODES
+    keycodes: KEYCODES,
+    keepAliveTime: 30000
   };
 }());
 
@@ -92,7 +99,8 @@ mongo.Cursor.prototype.executeQuery = function () {
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
   if (this.query.wasExecuted) {
-    // TODO: Print warning to the shell.
+    this.shell.insertResponseLine('Warning: Cannot call ' + methodName +
+        ' on already executed mongo.Cursor.' + this);
     console.warn('Cannot call', methodName, 'on already executed ' +
         'mongo.Cursor.', this);
   }
@@ -131,9 +139,20 @@ mongo.dom = (function () {
     $('head').prepend(linkElement); // Prepend so css can be overridden.
   }
 
+  function toggleVisibility(shell) {
+    if (shell.$rootElement.find('.mws-body').is(':visible')) {
+      shell.$body.hide();
+      shell.$hideButton.html('[Show]');
+    } else {
+      shell.$body.show();
+      shell.$hideButton.html('[Hide]');
+    }
+  }
+
   return {
     retrieveConfig: retrieveConfig,
-    injectStylesheet: injectStylesheet
+    injectStylesheet: injectStylesheet,
+    toggleVisibility: toggleVisibility
   };
 }());
 
@@ -150,7 +169,8 @@ mongo.keyword = (function () {
     case 'help':
     case 'show':
       if (unusedArg) {
-        // TODO: Print to shell.
+        this.shell.insertResponseLine('Too many parameters to '+
+            keyword + '.');
         console.debug('Too many parameters to', keyword + '.');
         return;
       }
@@ -158,7 +178,7 @@ mongo.keyword = (function () {
       break;
 
     default:
-      // TODO: Print to shell.
+      this.shell.insertResponseLine('Unknown keyword: ' + keyword + '.');
       console.debug('Unknown keyword', keyword);
     }
   }
@@ -174,8 +194,8 @@ mongo.keyword = (function () {
   }
 
   function use(shell, arg, arg2) {
-    // TODO: Print to shell.
     console.debug('cannot change db: functionality disabled.');
+    this.shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
   return {
@@ -214,7 +234,7 @@ mongo.mutateSource = (function () {
     var collectionArg = collectionNode.source();
     if (node.computed) {
       // TODO: We must substitute the given identifier for one not on the
-      // global object. This may be taken care of elsewhere.
+      // global object. This may be taken care of where.
       console.error('mutateMemberExpression(): node.computed not yet' +
           'implemented.');
       return;
@@ -387,7 +407,7 @@ mongo.request = (function () {
       // TODO: Insert response into shell.
       console.debug('db_collection_find success:', data);
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      // TODO: Print error into shell.
+      cursor.shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_find fail:', textStatus, errorThrown);
     });
   }
@@ -410,7 +430,7 @@ mongo.request = (function () {
         console.info('Insertion successful:', data);
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      // TODO: Print error into shell.
+      query.shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_insert fail:', textStatus, errorThrown);
     });
   }
@@ -440,9 +460,21 @@ mongo.request = (function () {
     }
   }
 
+  function keepAlive(shell){
+    var resID = this.mwsResourceID;
+    $.post(mongo.config.baseUrl + resID + '/keep-alive',
+           null, function (data, textStatus, jqXHR) {
+        console.info('Keep-alive succesful');
+      },'json').fail(function (jqXHR, textStatus, errorThrown) {
+      console.err('ERROR: keep alive failed: ' + errorThrown +
+          ' STATUS: ' + textStatus);
+    });
+  }
+
   return {
     db_collection_find: db_collection_find,
     db_collection_insert: db_collection_insert,
+    keepAlive: keepAlive,
 
     _getResURL: getResURL,
     _pruneKeys: pruneKeys,
@@ -454,7 +486,10 @@ mongo.request = (function () {
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$input = null;
-
+  this.$inputLI = null;
+  this.$responseList = null;
+  this.$hideButton = null;
+  this.$body = null;
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
@@ -462,19 +497,34 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // TODO: Why is there a border class? Can it be done with CSS border (or
-  // be renamed to be more descriptive)?
-  // TODO: .mshell not defined in CSS; change it.
-  var html = '<div class="mws-border">' +
-               '<div class="mshell">' +
-                 '<ul class="mws-in-shell-response"></ul>' +
-                 '<form>' +
-                   '<input type="text" class="mws-input" disabled="true">' +
-                 '</form>' +
-               '</div>' +
-             '</div>';
+  var html =  '<div class="mws-wrapper">' +
+                '<div class="mws-topbar">' +
+                  '<span> mongoDb web shell </span>' +
+                  '<button type="button" class="mws-hide-button">' +
+                    '[Hide]' +
+                  '</button>' +
+                '</div>' +
+                '<div class="mws-body">' +
+                  '<div class="mws-scrollbar-spacer"/>' +
+                  '<ul class="mws-response-list">' +
+                    '<li>' +
+                      this.$rootElement.html() +
+                    '</li>' +
+                    '<li class="input-li">' +
+                      '&gt;' +
+                      '<form class="mws-form">' +
+                        '<input type="text"' +
+                        'class="mws-input" disabled="true">' +
+                      '</form>' +
+                    '</li>' +
+                  '</ul>' +
+                '</div>' +
+              '</div>';
   this.$rootElement.html(html);
   this.$input = this.$rootElement.find('.mws-input');
+  this.$inputLI = this.$rootElement.find('.input-li');
+  this.$hideButton = this.$rootElement.find('.mws-hide-button');
+  this.$body = this.$rootElement.find('.mws-body');
 };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
@@ -487,6 +537,10 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   this.readline = new mongo.Readline(this.$input);
 };
 
+mongo.Shell.prototype.attachHideButtonHandler = function (shell) {
+  this.$hideButton.click(function () { mongo.dom.toggleVisibility(shell) });
+};
+
 /**
  * Retrieves the input from the mongo web shell, evaluates it, handles the
  * responses (indirectly via callbacks), and clears the input field.
@@ -494,11 +548,12 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
+  this.insertResponseLine(userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
   } catch (err) {
-    // TODO: Print falafel parse error to shell.
+    this.insertResponseLine('ERROR: syntax parsing error');
     console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',
         err);
     return;
@@ -514,7 +569,7 @@ mongo.Shell.prototype.handleInput = function () {
     // TODO: This is an error on the mws front since the original source
     // already passed parsing once before and we were the ones to make the
     // changes to the source. Figure out how to handle this error.
-    // TODO: Print esprima parse error to shell.
+    this.insertResponseLine('ERROR: syntax parsing error');
     console.debug('mongo.Shell.handleInput(): esprima parse error on ' +
         'mutated source:', err, mutatedSrc);
     return;
@@ -524,11 +579,11 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     this.evalStatements(statements);
   } catch (err) {
-    // TODO: Print out to shell.
     // TODO: This is probably an unknown identifier error. We should be hiding
     // the identifiers from the global object by hand (to be implemented
     // later) so so this is likely our fault. Figure out how to handle.
     // TODO: "var i = 1;" throws a TypeError here. Find out why.
+    this.insertResponseLine('ERROR: eval error on: ' + err.statement);
     console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
         err);
   }
@@ -540,6 +595,7 @@ mongo.Shell.prototype.handleInput = function () {
  * that is equivalent to the statement eval failed on.
  */
 mongo.Shell.prototype.evalStatements = function (statements) {
+  var me = this;
   statements.forEach(function (statement, index, array) {
     console.debug('mongo.Shell.handleInput(): Evaling', index, statement);
     var out;
@@ -559,9 +615,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out.executeQuery();
     } else if (out !== undefined) {
-      // TODO: Print out to shell.
-      console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
-          out);
+      me.insertResponseLine(out);
     }
   });
 };
@@ -570,6 +624,25 @@ mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
 };
 
+mongo.Shell.prototype.insertResponseArray = function (data) {
+  for (var i = 0; i < data.length; i++) {
+    this.insertResponseLine(data[i]);
+  }
+};
+
+mongo.Shell.prototype.insertResponseLine = function (data) {
+  var li = document.createElement('li');
+  li.innerHTML = data;
+  this.$inputLI.before(li);
+
+  // scrolling
+  var scrollArea = this.$rootElement.find('.mws-response-list').get(0);
+  scrollArea.scrollTop = scrollArea.scrollHeight;
+};
+
+mongo.Shell.prototype.keepAlive = function() {
+  mongo.request.keepAlive(this);
+};
 
 mongo.util = (function () {
   /**
