@@ -2,6 +2,7 @@ from datetime import timedelta
 from functools import update_wrapper
 import json
 import random
+import uuid
 
 from bson.json_util import dumps
 from flask import Blueprint, current_app, make_response, request, session
@@ -11,8 +12,7 @@ from . import db
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
 CLIENTS_COLLECTION = 'clients'
-#DB = db.get_db()
-ID_SIZE = 12
+ID_LEN = 12
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
 
 
@@ -64,15 +64,11 @@ def crossdomain(origin=None, methods=None, headers=None,
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
     res_id = generate_res_id()
-    session_id = ''
-    if 'session_id' in session:
-        session_id = session['session_id']
-    else:
-        session_id = generate_id()
-        session['session_id'] = session_id
+    print('res_id = ' + res_id)
+    session_id = session.get('session_id', str(uuid.uuid4()))
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
-    return dumps(result)
+    return dumps({'res_id': res_id})
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -96,10 +92,13 @@ def db_collection_find(res_id, collection_name):
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
-    session_id = session['session_id']
+    session_id = session.get('session_id', None)
+    if session_id is None:
+        error = 'There is no session_id cookie'
+        return {'status': -1, 'result': error}
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
-    if(check_session_validity(res_id, session_id) is False):
+    if not user_has_access(res_id, session_id):
         error = 'Session error. User does not have access to res_id'
         return {'status': -1, 'result': error}
     cursor = db.get_db()[internal_collection_name].find(query, projection)
@@ -127,11 +126,15 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
+    session_id = session.get('session_id', None)
+    if session_id is None:
+        error = 'There is no session_id cookie'
+        return {'status': -1, 'result': error}
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
-    session_id = session['session_id']
-    if(check_session_validity(res_id, session_id) is False):
+    if not user_has_access(res_id, session_id):
         error = 'Session error. User does not have access to res_id'
+        print('error')
         return {'status': -1, 'result': error}
     objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
@@ -146,26 +149,18 @@ def db_collection_insert(res_id, collection_name):
 
 
 def get_internal_collection_name(res_id, collection_name):
-    return res_id + collection_name
+    return collection_name + res_id
 
 
 def generate_res_id():
-    res_id = ''
     exists = ''
     while(exists is not None):
-        res_id = generate_id()
+        res_id = str(uuid.uuid4())
         exists = db.get_db()[CLIENTS_COLLECTION].find_one({'res_id': res_id})
     return res_id
 
 
-def generate_id():
-    # we're intentionally excluding 0, O, I, and 1 for readability
-    chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-    return ''.join([chars[int(random.random() * len(chars))] for i in
-                    range(ID_SIZE)])
-
-
-def check_session_validity(res_id, session_id):
+def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True

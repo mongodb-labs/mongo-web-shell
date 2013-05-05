@@ -27,7 +27,6 @@ def create_app():
 
     configure_logging(app)
     register_blueprints(app)
-    app.secret_key = 'A0gjhsd3678HK'
     return app
 
 
