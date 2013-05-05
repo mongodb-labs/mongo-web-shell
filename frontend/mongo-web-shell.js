@@ -465,7 +465,7 @@ mongo.request = (function () {
   }
 
   function keepAlive(shell) {
-    var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive'
+    var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive';
     $.post( url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
       },'json').fail(function (jqXHR, textStatus, errorThrown) {
@@ -617,7 +617,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out.executeQuery();
     } else if (out !== undefined) {
-      thisArg.insertResponseLine(out);
+      this.insertResponseLine(out);
     }
   });
 };
