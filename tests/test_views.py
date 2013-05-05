@@ -27,7 +27,65 @@ class ViewsUnitTestCase(MongoWSTestCase):
         url = '/mws/res_id/keep-alive'
         rv = self.app.post(url)
         self.assertIn('{}', rv.data)
+
+    def test_db_collection_simple_insert(self):
+        # TODO: Make sure these rows are deleted in the tearDown
+        rv = self.app.post('/mws/')
+        res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(res_id)
+        document = {'name': 'Mongo'}
+        rv = _make_insert_request(self.app, res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertIn('$oid', json_rv_data['result'])
+
+    def test_multiple_document_insert(self):
+        rv = self.app.post('/mws/')
+        res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(res_id)
+        document = [{'name': 'Mongo'}, {'name': '10gen'}]
+        rv = _make_insert_request(self.app, res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(len(json_rv_data['result']), 2)
+        self.assertIn('$oid', json_rv_data['result'][0])
+
+    def test_insert_find(self):
+        rv = self.app.post('/mws/')
+        res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(res_id)
+        key = 'name'
+        value = 'mongo'
+        document = {key: value}
+        rv = _make_insert_request(self.app, res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertIn('$oid', json_rv_data['result'])
+
+        rv = _make_find_request(self.app, res_id, 'test_collection',
+                                document)
+        json_rv_data = json.loads(rv.data)
+        query_results = json_rv_data['result'][0]
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(query_results[key], value)
 '''
+    def test_invalid_session(self):
+        rv = self.app.post('/mws/')
+        res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(res_id)
+        with self.app.session_transaction() as sess:
+                sess['session_id'] = 'value'
+        key = 'name'
+        value = 'mongo'
+        document = {key: value}
+        rv = _make_insert_request(self.app, res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        print(json_rv_data)
+
     def test_db_collection_find(self):
         # TODO: We should improve this test to assert something more relevant
         # than checking the presence of oid in the returned value. This should
@@ -40,24 +98,6 @@ class ViewsUnitTestCase(MongoWSTestCase):
         self.assertEqual(json_rv_data['status'], 0)
         self.assertGreater(len(json_rv_data['result']), 0)
         self.assertIn('_id', json_rv_data['result'][0])
-
-    def test_db_collection_insert(self):
-        # TODO: Make sure these rows are deleted in the tearDown
-        document = {'name': 'Mongo'}
-        rv = _make_insert_request(self.app, 'test_db', 'test_collection',
-                                  document)
-        json_rv_data = json.loads(rv.data)
-        self.assertEqual(json_rv_data['status'], 0)
-        self.assertIn('$oid', json_rv_data['result'])
-
-        # Test insert() with multiple documents
-        document = [{'name': 'Mongo'}, {'name': '10gen'}]
-        rv = _make_insert_request(self.app, 'test_db', 'test_collection',
-                                  document)
-        json_rv_data = json.loads(rv.data)
-        self.assertEqual(json_rv_data['status'], 0)
-        self.assertEqual(len(json_rv_data['result']), 2)
-        self.assertIn('$oid', json_rv_data['result'][0])
 
 
 class ViewsIntegrationTestCase(MongoWSTestCase):
@@ -86,7 +126,7 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
         self.assertEqual(json_rv_data['status'], 0)
         self.assertGreater(len(json_rv_data['result']), 0)
         self.assertIn('_id', json_rv_data['result'][0])
-
+'''
 
 def _make_find_request(app, res_id, collection, query=None, projection=None):
     # TODO: Should we be passing in None for query and projection here? The
@@ -100,4 +140,3 @@ def _make_insert_request(app, res_id, collection, document):
     url = '/mws/' + res_id + '/db/' + collection + '/insert'
     data = json.dumps({'document': document})
     return app.post(url, data=data, content_type='application/json')
-'''
