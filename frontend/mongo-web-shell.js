@@ -464,10 +464,9 @@ mongo.request = (function () {
     }
   }
 
-  function keepAlive(shell){
-    var resID = this.mwsResourceID;
-    $.post(mongo.config.baseUrl + resID + '/keep-alive',
-           null, function (data, textStatus, jqXHR) {
+  function keepAlive(shell) {
+    var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive'
+    $.post( url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
       },'json').fail(function (jqXHR, textStatus, errorThrown) {
       console.err('ERROR: keep alive failed: ' + errorThrown +
@@ -599,7 +598,6 @@ mongo.Shell.prototype.handleInput = function () {
  * that is equivalent to the statement eval failed on.
  */
 mongo.Shell.prototype.evalStatements = function (statements) {
-  var me = this;
   statements.forEach(function (statement, index, array) {
     console.debug('mongo.Shell.handleInput(): Evaling', index, statement);
     var out;
@@ -619,7 +617,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out.executeQuery();
     } else if (out !== undefined) {
-      me.insertResponseLine(out);
+      thisArg.insertResponseLine(out);
     }
   });
 };
