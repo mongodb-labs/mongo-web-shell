@@ -158,5 +158,4 @@ def generate_res_id():
 def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
-    # return False if return_value is None else True
-    return False
+    return False if return_value is None else True
