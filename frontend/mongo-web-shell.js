@@ -37,7 +37,7 @@ mongo.init = function () {
       }
       console.info('/mws/' + data.res_id, 'was created succssfully.');
       shell.attachInputHandler(data.res_id);
-      shell.attachHideButtonHandler(shell.id);
+      shell.attachHideButtonHandler(shell);
       shell.enableInput(true);
       setInterval(function () {shell.keepAlive();}, mongo.const.keepAliveTime);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
@@ -138,13 +138,11 @@ mongo.dom = (function () {
     $('head').prepend(linkElement); // Prepend so css can be overridden.
   }
 
-  function setVisibility(shellID) {
-    var shell = mongo.shells[shellID];
+  function toggleVisibility(shell) {
     if (shell.$rootElement.find('.mws-body').is(':visible')) {
       shell.$body.hide();
       shell.$hideButton.html('[Show]');
-    }
-    else {
+    } else {
       shell.$body.show();
       shell.$hideButton.html('[Hide]');
     }
@@ -153,7 +151,7 @@ mongo.dom = (function () {
   return {
     retrieveConfig: retrieveConfig,
     injectStylesheet: injectStylesheet,
-    setVisibility: setVisibility
+    toggleVisibility: toggleVisibility
   };
 }());
 
@@ -235,7 +233,7 @@ mongo.mutateSource = (function () {
     var collectionArg = collectionNode.source();
     if (node.computed) {
       // TODO: We must substitute the given identifier for one not on the
-      // global object. This may be taken care of elsewhere.
+      // global object. This may be taken care of where.
       console.error('mutateMemberExpression(): node.computed not yet' +
           'implemented.');
       return;
@@ -542,9 +540,8 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   this.readline = new mongo.Readline(this.$input);
 };
 
-mongo.Shell.prototype.attachHideButtonHandler = function (shellID) {
-  $(this.$rootElement.find('.mws-hide-button').get(0))
-  .attr('onClick', 'mongo.dom.setVisibility(' + shellID + ')');
+mongo.Shell.prototype.attachHideButtonHandler = function (shell) {
+  this.$hideButton.click(function () { mongo.dom.toggleVisibility(shell) });
 };
 
 /**
