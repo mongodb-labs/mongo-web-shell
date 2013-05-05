@@ -4,7 +4,8 @@ import json
 import uuid
 
 from bson.json_util import dumps
-from flask import Blueprint, current_app, make_response, request, session
+from flask import Blueprint, current_app, jsonify, make_response, request
+from flask import session
 
 from . import db
 
@@ -66,7 +67,7 @@ def create_mws_resource():
     session['session_id'] = session_id
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
-    return dumps({'res_id': res_id})
+    return jsonify(res_id=res_id)
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -89,16 +90,16 @@ def db_collection_find(res_id, collection_name):
     except ValueError:
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
-        return {'status': -1, 'result': error}
+        return jsonify(status=-1, result=error)
     session_id = session.get('session_id', None)
     if session_id is None:
         error = 'There is no session_id cookie'
-        return {'status': -1, 'result': error}
+        return jsonify(status=-1, result=error)
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
     if not user_has_access(res_id, session_id):
         error = 'Session error. User does not have access to res_id'
-        return {'status': -1, 'result': error}
+        return jsonify(status=-1, result=error)
     cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
@@ -107,8 +108,7 @@ def db_collection_find(res_id, collection_name):
     except ValueError:
         error = 'Error in find while trying to convert the results to ' + \
             'JSON format.'
-        result = {'status': -1, 'result': error}
-        result = dumps(result)
+        return jsonify(status=-1, result=error)
     return result
 
 
@@ -121,18 +121,16 @@ def db_collection_insert(res_id, collection_name):
         document = request.json['document']
     else:
         error = '\'document\' argument not found in the insert request.'
-        result = {'status': -1, 'result': error}
-        result = dumps(result)
-        return result
+        return jsonify(status=-1, result=error)
     session_id = session.get('session_id', None)
     if session_id is None:
         error = 'There is no session_id cookie'
-        return {'status': -1, 'result': error}
+        return jsonify(status=-1, result=error)
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
     if not user_has_access(res_id, session_id):
         error = 'Session error. User does not have access to res_id'
-        return {'status': -1, 'result': error}
+        return jsonify(status=-1, result=error)
     objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
     try:
@@ -140,8 +138,7 @@ def db_collection_insert(res_id, collection_name):
     except ValueError:
         error = 'Error in insert function while trying to convert the ' + \
             'results to JSON format.'
-        result = {'status': -1, 'result': error}
-        result = dumps(result)
+        return jsonify(status=-1, result=error)
     return result
 
 
