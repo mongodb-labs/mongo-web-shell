@@ -3,7 +3,7 @@ import logging.config
 import os
 import sys
 
-from flask import Flask
+from flask import Flask, session
 import yaml
 
 from .mws import mws

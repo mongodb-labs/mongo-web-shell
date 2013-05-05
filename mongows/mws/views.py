@@ -1,14 +1,17 @@
 from datetime import timedelta
 from functools import update_wrapper
 import json
+import random
+import uuid
 
 from bson.json_util import dumps
-from flask import Blueprint, current_app, make_response, request
+from flask import Blueprint, current_app, make_response, request, session
 
 from . import db
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
+CLIENTS_COLLECTION = 'clients'
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
 
 
@@ -59,12 +62,11 @@ def crossdomain(origin=None, methods=None, headers=None,
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-    # For now, the rest of the code uses resource ID as the name of the
-    # database to be queried. So I am hardconding it to test. It is yet to be
-    # decided how and where to maintain the relationship between the user,
-    # her resource ID and the database she can query.
-    result = {'res_id': 'test'}
-    return dumps(result)
+    res_id = generate_res_id()
+    session_id = session.get('session_id', str(uuid.uuid4()))
+    result = {'res_id': res_id, 'session_id': session_id}
+    db.get_db()[CLIENTS_COLLECTION].insert(result)
+    return dumps({'res_id': res_id})
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -88,8 +90,16 @@ def db_collection_find(res_id, collection_name):
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
         return {'status': -1, 'result': error}
-
-    cursor = db.collection_find(res_id, collection_name, query, projection)
+    session_id = session.get('session_id', None)
+    if session_id is None:
+        error = 'There is no session_id cookie'
+        return {'status': -1, 'result': error}
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    if not user_has_access(res_id, session_id):
+        error = 'Session error. User does not have access to res_id'
+        return {'status': -1, 'result': error}
+    cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
     try:
@@ -114,8 +124,16 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
         return result
-
-    objIDs = db.collection_insert(res_id, collection_name, document)
+    session_id = session.get('session_id', None)
+    if session_id is None:
+        error = 'There is no session_id cookie'
+        return {'status': -1, 'result': error}
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    if not user_has_access(res_id, session_id):
+        error = 'Session error. User does not have access to res_id'
+        return {'status': -1, 'result': error}
+    objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
     try:
         result = dumps(result)
@@ -125,3 +143,17 @@ def db_collection_insert(res_id, collection_name):
         result = {'status': -1, 'result': error}
         result = dumps(result)
     return result
+
+
+def get_internal_collection_name(res_id, collection_name):
+    return collection_name + res_id
+
+
+def generate_res_id():
+    return str(uuid.uuid4())
+
+
+def user_has_access(res_id, session_id):
+    query = {'res_id': res_id, 'session_id': session_id}
+    return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
+    return False if return_value is None else True
