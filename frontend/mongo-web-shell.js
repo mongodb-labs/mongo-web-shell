@@ -264,7 +264,7 @@ mongo.keyword = (function () {
 
 
 mongo.mutateSource = (function () {
-  // TODO: Handle this, with, expressions and function declarations.
+  // TODO: Handle with expression and function declarations.
   // TODO: Do LabeledStatements (break & continue) interfere with globals?
   // TODO: Calling an undefined variable results in return value undefined,
   // rather than a reference error.
