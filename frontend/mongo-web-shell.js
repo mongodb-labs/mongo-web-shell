@@ -139,7 +139,7 @@ mongo.dom = (function () {
     $('head').prepend(linkElement); // Prepend so css can be overridden.
   }
 
-  function toggleVisibility(shell) {
+  function toggleShellVisibility(shell) {
     if (shell.$rootElement.find('.mws-body').is(':visible')) {
       shell.$body.hide();
       shell.$hideButton.html('[Show]');
@@ -152,7 +152,7 @@ mongo.dom = (function () {
   return {
     retrieveConfig: retrieveConfig,
     injectStylesheet: injectStylesheet,
-    toggleVisibility: toggleVisibility
+    toggleShellVisibility: toggleShellVisibility
   };
 }());
 
@@ -466,7 +466,7 @@ mongo.request = (function () {
 
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive';
-    $.post( url, null, function (data, textStatus, jqXHR) {
+    $.post(url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
       },'json').fail(function (jqXHR, textStatus, errorThrown) {
       console.err('ERROR: keep alive failed: ' + errorThrown +
@@ -541,7 +541,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 };
 
 mongo.Shell.prototype.attachHideButtonHandler = function (shell) {
-  this.$hideButton.click(function () { mongo.dom.toggleVisibility(shell) });
+  this.$hideButton.click(function () { mongo.dom.toggleShellVisibility(shell) });
 };
 
 /**
@@ -619,7 +619,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
     } else if (out !== undefined) {
       this.insertResponseLine(out);
     }
-  });
+  }, this);
 };
 
 mongo.Shell.prototype.enableInput = function (bool) {
