@@ -18,7 +18,7 @@ class ViewsUnitTestCase(MongoWSTestCase):
         # returned value to check for appropriate contents
         url = '/mws/'
         rv = self.app.post(url)
-        self.assertIn('{"res_id": "test"}', rv.data)
+        self.assertIn('res_id', rv.data)
 
     def test_keep_mws_alive(self):
         url = '/mws/res_id/keep-alive'

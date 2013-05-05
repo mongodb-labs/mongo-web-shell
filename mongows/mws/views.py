@@ -1,6 +1,7 @@
 from datetime import timedelta
 from functools import update_wrapper
 import json
+import logging
 import uuid
 
 from bson.json_util import dumps
@@ -66,6 +67,7 @@ def create_mws_resource():
     session['session_id'] = session_id
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
+    logging.warning('res_id = %s', res_id)
     return dumps({'res_id': res_id})
 
 
@@ -146,7 +148,7 @@ def db_collection_insert(res_id, collection_name):
 
 
 def get_internal_collection_name(res_id, collection_name):
-    return collection_name + res_id
+    return res_id + collection_name
 
 
 def generate_res_id():
