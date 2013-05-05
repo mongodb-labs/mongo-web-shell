@@ -1,7 +1,6 @@
 from datetime import timedelta
 from functools import update_wrapper
 import json
-import random
 import uuid
 
 from bson.json_util import dumps
@@ -64,6 +63,7 @@ def crossdomain(origin=None, methods=None, headers=None,
 def create_mws_resource():
     res_id = generate_res_id()
     session_id = session.get('session_id', str(uuid.uuid4()))
+    session['session_id'] = session_id
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
     return dumps({'res_id': res_id})
