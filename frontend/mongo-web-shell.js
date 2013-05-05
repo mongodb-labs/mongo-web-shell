@@ -264,13 +264,14 @@ mongo.keyword = (function () {
 
 
 mongo.mutateSource = (function () {
-  // TODO: Handle this, var, with, and function expressions.
+  // TODO: Handle this, with, expressions and function declarations.
   // TODO: Do LabeledStatements (break & continue) interfere with globals?
   // TODO: Calling an undefined variable results in return value undefined,
   // rather than a reference error.
   var NODE_TYPE_HANDLERS = {
     'Identifier': mutateIdentifier,
-    'MemberExpression': mutateMemberExpression
+    'MemberExpression': mutateMemberExpression,
+    'VariableDeclaration': mutateVariableDeclaration
   };
 
   /**
@@ -281,6 +282,7 @@ mongo.mutateSource = (function () {
    * object associated with the shell that evaled the statement.
    */
   function mutateIdentifier(node, shellID) {
+    // TODO: If inside a function definition, only do if var was not declared.
     // Match any expression not of form '...a.iden...'.
     var parent = node.parent;
     if (parent.type === 'MemberExpression' && parent.property === node &&
@@ -316,6 +318,27 @@ mongo.mutateSource = (function () {
     node.update('new mongo.Query(' + args + ')');
     console.debug('mutateMemberExpression(): mutated', oldSrc, 'to',
         node.source());
+  }
+
+  /**
+   * Mutates the source of the given VariableDeclaration node backed by the
+   * falafel produced AST.
+   *
+   * Takes each initialized declaration found in the node and places it within
+   * an IIFE (i.e. `var i = 4;` => `(function () { i = 4; }());`). Ordinarily,
+   * this would just initialize the var to the global object but since we have
+   * already replaced the vars used in the shell with
+   * 'mongo.shells[id].vars.identifier', these variables will be stored there.
+   * These IIFEs also return a value of undefined, which mimics `var = ...`.
+   */
+  function mutateVariableDeclaration(node) {
+    // TODO: Do not run inside of a function.
+    var source = '';
+    node.declarations.forEach(function (declarationNode) {
+      if (declarationNode.init === null) { return; }
+      source += '(function () { ' + declarationNode.source() + '; }());';
+    });
+    node.update(source);
   }
 
   /**
@@ -372,6 +395,7 @@ mongo.mutateSource = (function () {
 
     _mutateIdentifier: mutateIdentifier,
     _mutateMemberExpression: mutateMemberExpression,
+    _mutateVariableDeclaration: mutateVariableDeclaration,
     _convertTokensToKeywordCall: convertTokensToKeywordCall
   };
 }());
