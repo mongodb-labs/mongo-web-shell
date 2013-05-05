@@ -24,7 +24,6 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object('mongows.configs.base')
     override_config_from_envvar(app)
-
     configure_logging(app)
     register_blueprints(app)
     return app
