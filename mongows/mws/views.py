@@ -12,7 +12,6 @@ from . import db
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
 CLIENTS_COLLECTION = 'clients'
-ID_LEN = 12
 REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
 
 
@@ -64,7 +63,6 @@ def crossdomain(origin=None, methods=None, headers=None,
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
     res_id = generate_res_id()
-    print('res_id = ' + res_id)
     session_id = session.get('session_id', str(uuid.uuid4()))
     result = {'res_id': res_id, 'session_id': session_id}
     db.get_db()[CLIENTS_COLLECTION].insert(result)
@@ -134,7 +132,6 @@ def db_collection_insert(res_id, collection_name):
                                                             collection_name)
     if not user_has_access(res_id, session_id):
         error = 'Session error. User does not have access to res_id'
-        print('error')
         return {'status': -1, 'result': error}
     objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
@@ -153,11 +150,7 @@ def get_internal_collection_name(res_id, collection_name):
 
 
 def generate_res_id():
-    exists = ''
-    while(exists is not None):
-        res_id = str(uuid.uuid4())
-        exists = db.get_db()[CLIENTS_COLLECTION].find_one({'res_id': res_id})
-    return res_id
+    return str(uuid.uuid4())
 
 
 def user_has_access(res_id, session_id):
