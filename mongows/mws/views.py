@@ -146,7 +146,7 @@ def db_collection_insert(res_id, collection_name):
 
 
 def get_internal_collection_name(res_id, collection_name):
-    return collection_name + res_id
+    return res_id + collection_name
 
 
 def generate_res_id():
