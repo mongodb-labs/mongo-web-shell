@@ -264,15 +264,40 @@ mongo.keyword = (function () {
 
 
 mongo.mutateSource = (function () {
-  // TODO: Handle with expression and function declarations.
+  // TODO: Handle WithStatement var hiding. :(
   // TODO: Do LabeledStatements (break & continue) interfere with globals?
   // TODO: Calling an undefined variable results in return value undefined,
   // rather than a reference error.
   var NODE_TYPE_HANDLERS = {
+    'FunctionDeclaration': mutateFunctionDeclaration,
     'Identifier': mutateIdentifier,
     'MemberExpression': mutateMemberExpression,
     'VariableDeclaration': mutateVariableDeclaration
   };
+
+  /**
+   * Mutates the source of the given FunctionDeclaration node backed by the
+   * falafel produced AST. Note that this is for declarations (`function
+   * identifier()...`), not expressions (var i = function ()...).
+   *
+   * Outside of a function, the function declaration is replaced with a
+   * function expression with the assigned variable changed to
+   * shell.vars.functionIdentifier, avoiding assignment to the global object.
+   *
+   * Inside of a function, does nothing as the declared function will be bound
+   * to the function scope.
+   */
+  function mutateFunctionDeclaration(node, shellID) {
+    // TODO: Handle FunctionDeclaration.: defaults, rest, generator, expression
+    if (nodeIsInsideFunction(node)) { return; }
+
+    var objRef = 'mongo.shells[' + shellID + '].vars.' + node.id.name;
+    var paramsStr = node.params.map(function (paramNode) {
+      return paramNode.source();
+    }).join(', ');
+    node.update(objRef + ' = function (' + paramsStr + ') ' +
+        node.body.source());
+  }
 
   /**
    * Mutates the source of the given Identifier node backed by the falafel
@@ -294,10 +319,30 @@ mongo.mutateSource = (function () {
     }
     // Match any expression not of the form '...{iden: a}...'.
     if (parent.type === 'Property' && parent.key === node) { return; }
-    // Match any expression not of the form 'function iden()...'.
+    // Match any expression not of the form 'function iden()...' or 'function
+    // a(iden)...'.
     if (parent.type === 'FunctionDeclaration' ||
         parent.type === 'FunctionExpression') {
       return;
+    }
+    // XXX: Match any expression not of the form 'mongo.keyword.evaluate(...)'.
+    // The keywords are swapped into the source before the AST walk and are
+    // considered to be normal user input during the AST walk. Thus, the call
+    // would be replaced as any other but to prevent that, we explicitly
+    // reserve the specific CallExpression below.
+    if (parent.type === 'MemberExpression' && parent.computed === false) {
+      var keywordNode = parent.property;
+      var evaluateNode = parent.parent;
+      var callNode = evaluateNode.parent;
+      if (keywordNode.type === 'Identifier' &&
+          keywordNode.name === 'keyword' &&
+          evaluateNode.type === 'MemberExpression' &&
+          evaluateNode.computed === false &&
+          evaluateNode.property.type === 'Identifier' &&
+          evaluateNode.property.name === 'evaluate' &&
+          callNode.type === 'CallExpression') {
+        return;
+      }
     }
 
     node.update('mongo.shells[' + shellID + '].vars.' + node.name);
@@ -501,6 +546,7 @@ mongo.mutateSource = (function () {
     swapMongoCalls: swapMongoCalls,
     swapKeywords: swapKeywords,
 
+    _mutateFunctionDeclaration: mutateFunctionDeclaration,
     _mutateIdentifier: mutateIdentifier,
     _mutateMemberExpression: mutateMemberExpression,
     _mutateVariableDeclaration: mutateVariableDeclaration,
