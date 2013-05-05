@@ -278,11 +278,14 @@ mongo.mutateSource = (function () {
    * Mutates the source of the given Identifier node backed by the falafel
    * produced AST.
    *
-   * We hide all references given to the shell input inside the shell.vars
-   * object associated with the shell that evaled the statement.
+   * We hide all global references given to the shell input inside the
+   * shell.vars object associated with the shell that evaled the statement.
+   * Local references (i.e. declared within functions) are untouched.
    */
   function mutateIdentifier(node, shellID) {
-    // TODO: If inside a function definition, only do if var was not declared.
+    // TODO: Handle `function identifier()` expressions.
+    if (getLocalVariableIdentifiers(node)[node.name]) { return; }
+
     // Match any expression not of form '...a.iden...'.
     var parent = node.parent;
     if (parent.type === 'MemberExpression' && parent.property === node &&
@@ -324,21 +327,119 @@ mongo.mutateSource = (function () {
    * Mutates the source of the given VariableDeclaration node backed by the
    * falafel produced AST.
    *
-   * Takes each initialized declaration found in the node and places it within
-   * an IIFE (i.e. `var i = 4;` => `(function () { i = 4; }());`). Ordinarily,
-   * this would just initialize the var to the global object but since we have
-   * already replaced the vars used in the shell with
-   * 'mongo.shells[id].vars.identifier', these variables will be stored there.
-   * These IIFEs also return a value of undefined, which mimics `var = ...`.
+   * Outside of a function, takes each initialized declaration found in the
+   * node and places it within an IIFE (i.e. `var i = 4;` => `(function () {
+   * i = 4; }());`). Ordinarily, this would initialize the var to the global
+   * object but since we have already replaced the vars used in the shell with
+   * 'mongo.shells[id].vars.identifier', these variables will be stored there
+   * instead. These IIFEs also return a value of undefined, which mimics
+   * `var = ...`.
+   *
+   * Inside of a function, does nothing. JavaScript is function scoped so
+   * identifiers local to a function (i.e. declared) will not be replaced with
+   * `mongo...` and to correctly declare these function local vars, the
+   * VariableDeclaration node is needed unchanged.
    */
   function mutateVariableDeclaration(node) {
-    // TODO: Do not run inside of a function.
+    if (nodeIsInsideFunction(node)) { return; }
+
     var source = '';
     node.declarations.forEach(function (declarationNode) {
       if (declarationNode.init === null) { return; }
       source += '(function () { ' + declarationNode.source() + '; }());';
     });
     node.update(source);
+  }
+
+  /*
+   * Returns an object of {identifier: true} for each non-global identifier
+   * found within the scope of the given node. These identifiers are the
+   * parameters to, and variables declared, within the containing functions.
+   */
+  function getLocalVariableIdentifiers(node) {
+    // TODO: Handle function ID?
+    var mergeObjects = mongo.util.mergeObjects;
+    var identifiers = {};
+    var functionNode = getContainingFunctionNode(node);
+    while (functionNode !== null) {
+      var paramIdentifiers = extractParamsIdentifiers(functionNode.params);
+      identifiers = mergeObjects(identifiers, paramIdentifiers);
+      var bodyIdentifiers = extractBodyIdentifiers(functionNode.body);
+      identifiers = mergeObjects(identifiers, bodyIdentifiers);
+
+      functionNode = getContainingFunctionNode(functionNode);
+    }
+    return identifiers;
+  }
+
+  /**
+   * Returns {identifier: true} for all of the identifiers found in the given
+   * FunctionDeclaration.params or FunctionExpression.params.
+   */
+  function extractParamsIdentifiers(params) {
+    var identifiers = {};
+    params.forEach(function (paramNode) {
+      if (paramNode.type !== 'Identifier') {
+        // TODO: Check what other types this can be and handle if relevant.
+        console.debug('extractParamsIdentifiers: does not handle ' +
+            'paramNode of type', paramNode.type);
+        return;
+      }
+      identifiers[paramNode.name] = true;
+    });
+    return identifiers;
+  }
+
+  /**
+   * Returns {identifier: true} for all of the declared identifiers found in
+   * the given FunctionDeclaration.body or FunctionExpression.body.
+   */
+  function extractBodyIdentifiers(body) {
+    // TODO: Can the body be anything but BlockStatement?
+    if (body.type !== 'BlockStatement') { return; }
+
+    var identifiers = {};
+    body.body.forEach(function (statement) {
+      if (statement.type !== 'VariableDeclaration') { return; }
+
+      statement.declarations.forEach(function (declaration) {
+        if (declaration.type !== 'VariableDeclarator') {
+          // TODO: Check what other types this can be and handle if relevant.
+          console.debug('extractBodyIdentifiers: does not handle ' +
+              'declaration node of type', declaration.type);
+          return;
+        }
+        var identifierNode = declaration.id;
+        if (identifierNode.type !== 'Identifier') {
+          // TODO: Check what other types this can be and handle if relevant.
+          console.debug('extractBodyIdentifiers: does not handle ' +
+              'statement node of type', identifierNode.type);
+          return;
+        }
+        identifiers[identifierNode.name] = true;
+      });
+    });
+    return identifiers;
+  }
+
+  /**
+   * Returns the node of the function that contains the given node, or null if
+   * it does not exist.
+   */
+  function getContainingFunctionNode(node) {
+    node = node.parent;
+    while (node) {
+      if (node.type === 'FunctionDeclaration' ||
+          node.type === 'FunctionExpression') {
+        return node;
+      }
+      node = node.parent;
+    }
+    return null;
+  }
+
+  function nodeIsInsideFunction(node) {
+    return (getContainingFunctionNode(node) !== null) ? true : false;
   }
 
   /**
@@ -396,6 +497,11 @@ mongo.mutateSource = (function () {
     _mutateIdentifier: mutateIdentifier,
     _mutateMemberExpression: mutateMemberExpression,
     _mutateVariableDeclaration: mutateVariableDeclaration,
+    _getLocalVariableIdentifiers: getLocalVariableIdentifiers,
+    _extractParamsIdentifiers: extractParamsIdentifiers,
+    _extractBodyIdentifiers: extractBodyIdentifiers,
+    _getContainingFunctionNode: getContainingFunctionNode,
+    _nodeIsInsideFunction: nodeIsInsideFunction,
     _convertTokensToKeywordCall: convertTokensToKeywordCall
   };
 }());
@@ -693,6 +799,26 @@ mongo.util = (function () {
   }
 
   /**
+   * Returns an object with the key-value pairs from both given objects. If
+   * there is a conflict, the pairs in obj1 take precedence over those in obj2.
+   */
+  function mergeObjects(obj1, obj2) {
+    // TODO: Generalize this to an arbitrary number of arguments.
+    var out = {};
+    addOwnProperties(out, obj2);
+    addOwnProperties(out, obj1);
+    return out;
+  }
+
+  function addOwnProperties(out, obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        out[key] = obj[key];
+      }
+    }
+  }
+
+  /**
    * Uses the range indices in the given AST to divide the given source into
    * individual statements and returns each statement as an entry in an array.
    */
@@ -707,7 +833,10 @@ mongo.util = (function () {
 
   return {
     isNumeric: isNumeric,
-    sourceToStatements: sourceToStatements
+    mergeObjects: mergeObjects,
+    sourceToStatements: sourceToStatements,
+
+    _addOwnProperties: addOwnProperties
   };
 }());
 
