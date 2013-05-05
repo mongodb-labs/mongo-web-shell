@@ -39,7 +39,8 @@ mongo.init = function () {
       shell.attachInputHandler(data.res_id);
       shell.attachHideButtonHandler(shell);
       shell.enableInput(true);
-      setInterval(function () {shell.keepAlive();}, mongo.const.keepAliveTime);
+      setInterval(function () { shell.keepAlive(); },
+          mongo.const.keepAliveTime);
     },'json').fail(function (jqXHR, textStatus, errorThrown) {
       shell.insertResponseLine('Failed to create resources on DB on server');
       console.error('AJAX request failed:', textStatus, errorThrown);
