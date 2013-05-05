@@ -264,33 +264,50 @@ mongo.keyword = (function () {
 
 
 mongo.mutateSource = (function () {
+  // TODO: Handle this, var, with, and function expressions.
+  // TODO: Do LabeledStatements (break & continue) interfere with globals?
+  // TODO: Calling an undefined variable results in return value undefined,
+  // rather than a reference error.
   var NODE_TYPE_HANDLERS = {
+    'Identifier': mutateIdentifier,
     'MemberExpression': mutateMemberExpression
   };
 
-  function mutateMemberExpression(node, shellID) {
-    // Search for an expression of the form "db.collection", attempting to
-    // match from the "db.collection" MemberExpression node as this is the one
-    // that will be modified.
-    var dbNode = node.object, collectionNode = node.property;
-    if (dbNode.type !== 'Identifier') { return; }
-    // TODO: Resolve db reference in other identifiers.
-    if (dbNode.name !== 'db') { return; }
-    if (collectionNode.type !== 'Identifier') {
-      // TODO: Can collectionNode be of any other types?
-      console.debug('collectionNode not of type Identifier.', collectionNode);
+  /**
+   * Mutates the source of the given Identifier node backed by the falafel
+   * produced AST.
+   *
+   * We hide all references given to the shell input inside the shell.vars
+   * object associated with the shell that evaled the statement.
+   */
+  function mutateIdentifier(node, shellID) {
+    // Match any expression not of form '...a.iden...'.
+    var parent = node.parent;
+    if (parent.type === 'MemberExpression' && parent.property === node &&
+        parent.computed === false) {
       return;
     }
+    // Match any expression not of the form '...{iden: a}...'.
+    if (parent.type === 'Property' && parent.key === node) { return; }
+
+    node.update('mongo.shells[' + shellID + '].vars.' + node.name);
+  }
+
+  /**
+   * Mutates the source of the given MemberExpression node backed by the
+   * falafel produced AST.
+   *
+   * We replace any expressions of the form "db.collection" with a new
+   * mongo.Query object using the matched identifiers.
+   */
+  function mutateMemberExpression(node, shellID) {
+    // TODO: Resolve db reference in other identifiers.
+    var dbNode = node.object, collectionNode = node.property;
+    if (dbNode.type !== 'Identifier' || dbNode.name !== 'db') { return; }
 
     var collectionArg = collectionNode.source();
-    if (node.computed) {
-      // TODO: We must substitute the given identifier for one not on the
-      // global object. This may be taken care of elsewhere.
-      console.error('mutateMemberExpression(): node.computed not yet' +
-          'implemented.');
-      return;
-    } else {
-      // The collection identifier should be taken from the user as a literal.
+    if (collectionNode.type === 'Identifier' && !node.computed) {
+      // Of the form a.collection; the identifier should be taken as a literal.
       collectionArg = '"' + collectionArg + '"';
     }
 
@@ -353,6 +370,7 @@ mongo.mutateSource = (function () {
     swapMongoCalls: swapMongoCalls,
     swapKeywords: swapKeywords,
 
+    _mutateIdentifier: mutateIdentifier,
     _mutateMemberExpression: mutateMemberExpression,
     _convertTokensToKeywordCall: convertTokensToKeywordCall
   };
@@ -529,6 +547,7 @@ mongo.Shell = function (rootElement, shellID) {
 
   this.id = shellID;
   this.mwsResourceID = null;
+  this.vars = {};
   this.readline = null;
   this.lastUsedCursor = null;
 };
