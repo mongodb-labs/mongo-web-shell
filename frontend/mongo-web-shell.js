@@ -64,13 +64,14 @@ mongo.const = (function () {
  * result set format through various methods such as sort().
  */
 mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
-  this.shell = mwsQuery.shell;
-  this.database = mwsQuery.database;
-  this.collection = mwsQuery.collection;
-  this.query = {
+  this._shell = mwsQuery.shell;
+  this._database = mwsQuery.database;
+  this._collection = mwsQuery.collection;
+  this._query = {
     wasExecuted: false,
     func: queryFunction,
-    args: queryArgs
+    args: queryArgs,
+    result: null
   };
   console.debug('Created mongo.Cursor:', this);
 };
@@ -78,12 +79,56 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
 /**
  * Executes the stored query function, disabling result set format modification
  * methods such as sort() and enabling result set iteration methods such as
- * next().
+ * next(). Will execute onSuccess on query success, or instantly if the query
+ * was previously successful.
  */
-mongo.Cursor.prototype.executeQuery = function () {
-  console.debug('Executing query:', this);
-  this.query.func(this);
-  this.query.wasExecuted = true;
+mongo.Cursor.prototype._executeQuery = function (onSuccess) {
+  if (!this._query.wasExecuted) {
+    console.debug('Executing query:', this);
+    this._query.func(this, onSuccess);
+    this._query.wasExecuted = true;
+  } else {
+    onSuccess();
+  }
+};
+
+mongo.Cursor.prototype._printBatch = function () {
+  var cursor = this;
+  this._executeQuery(function () {
+    cursor._shell.lastUsedCursor = cursor;
+
+    var setSize = DBQuery.shellBatchSize;
+    if (!mongo.util.isNumeric(setSize)) {
+      // TODO: Print to shell.
+      console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
+          'value.');
+      return;
+    }
+    var batch = [];
+    for (var i = 0; i < setSize; i++) {
+      // pop() setSize times rather than splice(-setSize) to preserve order.
+      var document_ = cursor._query.result.pop();
+      if (document_ === undefined) {
+        break;
+      }
+      batch.push(document_);
+    }
+
+    if (batch.length !== 0) {
+      // TODO: Print to shell.
+      console.debug('_printBatch() results:', batch);
+    }
+    if (cursor.hasNext()) {
+      console.debug('Type "it" for more');
+    }
+  });
+};
+
+mongo.Cursor.prototype._storeQueryResult = function (result) {
+  // For efficiency, we reverse the result. This allows us to pop() as we
+  // iterate over the result set, both freeing the reference and preventing a
+  // reindexing on each removal from the array as with unshift/splice().
+  this._query.result = result.reverse();
 };
 
 /**
@@ -91,12 +136,28 @@ mongo.Cursor.prototype.executeQuery = function () {
  * returns true. Otherwise returns false.
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
-  if (this.query.wasExecuted) {
+  if (this._query.wasExecuted) {
     // TODO: Print warning to the shell.
     console.warn('Cannot call', methodName, 'on already executed ' +
         'mongo.Cursor.', this);
   }
-  return this.query.wasExecuted;
+  return this._query.wasExecuted;
+};
+
+mongo.Cursor.prototype.hasNext = function () {
+  var retval, cursor = this;
+  this._executeQuery(function () { retval = cursor._query.result.length; });
+  return retval === 0 ? false : true;
+};
+
+mongo.Cursor.prototype.next = function () {
+  var retval, cursor = this;
+  this._executeQuery(function () { retval = cursor._query.result.pop(); });
+  if (retval === undefined) {
+    // TODO: Print to shell.
+    console.warn('Cursor error hasNext: false', this);
+  }
+  return retval;
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
@@ -147,6 +208,10 @@ mongo.keyword = (function () {
       mongo.keyword.use(shell, arg, arg2, unusedArg);
       break;
 
+    case 'it':
+      mongo.keyword.it(shell); // it ignores other arguments.
+      break;
+
     case 'help':
     case 'show':
       if (unusedArg) {
@@ -168,6 +233,16 @@ mongo.keyword = (function () {
     console.debug('keyword.help called.');
   }
 
+  function it(shell) {
+    var cursor = shell.lastUsedCursor;
+    if (cursor && cursor.hasNext()) {
+      cursor._printBatch();
+      return;
+    }
+    // TODO: Print to shell.
+    console.warn('no cursor');
+  }
+
   function show(shell, arg) {
     // TODO: Implement.
     console.debug('keyword.show called.');
@@ -181,6 +256,7 @@ mongo.keyword = (function () {
   return {
     evaluate: evaluate,
     help: help,
+    it: it,
     show: show,
     use: use
   };
@@ -258,7 +334,7 @@ mongo.mutateSource = (function () {
       var tokens = statement.split(/\s+/).filter(function (str) {
         return str.length !== 0;
       });
-      if (/help|show|use/.test(tokens[0])) {
+      if (/help|it|show|use/.test(tokens[0])) {
         arr[index] = convertTokensToKeywordCall(shellID, tokens);
       }
     });
@@ -366,11 +442,11 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
-  function db_collection_find(cursor) {
-    var resID = cursor.shell.mwsResourceID;
-    var args = cursor.query.args;
+  function db_collection_find(cursor, onSuccess) {
+    var resID = cursor._shell.mwsResourceID;
+    var args = cursor._query.args;
 
-    var url = getResURL(resID, cursor.collection) + 'find';
+    var url = getResURL(resID, cursor._collection) + 'find';
     var params = {
       query: args.query,
       projection: args.projection
@@ -384,8 +460,9 @@ mongo.request = (function () {
 
     console.debug('find() request:', url, params);
     $.getJSON(url, params, function (data, textStatus, jqXHR) {
-      // TODO: Insert response into shell.
-      console.debug('db_collection_find success:', data);
+      console.debug('db_collection_find success');
+      cursor._storeQueryResult(data.result);
+      onSuccess();
     }).fail(function (jqXHR, textStatus, errorThrown) {
       // TODO: Print error into shell.
       console.error('db_collection_find fail:', textStatus, errorThrown);
@@ -458,6 +535,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
+  this.lastUsedCursor = null;
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -557,7 +635,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
     if (out instanceof mongo.Cursor) {
       // We execute the query lazily so result set modification methods (such
       // as sort()) can be called before the query's execution.
-      out.executeQuery();
+      out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
       // TODO: Print out to shell.
       console.debug('mongo.Shell.handleInput(): shell output:', out.toString(),
@@ -572,6 +650,10 @@ mongo.Shell.prototype.enableInput = function (bool) {
 
 
 mongo.util = (function () {
+  function isNumeric(val) {
+    return typeof val === 'number' && !isNaN(val);
+  }
+
   /**
    * Uses the range indices in the given AST to divide the given source into
    * individual statements and returns each statement as an entry in an array.
@@ -586,8 +668,16 @@ mongo.util = (function () {
   }
 
   return {
+    isNumeric: isNumeric,
     sourceToStatements: sourceToStatements
   };
 }());
+
+// TODO: Move this into the shell's local variables when implemented. This will
+// allow both multiple shells to have different values and reduce the global
+// variable use back to just "mongo".
+var DBQuery = {
+  shellBatchSize: 20
+};
 
 $(document).ready(mongo.init);
