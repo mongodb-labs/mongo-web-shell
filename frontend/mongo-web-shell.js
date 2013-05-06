@@ -124,8 +124,10 @@ mongo.Cursor.prototype._printBatch = function () {
 
     if (batch.length !== 0) {
       for (var i = 0; i < batch.length; i++) {
+        //TODO: use insertResponseArray instead, stringify in insertResponseLine
         cursor._shell.insertResponseLine(JSON.stringify(batch[i]));
       }
+      console.debug('_printBatch() results:', batch);
     }
     if (cursor.hasNext()) {
       cursor._shell.insertResponseLine('Type "it" for more');
