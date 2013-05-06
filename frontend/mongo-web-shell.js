@@ -656,9 +656,14 @@ mongo.request = (function () {
 
     console.debug('find() request:', url, params);
     $.getJSON(url, params, function (data, textStatus, jqXHR) {
-      console.debug('db_collection_find success');
-      cursor._storeQueryResult(data.result);
-      onSuccess();
+      if (data.status === 0) {
+        console.debug('db_collection_find success');
+        cursor._storeQueryResult(data.result);
+        onSuccess();
+      } else {
+        // TODO: Print error into shell.
+        console.debug('db_collection_find error:', data.result);
+      }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       // TODO: Print error into shell.
       console.error('db_collection_find fail:', textStatus, errorThrown);
@@ -680,7 +685,11 @@ mongo.request = (function () {
       dataType: 'json',
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {
-        console.info('Insertion successful:', data);
+        if (data.status === 0) {
+          console.info('Insertion successful:', data);
+        } else {
+          console.debug('db_collection_insert error', data.result);
+        }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       // TODO: Print error into shell.
