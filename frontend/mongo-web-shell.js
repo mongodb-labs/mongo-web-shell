@@ -541,7 +541,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 };
 
 mongo.Shell.prototype.attachHideButtonHandler = function (shell) {
-  this.$hideButton.click(function (){
+  this.$hideButton.click(function () {
       mongo.dom.toggleShellVisibility(shell);
   });
 };
