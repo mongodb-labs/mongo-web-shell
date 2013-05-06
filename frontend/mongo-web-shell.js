@@ -106,7 +106,7 @@ mongo.Cursor.prototype._printBatch = function () {
 
     var setSize = DBQuery.shellBatchSize;
     if (!mongo.util.isNumeric(setSize)) {
-      cursor._shell.insertResponseLine('ERROR: Please set' +
+      cursor._shell.insertResponseLine('ERROR: Please set ' +
         'DBQuery.shellBatchSize to a valid numerical value.');
       console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
           'value.');
@@ -123,21 +123,9 @@ mongo.Cursor.prototype._printBatch = function () {
     }
 
     if (batch.length !== 0) {
-      for (var j = 0; j < batch.length; j++){
-        if (batch[j].hasOwnProperty('_id')){
-          //if _id, id should be shown first as in the actual mongo shell
-          var idString = '{ "_id" : ObjectID("' + batch[j]._id.$oid + '"), ';
-          var objectString = JSON.stringify(batch[j], cursor.replacer, ' ')
-            .replace('{', '');
-          objectString = objectString.replace('}', '');
-          cursor._shell.insertResponseLine(idString + objectString + ' } ');
-        }
-        else {
-          cursor._shell.insertResponseLine(JSON.stringify(batch[j],
-            cursor.replacer, ' '));
-        }
+      for (var j = 0; j < batch.length; j++) {
+        cursor._shell.insertResponseLine(JSON.stringify(batch[j]));
       }
-      console.debug('_printBatch() results:', batch);
     }
     if (cursor.hasNext()) {
       cursor._shell.insertResponseLine('Type "it" for more');
@@ -146,13 +134,7 @@ mongo.Cursor.prototype._printBatch = function () {
   });
 };
 
-mongo.Cursor.prototype.replacer = function(key, value) {
-  if (key === '_id') {
-    return undefined;
-  } else {
-    return value;
-  }
-};
+
 
 mongo.Cursor.prototype._storeQueryResult = function (result) {
   // For efficiency, we reverse the result. This allows us to pop() as we
@@ -282,7 +264,7 @@ mongo.keyword = (function () {
       cursor._printBatch();
       return;
     }
-    shell.insertResponseLine('No Cursor');
+    shell.insertResponseLine('no cursor');
     console.warn('no cursor');
   }
 
