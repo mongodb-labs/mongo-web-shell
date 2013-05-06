@@ -106,7 +106,8 @@ mongo.Cursor.prototype._printBatch = function () {
 
     var setSize = DBQuery.shellBatchSize;
     if (!mongo.util.isNumeric(setSize)) {
-      // TODO: Print to shell.
+      cursor._shell.insertResponseLine('ERROR: Please set ' +
+        'DBQuery.shellBatchSize to a valid numerical value.');
       console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
           'value.');
       return;
@@ -122,10 +123,14 @@ mongo.Cursor.prototype._printBatch = function () {
     }
 
     if (batch.length !== 0) {
-      // TODO: Print to shell.
+      for (var i = 0; i < batch.length; i++) {
+        //TODO: use insertResponseArray instead, stringify in insertResponseLine
+        cursor._shell.insertResponseLine(JSON.stringify(batch[i]));
+      }
       console.debug('_printBatch() results:', batch);
     }
     if (cursor.hasNext()) {
+      cursor._shell.insertResponseLine('Type "it" for more');
       console.debug('Type "it" for more');
     }
   });
@@ -162,7 +167,7 @@ mongo.Cursor.prototype.next = function () {
   var retval, cursor = this;
   this._executeQuery(function () { retval = cursor._query.result.pop(); });
   if (retval === undefined) {
-    // TODO: Print to shell.
+    cursor._shell.insertResponseLine('ERROR: no more results to show');
     console.warn('Cursor error hasNext: false', this);
   }
   return retval;
@@ -259,7 +264,7 @@ mongo.keyword = (function () {
       cursor._printBatch();
       return;
     }
-    // TODO: Print to shell.
+    shell.insertResponseLine('no cursor');
     console.warn('no cursor');
   }
 
@@ -685,7 +690,7 @@ mongo.request = (function () {
         cursor._storeQueryResult(data.result);
         onSuccess();
       } else {
-        // TODO: Print error into shell.
+        cursor.shell.insertResponseLine('ERROR: server error occured');
         console.debug('db_collection_find error:', data.result);
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
