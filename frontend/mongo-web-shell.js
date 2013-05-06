@@ -140,6 +140,7 @@ mongo.Cursor.prototype._printBatch = function () {
       console.debug('_printBatch() results:', batch);
     }
     if (cursor.hasNext()) {
+      cursor._shell.insertResponseLine('Type "it" for more');
       console.debug('Type "it" for more');
     }
   });
