@@ -106,7 +106,8 @@ mongo.Cursor.prototype._printBatch = function () {
 
     var setSize = DBQuery.shellBatchSize;
     if (!mongo.util.isNumeric(setSize)) {
-      // TODO: Print to shell.
+      cursor._shell.insertResponseLine('ERROR: Please set' +
+        'DBQuery.shellBatchSize to a valid numerical value.');
       console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
           'value.');
       return;
@@ -122,13 +123,34 @@ mongo.Cursor.prototype._printBatch = function () {
     }
 
     if (batch.length !== 0) {
-      // TODO: Print to shell.
+      for (var j = 0; j < batch.length; j++){
+        if (batch[j].hasOwnProperty('_id')){
+          //if _id, id should be shown first as in the actual mongo shell
+          var idString = '{ "_id" : ObjectID("' + batch[j]._id.$oid + '"), ';
+          var objectString = JSON.stringify(batch[j], cursor.replacer, ' ')
+            .replace('{', '');
+          objectString = objectString.replace('}', '');
+          cursor._shell.insertResponseLine(idString + objectString + ' } ');
+        }
+        else {
+          cursor._shell.insertResponseLine(JSON.stringify(batch[j],
+            cursor.replacer, ' '));
+        }
+      }
       console.debug('_printBatch() results:', batch);
     }
     if (cursor.hasNext()) {
       console.debug('Type "it" for more');
     }
   });
+};
+
+mongo.Cursor.prototype.replacer = function(key, value) {
+  if (key === '_id') {
+    return undefined;
+  } else {
+    return value;
+  }
 };
 
 mongo.Cursor.prototype._storeQueryResult = function (result) {
@@ -162,7 +184,7 @@ mongo.Cursor.prototype.next = function () {
   var retval, cursor = this;
   this._executeQuery(function () { retval = cursor._query.result.pop(); });
   if (retval === undefined) {
-    // TODO: Print to shell.
+    cursor._shell.insertResponseLine('ERROR: no more results to show');
     console.warn('Cursor error hasNext: false', this);
   }
   return retval;
@@ -259,7 +281,7 @@ mongo.keyword = (function () {
       cursor._printBatch();
       return;
     }
-    // TODO: Print to shell.
+    shell.insertResponseLine('No Cursor');
     console.warn('no cursor');
   }
 
@@ -681,7 +703,7 @@ mongo.request = (function () {
         cursor._storeQueryResult(data.result);
         onSuccess();
       } else {
-        // TODO: Print error into shell.
+        cursor.shell.insertResponseLine('ERROR: server error occured');
         console.debug('db_collection_find error:', data.result);
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
