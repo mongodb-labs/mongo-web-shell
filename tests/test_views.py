@@ -52,26 +52,6 @@ class ViewsUnitTestCase(MongoWSTestCase):
         self.assertEqual(len(json_rv_data['result']), 2)
         self.assertIn('$oid', json_rv_data['result'][0])
 
-    def test_insert_find(self):
-        rv = self.app.post('/mws/')
-        res_id = json.loads(rv.data)['res_id']
-        self.assertIsNotNone(res_id)
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
-        rv = _make_insert_request(self.app, res_id, 'test_collection',
-                                  document)
-        json_rv_data = json.loads(rv.data)
-        self.assertEqual(json_rv_data['status'], 0)
-        self.assertIn('$oid', json_rv_data['result'])
-
-        rv = _make_find_request(self.app, res_id, 'test_collection',
-                                document)
-        json_rv_data = json.loads(rv.data)
-        query_results = json_rv_data['result'][0]
-        self.assertEqual(json_rv_data['status'], 0)
-        self.assertEqual(query_results[key], value)
-
     def test_invalid_insert_session(self):
         rv = self.app.post('/mws/')
         res_id = json.loads(rv.data)['res_id']
@@ -103,6 +83,33 @@ class ViewsUnitTestCase(MongoWSTestCase):
         error = 'Session error. User does not have access to res_id'
         self.assertEqual(json_rv_data['status'], -1)
         self.assertEqual(json_rv_data['result'], error)
+
+class ViewsIntegrationTestCase(MongoWSTestCase):
+    def setUp(self):
+        super(ViewsIntegrationTestCase, self).setUp()
+
+    def tearDown(self):
+        super(ViewsIntegrationTestCase, self).tearDown()
+
+    def test_insert_find(self):
+        rv = self.app.post('/mws/')
+        res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(res_id)
+        key = 'name'
+        value = 'mongo'
+        document = {key: value}
+        rv = _make_insert_request(self.app, res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertIn('$oid', json_rv_data['result'])
+
+        rv = _make_find_request(self.app, res_id, 'test_collection',
+                                document)
+        json_rv_data = json.loads(rv.data)
+        query_results = json_rv_data['result'][0]
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(query_results[key], value)
 
 
 def _make_find_request(app, res_id, collection, query=None, projection=None):
