@@ -134,8 +134,6 @@ mongo.Cursor.prototype._printBatch = function () {
   });
 };
 
-
-
 mongo.Cursor.prototype._storeQueryResult = function (result) {
   // For efficiency, we reverse the result. This allows us to pop() as we
   // iterate over the result set, both freeing the reference and preventing a
