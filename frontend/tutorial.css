@@ -1,0 +1,8 @@
+body {
+  font-family: Terminal, monospace;
+}
+
+.content-wrapper {
+  margin-left: 20%;
+  margin-right: 20%;
+}

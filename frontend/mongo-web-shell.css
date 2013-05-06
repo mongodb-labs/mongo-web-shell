@@ -1,47 +1,95 @@
-/* TODO: Why are there ids here? */
-#mws-border {
-  height: 640px;
-  text-align: left;
-  border: 2px solid;
-  border-radius: 25px;
-  background-color: #000000;
-  margin-top: 10px;
-  margin-bottom: 10px;
+.mws-wrapper {
+  resize: both;
+  overflow: hidden;
+  height: 400px;
 }
 
-#mws-response {
-  height: 560px;
-  margin-top: 20px;
-  overflow-y: auto;
-  color: #00e500;
-  font-size: 20px;
+.mws-topbar {
+  background-color: transparent;
+  border-radius: 10px;
+  height: 50px;
+  color: #00000;
   font-family: Terminal, monospace;
 }
 
-.mws-in-shell-response {
+.mws-topbar span {
+  display: inline-block;
+  line-height: 50px;
+  font-size: 35px;
+  width: 90%;
+}
+
+.mws-hide-button {
+  display: inline-block;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+}
+
+.mws-hide-button:hover {
+  text-decoration: underline;
+}
+
+.mws-body {
+  resize: none;
+  border-radius: 10px;
+  height: -moz-calc(100% - 50px);
+  height: -webkit-calc(100% - 50px);
+  height: -o-calc(100% - 50px);
+  height: calc(100% - 50px);
+}
+
+.mws-body, .mws-body * {
+  background-color: #000000;
+  color: #00e500;
+  font-size: 15px;
+}
+
+.mws-body p {
+  padding: 0px;
+  margin: 0px;
+}
+
+.mws-scrollbar-spacer {
+  height: 20px;
+  border-radius: 10px;
+}
+
+.mws-response-list {
+  resize: none;
   list-style-type: none;
-  margin-top: 0;
-  margin-bottom: 0;
+  /* Firefox */
+  height: -moz-calc(100% - 40px);
+  /* WebKit */
+  height: -webkit-calc(100% - 40px);
+  /* Opera */
+  height: -o-calc(100% - 40px);
+  /* Standard */
+  height: calc(100% - 40px);
+  padding-left: 20px;
+  padding-bottom: 0;
+  padding-top: 0;
+  margin: 0;
+  overflow-y: auto;
 }
 
-.mws-in-shell-response li {
+.mws-response-list li {
   margin-top: 3px;
+  margin-bottom: 3px;
 }
 
-#mws-input {
-  height: 60px;
-  margin-top: 0px;
-  text-align: center;
+.mws-form {
+  display: inline-block;
+  margin-left: 5px;
+  width: 95%
 }
 
 .mws-input {
-  width: 98%;
-  height: 60px;
+  resize: none;
   border: none;
-  background-color: #000000;
-  color: #00e500;
-  font-size: 20px;
-  font-family: Terminal, monospace;
+  width: 100%;
+  padding: 0;
+  margin: 0;
 }
 
 .mws-input:focus {

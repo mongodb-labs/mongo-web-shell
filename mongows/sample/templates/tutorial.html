@@ -2,13 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Tutorial</title>
+  <title>MongoDB Web Shell Sample Page</title>
+  <link rel="stylesheet" type="text/css" href="/sample/static/tutorial.css"/>
 </head>
 <body>
-  <h1>Tutorial Sample</h1>
-  <p>Some intro text here.</p>
-  <div class="mongo-web-shell">Hello</div>
-  <div class="mongo-web-shell">Hello</div>
+  <div class="content-wrapper">
+    <h1>Welcome to the mongoDB web shell!</h1>
+    <p>
+      The mongoDB web shell simulates interaction with a mongo shell for
+      use as a learning aid and a promotional tool. Go ahead and try some 
+      commands out! Check 
+      <a href="http://docs.mongodb.org/manual/reference/mongo-shell/"> 
+      this</a>
+      page for detailed information on commands to try.
+    </p>
+    <div class="mongo-web-shell">
+      <p>connecting to random database</p>
+      <p>type "help" for help</p>
+    </div>
+  </div>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
   <script src="/sample/static/lib/esprima/esprima.js"></script>
