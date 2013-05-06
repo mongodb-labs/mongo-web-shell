@@ -2,6 +2,8 @@
   resize: both;
   overflow: hidden;
   height: 400px;
+  min-height: 200px;
+  min-width: 500px;
 }
 
 .mws-wrapper * {
