@@ -124,8 +124,8 @@ mongo.Cursor.prototype._printBatch = function () {
 
     if (batch.length !== 0) {
       for (var i = 0; i < batch.length; i++) {
-        //TODO: use insertResponseArray instead, stringify in insertResponseLine
-        cursor._shell.insertResponseLine(JSON.stringify(batch[i]));
+        //TODO: use insertResponseArray instead
+        cursor._shell.insertResponseLine(cursor.stringify(batch[i]));
       }
       console.debug('_printBatch() results:', batch);
     }
@@ -177,6 +177,28 @@ mongo.Cursor.prototype.sort = function (sort) {
   if (this._warnIfExecuted('sort')) { return this; }
   console.debug('mongo.Cursor would be sorted.', this);
   return this;
+};
+
+mongo.Cursor.prototype.stringify = function (obj) {
+  var cursor = this;
+  if (obj.hasOwnProperty('_id')) {
+    //if _id exists, id should be shown first
+    var idString = '{ "_id" : ObjectID("' + obj._id.$oid + '"), ';
+    var objectString = JSON.stringify(obj, cursor.replacer, ' ')
+      .replace('{', '');
+    objectString = objectString.replace('}', '');
+    return idString + objectString + ' } ';
+  } else {
+    return JSON.stringify(obj, cursor.replacer, ' ');
+  }
+};
+
+mongo.Cursor.prototype.replacer = function(key, value) {
+  if (key === '_id') {
+    return undefined;
+  } else {
+    return value;
+  }
 };
 
 
