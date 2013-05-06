@@ -4,12 +4,15 @@
   height: 400px;
 }
 
+.mws-wrapper * {
+  font-family: Terminal, monospace;
+}
+
 .mws-topbar {
   background-color: transparent;
   border-radius: 10px;
   height: 50px;
   color: #00000;
-  font-family: Terminal, monospace;
 }
 
 .mws-topbar span {
