@@ -8,6 +8,22 @@
   font-family: Terminal, monospace;
 }
 
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  -webkit-border-radius: 10px;
+  background: -webkit-linear-gradient(left, #808080, #000000);
+}
+
+::-webkit-scrollbar-thumb {
+  -webkit-border-radius: 10px;
+  background: -webkit-linear-gradient(left, #C2C2C2, #002640);
+  border: 1px solid #333;
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.4);
+}
+
 .mws-topbar {
   background-color: transparent;
   border-radius: 10px;
