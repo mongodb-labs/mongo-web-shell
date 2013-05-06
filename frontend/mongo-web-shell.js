@@ -413,11 +413,15 @@ mongo.mutateSource = (function () {
   function mutateVariableDeclaration(node) {
     if (nodeIsInsideFunction(node)) { return; }
 
-    var source = '';
-    node.declarations.forEach(function (declarationNode) {
-      if (declarationNode.init === null) { return; }
-      source += '(function () { ' + declarationNode.source() + '; }());';
-    });
+    var declarationSrc = node.declarations.map(function (declarationNode) {
+      if (declarationNode.init === null) {
+        return '';
+      }
+      return declarationNode.source() + ';';
+    }).join(' ');
+    var source = '(function () { ' + declarationSrc + ' }())';
+    // ForStatement provides it's own ';' outside of this node.
+    source += (node.parent.type !== 'ForStatement') ? '; ' : '';
     node.update(source);
   }
 
