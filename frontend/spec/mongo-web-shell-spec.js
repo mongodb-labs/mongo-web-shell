@@ -251,6 +251,21 @@ describe('A Shell', function () {
 
 
 describe('The util module', function () {
+  it('determines if a given variable is numeric', function () {
+    var isNumeric = mongo.util.isNumeric;
+    // 9007199254740992 is the max value in JavaScript's number type.
+    var numeric = [-9007199254740992, -4, -1, 0, 1, 4, 9007199254740992];
+    numeric.forEach(function (number) {
+      expect(isNumeric(number)).toBe(true);
+    });
+
+    var nonNumeric = [undefined, null, NaN, [], {}, false, true, '0', '1',
+        'number', [4], {key: 4}];
+    nonNumeric.forEach(function (number) {
+      expect(isNumeric(number)).toBe(false);
+    });
+  });
+
   it('divides source code into statements based on range indicies',
       function () {
     var expected, sourceArr;
