@@ -1,59 +1,66 @@
 mongo-web-shell
 ===============
-BU Student project
+A recreation of the interactive mongoDB shell for the browser.
 
-Brown CS Department Specific Notes
-----------------------------------
-* When running `python`, you should use `python2.7` instead.
-* When running `virtualenv`, you should use `virtualenv2.7` instead.
-* When running `mongod`, you should specify a new database path with the
-  `--dbpath` flag as the default path is not writable (ex: `mongod --dbpath
-  <path>`).
+The shell input is initially evaluated in the browser with all appropriate
+database queries being forwarded to (and returned from) a running mongod
+instance on the back-end server.
 
 Installation
 ------------
 __Requirements__:
+
+* [mongoDB][mongoDB install]
 * Python 2.7
-* [virtualenv](https://pypi.python.org/packages/source/v/virtualenv/)
+* [virtualenv][]
 
-After the above requirements are installed:
+After the above requirements are installed, clone the repo:
 
-1. Clone the repository: `git clone git@github.com:10gen/mongo-web-shell.git`
-   Note that if you are planning on contributing, you may wish to fork the repo
-   into your own github repository space and clone that instead.
-2. Change to the cloned directory: `cd mongo-web-shell.git`
-3. Create a virtual environment: `virtualenv venv` A virtual environment allows
-   you to sandbox and maintain project dependencies in the specified directory
-   ("venv" in this case).
-4. Enter the virtual environment: `source venv/bin/activate` This updates the
-   path on your shell to point to the dependencies in your virtual environment.
-5. Download the project dependencies: `pip install -r requirements.txt`
-   "pip" is a Python package manager and "requirements.txt" is a text file
-   containing a list of the dependencies needed.
-6. Check out git submodules: run `git submodule init && git submodule update`
+    git clone git@github.com:10gen-labs/mongo-web-shell.git && \
+        cd mongo-web-shell
+
+Create and activate a virtualenv:
+
+    virtualenv venv && \
+        source venv/bin/activate
+
+Retrieve the dependencies:
+
+    git submodule init && git submodule update
+        pip install -r requirements.txt
 
 Running
 -------
-After following the installation directions above:
+After the installation above, launch a mongod instance that will be accessed by
+the back-end:
 
-1. Launch a mongod instance: `mongod`
+    mongod
 
-Run the following from a shell that has been activated with your virtual
-environment (see Installation #4):
+Then run the server from within your virtual environment:
 
-1. Run the server: `python run.py` (or `DEBUG=1 python run.py` for debug mode).
+    python run.py
 
-By default, you can connect to the sample at <http://localhost:5000/sample/>.
+To enable Flask debug mode, set the `DEBUG` environment variable to any value.
+Alternatively, run via [foreman][] and specify the environment variable in a
+.env file.
 
-Testing
--------
-Run the following from a shell that has been activated with your virtual
-environment (see Installation #4):
+By default, you can connect to the running sample at
+<http://localhost:5000/sample/>.
 
-1. Run the tests: `python run_tests.py`
+Tests
+-----
+### Front-end
+Open frontend/SpecRunner.html in a browser.
 
-TODO
-----
-* The "Brown CS Department" section should be removed before this is released.
-* The above text explains more than it probably should in a prod environment.
-  Considering removing some of it for brevity's sake.
+### Back-end
+From within a virtual environment:
+
+    python run_tests.py
+
+More info
+---------
+See docs/.
+
+[foreman]: http://ddollar.github.io/foreman/
+[mongoDB install]: http://docs.mongodb.org/manual/installation/
+[virtualenv]: http://www.virtualenv.org/en/latest/
