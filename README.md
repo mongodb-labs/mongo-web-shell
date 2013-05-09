@@ -59,8 +59,9 @@ From within a virtual environment:
 
 More info
 ---------
-See docs/.
+See the project [wiki][].
 
 [foreman]: http://ddollar.github.io/foreman/
 [mongoDB install]: http://docs.mongodb.org/manual/installation/
 [virtualenv]: http://www.virtualenv.org/en/latest/
+[wiki]: https://github.com/10gen-labs/mongo-web-shell/wiki
