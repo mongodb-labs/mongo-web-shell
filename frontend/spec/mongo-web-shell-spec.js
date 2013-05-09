@@ -8,9 +8,14 @@ var CONST = {
     classes: {
       root: '.mongo-web-shell',
       internal: [
-        '.mws-border',
-        '.mshell',
-        '.mws-in-shell-response',
+        '.mws-wrapper',
+        '.mws-topbar',
+        '.mws-hide-button',
+        '.mws-body',
+        '.mws-scrollbar-spacer',
+        '.mws-response-list',
+        '.input-li',
+        '.mws-form',
         '.mws-input'
       ]
     }
