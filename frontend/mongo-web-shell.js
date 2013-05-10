@@ -123,8 +123,8 @@ mongo.Cursor.prototype._printBatch = function () {
     }
 
     if (batch.length !== 0) {
-      for (var i = 0; i < batch.length; i++) {
-        //TODO: use insertResponseArray instead, stringify in insertResponseLine
+      // TODO: Use insertResponseArray instead, stringify in insertResponseLine
+      for (i = 0; i < batch.length; i++) {
         cursor._shell.insertResponseLine(JSON.stringify(batch[i]));
       }
       console.debug('_printBatch() results:', batch);
