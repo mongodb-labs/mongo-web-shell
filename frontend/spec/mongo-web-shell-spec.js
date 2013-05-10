@@ -1,6 +1,6 @@
 /* jshint loopfunc: true */
 /* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
-/* global xdescribe, xit */
+/* global spyOn, xdescribe, xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -114,7 +114,23 @@ describe('A Query', function () {
 
 
 describe('A Readline instance', function () {
-  // TODO: Test.
+  var $input, instance;
+
+  beforeEach(function () {
+    $input = $(document.createElement('input'));
+    instance = new mongo.Readline($input);
+  });
+
+  afterEach(function () {
+    $input = null;
+    instance = null;
+  });
+
+  it('registers a keydown handler', function () {
+    spyOn(instance, 'keydown');
+    $input.trigger('keydown');
+    expect(instance.keydown).toHaveBeenCalled();
+  });
 });
 
 
