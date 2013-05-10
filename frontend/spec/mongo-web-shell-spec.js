@@ -99,20 +99,30 @@ describe('A Cursor', function () {
   });
 
   describe('depending on query state', function () {
-    var stateStore;
+    var stateStore, callbackSpy;
 
     beforeEach(function () {
       stateStore = instance._query.wasExecuted;
+      callbackSpy = jasmine.createSpy('callback');
     });
 
     afterEach(function () {
       instance._query.wasExecuted = stateStore;
       stateStore = null;
+      callbackSpy = null;
     });
 
     describe('before execution', function () {
       beforeEach(function () {
         instance._query.wasExecuted = false;
+      });
+
+      it('executes queries', function () {
+        instance._executeQuery(callbackSpy);
+        expect(instance._query.wasExecuted).toBe(true);
+        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy);
+        // Callback is called asynchronously by helpers which are spies in this
+        // test and thus cannot be tested here.
       });
 
       it('does not warn the user and returns false', function () {
