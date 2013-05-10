@@ -113,12 +113,12 @@ describe('A Cursor', function () {
     });
 
     describe('before execution', function () {
+      // Cursor._query.func, who calls the success callback, is a spy and so
+      // the callback cannot be properly tested here.
       beforeEach(function () {
         instance._query.wasExecuted = false;
       });
 
-      // Cursor._query.func is a spy and so the callback cannot be properly
-      // tested here.
       it('executes asynchronous queries', function () {
         var async = true;
         instance._executeQuery(callbackSpy, async);
@@ -146,6 +146,17 @@ describe('A Cursor', function () {
         expect(actual).toBe(false);
         expect(insertResponseLineSpy).not.toHaveBeenCalled();
       });
+
+      describe('will execute a query when it', function () {
+        beforeEach(function () {
+          spyOn(instance, '_executeQuery');
+        });
+
+        it('returns a boolean showing if it has another result', function () {
+          instance.hasNext();
+          expect(instance._executeQuery).toHaveBeenCalled();
+        });
+      });
     });
 
     describe('after execution', function () {
@@ -164,6 +175,35 @@ describe('A Cursor', function () {
         var actual = instance._warnIfExecuted('methodName');
         expect(actual).toBe(true);
         expect(insertResponseLineSpy).toHaveBeenCalled();
+      });
+
+      describe('calls a success callback that', function () {
+        var RESULTS = 'iu'.split('');
+        var queryStore;
+
+        beforeEach(function () {
+          queryStore = instance._query.result;
+          instance._query.result = RESULTS.slice(0); // A copy.
+          instance._query.wasExecuted = true;
+          spyOn(instance, '_executeQuery').andCallFake(function (onSuccess) {
+            onSuccess();
+          });
+        });
+
+        afterEach(function () {
+          instance._query.result = queryStore;
+          queryStore = null;
+        });
+
+        it('returns a boolean showing if it has another result', function () {
+          var actual = instance.hasNext();
+          expect(instance._executeQuery.calls.length).toBe(1);
+          expect(actual).toBe(true);
+          instance._query.result = [];
+          actual = instance.hasNext();
+          expect(instance._executeQuery.calls.length).toBe(2);
+          expect(actual).toBe(false);
+        });
       });
     });
   });
