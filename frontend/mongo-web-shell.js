@@ -943,14 +943,16 @@ mongo.util = (function () {
   }
 
   /**
-   * Returns an object with the key-value pairs from both given objects. If
-   * there is a conflict, the pairs in obj1 take precedence over those in obj2.
+   * Returns an object with the combined key-value pairs from the given
+   * objects, for pairs not on the objects' prototypes. If there are indentical
+   * keys, the pairs of the arguments given in an earlier position take
+   * precedence over those given in later arguments.
    */
-  function mergeObjects(obj1, obj2) {
-    // TODO: Generalize this to an arbitrary number of arguments.
+  function mergeObjects() {
     var out = {};
-    addOwnProperties(out, obj2);
-    addOwnProperties(out, obj1);
+    for (var i = arguments.length - 1; i >= 0; i--) {
+      addOwnProperties(out, arguments[i]);
+    }
     return out;
   }
 
