@@ -69,7 +69,33 @@ describe('The const module', function () {
 
 
 describe('A Cursor', function () {
-  // TODO: Test.
+  var instance, queryFuncSpy, queryArgs;
+
+  beforeEach(function () {
+    var mwsQuery = {
+      shell: {
+        insertResponseLine: jasmine.createSpy('insertResponseLine'),
+        lastUsedCursor: null
+      },
+      collection: null
+    };
+    queryFuncSpy = jasmine.createSpy('queryFuncSpy');
+    queryArgs = 'some args';
+    instance = new mongo.Cursor(mwsQuery, queryFuncSpy, queryArgs);
+  });
+
+  afterEach(function () {
+    queryFuncSpy = null;
+    queryArgs = null;
+    instance = null;
+  });
+
+  it('stores a query result', function () {
+    var str = 'str';
+    expect(instance._query.result).toBeNull();
+    instance._storeQueryResult([str, 'does', 'not', 'matter']);
+    expect(instance._query.result).toContain(str);
+  });
 });
 
 
