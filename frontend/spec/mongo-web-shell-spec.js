@@ -162,6 +162,14 @@ describe('A Cursor', function () {
           expect(instance._executeQuery).toHaveBeenCalled();
         });
       });
+
+      describe('will execute a function that', function () {
+        it('sorts the query result set', function () {
+          // TODO: Implement sort.
+          var actual = instance.sort();
+          expect(actual).toEqual(jasmine.any(mongo.Cursor));
+        });
+      });
     });
 
     describe('after execution', function () {
@@ -220,6 +228,14 @@ describe('A Cursor', function () {
           expect(instance.next()).toBeUndefined();
           // Error message.
           expect(insertResponseLineSpy.calls.length).toBe(oldCallCount + 1);
+        });
+      });
+
+      describe('will not execute a function that', function () {
+        it('sorts the query result set', function () {
+          // TODO: Implement sort.
+          var actual = instance.sort();
+          expect(actual).toEqual(jasmine.any(mongo.Cursor));
         });
       });
     });
