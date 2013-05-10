@@ -149,8 +149,8 @@ describe('A Readline instance', function () {
       $input.val('');
     });
 
-    // When adding additional keys, be sure to update the other keys' 'only
-    // gets' methods.
+    // When adding additional keys, be sure to update the other keys' 'only'
+    // methods.
     describe('that are the down arrow', function () {
       var EVENT = {keyCode: KEYCODES.down};
 
@@ -198,6 +198,32 @@ describe('A Readline instance', function () {
 
       it('does not clear the input when returning undefined', function () {
         spyOn(instance, 'getOlderHistoryEntry').andReturn(undefined);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(BEFORE);
+      });
+    });
+
+    describe('that are enter', function () {
+      var EVENT = {keyCode: KEYCODES.enter};
+
+      it('only submits input lines', function () {
+        spyOn(instance, 'getNewerHistoryEntry');
+        spyOn(instance, 'getOlderHistoryEntry');
+        spyOn(instance, 'submit');
+        instance.keydown(EVENT);
+        expect(instance.getNewerHistoryEntry).not.toHaveBeenCalled();
+        expect(instance.getOlderHistoryEntry).not.toHaveBeenCalled();
+        expect(instance.submit).toHaveBeenCalled();
+      });
+
+      it('does not clear the input when returning a string', function () {
+        spyOn(instance, 'submit').andReturn(AFTER);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(BEFORE);
+      });
+
+      it('does not clear the input when returning undefined', function () {
+        spyOn(instance, 'submit').andReturn(undefined);
         instance.keydown(EVENT);
         expect($input.val()).toBe(BEFORE);
       });
