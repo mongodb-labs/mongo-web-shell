@@ -132,6 +132,51 @@ describe('A Readline instance', function () {
     expect(instance.keydown).toHaveBeenCalled();
   });
 
+  describe('with a non-empty command history', function () {
+    var expectedHistory = ['shaken', 'not', 'stirred'];
+
+    beforeEach(function () {
+      instance.history = expectedHistory;
+    });
+
+    afterEach(function () {
+      instance.history = [];
+      instance.historyIndex = instance.history.length;
+    });
+
+    it('gets newer history entries', function () {
+      instance.historyIndex = 0;
+
+      var actual;
+      // We init to 1 because historyIndex must be incremented and setting
+      // historyIndex to -1 is an invalid state.
+      for (var i = 1; i < expectedHistory.length; i++) {
+        actual = instance.getNewerHistoryEntry();
+        expect(actual).toBe(expectedHistory[i]);
+      }
+      actual = instance.getNewerHistoryEntry();
+      expect(actual).toBe('');
+      for (i = 0; i < 2; i++) {
+        actual = instance.getNewerHistoryEntry();
+        expect(actual).toBeUndefined();
+      }
+    });
+
+    it('gets older history entries', function () {
+      instance.historyIndex = instance.history.length;
+
+      var actual;
+      for (var i = expectedHistory.length - 1; i >= 0; i--) {
+        actual = instance.getOlderHistoryEntry();
+        expect(actual).toBe(expectedHistory[i]);
+      }
+      for (i = 0; i < 2; i++) {
+        actual = instance.getOlderHistoryEntry();
+        expect(actual).toBe(expectedHistory[0]);
+      }
+    });
+  });
+
   it('submits input lines', function () {
     expect(instance.history.length).toBe(0);
     for (var i = 1; i < 4; i++) {
