@@ -149,6 +149,8 @@ describe('A Readline instance', function () {
       $input.val('');
     });
 
+    // When adding additional keys, be sure to update the other keys' 'only
+    // gets' methods.
     describe('that are down', function () {
       var EVENT = {keyCode: KEYCODES.down};
 
@@ -170,6 +172,32 @@ describe('A Readline instance', function () {
 
       it('does not clear the input when returning undefined', function () {
         spyOn(instance, 'getNewerHistoryEntry').andReturn(undefined);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(BEFORE);
+      });
+    });
+
+    describe('that are up', function () {
+      var EVENT = {keyCode: KEYCODES.up};
+
+      it('only gets an older history entry', function () {
+        spyOn(instance, 'getNewerHistoryEntry');
+        spyOn(instance, 'getOlderHistoryEntry');
+        spyOn(instance, 'submit');
+        instance.keydown(EVENT);
+        expect(instance.getNewerHistoryEntry).not.toHaveBeenCalled();
+        expect(instance.getOlderHistoryEntry).toHaveBeenCalled();
+        expect(instance.submit).not.toHaveBeenCalled();
+      });
+
+      it('clears the input when returning a string', function () {
+        spyOn(instance, 'getOlderHistoryEntry').andReturn(AFTER);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(AFTER);
+      });
+
+      it('does not clear the input when returning undefined', function () {
+        spyOn(instance, 'getOlderHistoryEntry').andReturn(undefined);
         instance.keydown(EVENT);
         expect($input.val()).toBe(BEFORE);
       });
