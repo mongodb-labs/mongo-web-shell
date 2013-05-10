@@ -156,6 +156,11 @@ describe('A Cursor', function () {
           instance.hasNext();
           expect(instance._executeQuery).toHaveBeenCalled();
         });
+
+        it('returns the next result', function () {
+          instance.next();
+          expect(instance._executeQuery).toHaveBeenCalled();
+        });
       });
     });
 
@@ -203,6 +208,18 @@ describe('A Cursor', function () {
           actual = instance.hasNext();
           expect(instance._executeQuery.calls.length).toBe(2);
           expect(actual).toBe(false);
+        });
+
+        it('returns the next result', function () {
+          var actual = [];
+          for (var i = 0; i < RESULTS.length; i++) {
+            actual.push(instance.next());
+          }
+          RESULTS.forEach(function (val) { expect(actual).toContain(val); });
+          var oldCallCount = insertResponseLineSpy.calls.length;
+          expect(instance.next()).toBeUndefined();
+          // Error message.
+          expect(insertResponseLineSpy.calls.length).toBe(oldCallCount + 1);
         });
       });
     });
