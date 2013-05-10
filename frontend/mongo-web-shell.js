@@ -1,15 +1,10 @@
 /* jshint camelcase: false, evil: true, unused: false */
 /* global esprima, falafel */
+var console; // See mongo.util.enableConsoleProtection().
 var mongo = {
   config: null,
   shells: {} // {shellID: mongo.Shell}
 };
-
-// Protect older browsers from an absent console.
-if (!console || !console.log) { var console = { log: function () {} }; }
-if (!console.debug || !console.error || !console.info || !console.warn) {
-  console.debug = console.error = console.info = console.warn = console.log;
-}
 
 /**
  * Injects a mongo web shell into the DOM wherever an element of class
@@ -18,6 +13,7 @@ if (!console.debug || !console.error || !console.info || !console.warn) {
  * CSS stylesheets.
  */
 mongo.init = function () {
+  mongo.util.enableConsoleProtection();
   var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
   $('.mongo-web-shell').each(function (index, shellElement) {
@@ -938,6 +934,18 @@ mongo.Shell.prototype.keepAlive = function() {
 };
 
 mongo.util = (function () {
+  /**
+   * Enables protection from undefined console references on older browsers
+   * without consoles.
+   */
+  function enableConsoleProtection() {
+    if (!console || !console.log) { console = { log: function () {} }; }
+    if (!console.debug || !console.error || !console.info || !console.warn) {
+      var log = console.log;
+      console.debug = console.error = console.info = console.warn = log;
+    }
+  }
+
   function isNumeric(val) {
     return typeof val === 'number' && !isNaN(val);
   }
@@ -978,6 +986,7 @@ mongo.util = (function () {
   }
 
   return {
+    enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
     mergeObjects: mergeObjects,
     sourceToStatements: sourceToStatements,
