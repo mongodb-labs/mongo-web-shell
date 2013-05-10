@@ -131,6 +131,17 @@ describe('A Readline instance', function () {
     $input.trigger('keydown');
     expect(instance.keydown).toHaveBeenCalled();
   });
+
+  it('submits input lines', function () {
+    expect(instance.history.length).toBe(0);
+    for (var i = 1; i < 4; i++) {
+      var line = i.toString();
+      instance.submit(line);
+      expect(instance.history.length).toBe(i);
+      expect(instance.history).toContain(line);
+      expect(instance.historyIndex).toBe(i);
+    }
+  });
 });
 
 

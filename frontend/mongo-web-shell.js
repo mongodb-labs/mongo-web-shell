@@ -655,6 +655,9 @@ mongo.Readline.prototype.getOlderHistoryEntry = function () {
   return this.history[this.historyIndex];
 };
 
+/**
+ * Stores the given line to the command history and resets the history index.
+ */
 mongo.Readline.prototype.submit = function (line) {
   // TODO: Remove old entries if we've hit the limit.
   this.history.push(line);
