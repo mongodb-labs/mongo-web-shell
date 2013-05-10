@@ -82,12 +82,14 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
  * Executes the stored query function, disabling result set format modification
  * methods such as sort() and enabling result set iteration methods such as
  * next(). Will execute onSuccess on query success, or instantly if the query
- * was previously successful.
+ * was previously successful. onSuccess will be called asynchronously by
+ * default, or synchronously if given false for the async parameter.
  */
-mongo.Cursor.prototype._executeQuery = function (onSuccess) {
+mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
+  async = typeof async !== 'undefined' ? async : true;
   if (!this._query.wasExecuted) {
     console.debug('Executing query:', this);
-    this._query.func(this, onSuccess);
+    this._query.func(this, onSuccess, async);
     this._query.wasExecuted = true;
   } else {
     onSuccess();
@@ -153,19 +155,23 @@ mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
 };
 
 mongo.Cursor.prototype.hasNext = function () {
-  var retval, cursor = this;
-  this._executeQuery(function () { retval = cursor._query.result.length; });
-  return retval === 0 ? false : true;
+  var hasNext, cursor = this, failure = false;
+  this._executeQuery(function () {
+    hasNext = cursor._query.result.length === 0 ? false : true;
+  }, false);
+  return hasNext;
 };
 
 mongo.Cursor.prototype.next = function () {
-  var retval, cursor = this;
-  this._executeQuery(function () { retval = cursor._query.result.pop(); });
-  if (retval === undefined) {
-    cursor._shell.insertResponseLine('ERROR: no more results to show');
-    console.warn('Cursor error hasNext: false', this);
+  var nextVal, cursor = this;
+  this._executeQuery(function () {
+    nextVal = cursor._query.result.pop();
+  }, false);
+  if (nextVal !== undefined) {
+    return nextVal;
   }
-  return retval;
+  cursor._shell.insertResponseLine('ERROR: no more results to show');
+  console.warn('Cursor error hasNext: false', this);
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
@@ -682,7 +688,14 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
-  function db_collection_find(cursor, onSuccess) {
+  /**
+   * Makes a find request to the mongod instance on the backing server. On
+   * success, the result is stored and onSuccess is called, otherwise a failure
+   * message is printed and an error is thrown. The request is optionally
+   * async, as determined by the given parameter, as some functions (e.g.
+   * cursor.next()) need to return a value from the request directly into eval.
+   */
+  function db_collection_find(cursor, onSuccess, async) {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
@@ -699,18 +712,30 @@ mongo.request = (function () {
     stringifyKeys(params);
 
     console.debug('find() request:', url, params);
-    $.getJSON(url, params, function (data, textStatus, jqXHR) {
-      if (data.status === 0) {
-        console.debug('db_collection_find success');
-        cursor._storeQueryResult(data.result);
-        onSuccess();
-      } else {
-        cursor.shell.insertResponseLine('ERROR: server error occured');
-        console.debug('db_collection_find error:', data.result);
+    $.ajax({
+      async: async,
+      url: url,
+      data: params,
+      dataType: 'json',
+      success: function (data, textStatus, jqXHR) {
+        if (data.status === 0) {
+          console.debug('db_collection_find success');
+          cursor._storeQueryResult(data.result);
+          onSuccess();
+        } else {
+          cursor.shell.insertResponseLine('ERROR: server error occured');
+          console.debug('db_collection_find error:', data.result);
+        }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      cursor.shell.insertResponseLine('ERROR: server error occured');
+      cursor._shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_find fail:', textStatus, errorThrown);
+      // TODO: Make this more robust (currently prints two errors, eval doesn't
+      // say why it failed, etc.).
+      // TODO: Should we throw in insert too?
+      // Throwing here will cause the query eval() to fail, rather than
+      // handling the edge cases in each query method individually.
+      throw 'db_collection_find: Server error';
     });
   }
 

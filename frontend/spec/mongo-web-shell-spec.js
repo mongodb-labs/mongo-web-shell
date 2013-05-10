@@ -99,6 +99,7 @@ describe('A Cursor', function () {
   });
 
   describe('depending on query state', function () {
+    var ASYNC = false;
     var stateStore, callbackSpy;
 
     beforeEach(function () {
@@ -118,11 +119,12 @@ describe('A Cursor', function () {
       });
 
       it('executes queries', function () {
-        instance._executeQuery(callbackSpy);
+        instance._executeQuery(callbackSpy, ASYNC);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy);
-        // Callback is called asynchronously by helpers which are spies in this
-        // test and thus cannot be tested here.
+        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy,
+            ASYNC);
+        // Cursor._query.func is a spy and so the callback cannot be properly
+        // tested here.
       });
 
       it('does not warn the user and returns false', function () {
