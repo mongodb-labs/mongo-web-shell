@@ -266,6 +266,32 @@ describe('The util module', function () {
     });
   });
 
+  it('merges the key-values pairs in two objects together', function () {
+    var mergeObj = mongo.util.mergeObjects;
+
+    expect(mergeObj()).toEqual({});
+    var obj1 = {key: 'val'};
+    expect(mergeObj(obj1)).toEqual({key: 'val'});
+    var obj2 = {iu: 'jjang'};
+    expect(mergeObj(obj1, obj2)).toEqual({key: 'val', iu: 'jjang'});
+    var obj3 = {gd: 'top'};
+    var mergedObj = {key: 'val', iu: 'jjang', gd: 'top'};
+    expect(mergeObj(obj1, obj2, obj3)).toEqual(mergedObj);
+
+    var collideObj1 = {key: 'value', iu: 'jjang'};
+    var collideObj2 = {key: 'values', gd: 'top'};
+    expect(mergeObj(obj1, collideObj1, collideObj2)).toEqual(mergedObj);
+
+    var TestProto = function () {};
+    TestProto.prototype.key = 'val';
+    var proto = new TestProto();
+    expect(mergeObj(proto)).toEqual({});
+    proto.iu = 'jjang';
+    expect(mergeObj(proto)).toEqual({iu: 'jjang'});
+    expect(mergeObj(proto, {key: 'value'})).toEqual({iu: 'jjang',
+        key: 'value'});
+  });
+
   it('divides source code into statements based on range indicies',
       function () {
     var expected, sourceArr;
