@@ -137,6 +137,13 @@ describe('A Cursor', function () {
         instance._query.wasExecuted = true;
       });
 
+      it('does not re-execute and calls the on success callback', function () {
+        instance._executeQuery(callbackSpy);
+        expect(instance._query.wasExecuted).toBe(true);
+        expect(queryFuncSpy).not.toHaveBeenCalled();
+        expect(callbackSpy).toHaveBeenCalled();
+      });
+
       it('warns the user and returns true', function () {
         var actual = instance._warnIfExecuted('methodName');
         expect(actual).toBe(true);
