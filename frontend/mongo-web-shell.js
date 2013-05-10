@@ -143,8 +143,8 @@ mongo.Cursor.prototype._storeQueryResult = function (result) {
  * returns true. Otherwise returns false.
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
-  if (this.query.wasExecuted) {
-    this.shell.insertResponseLine('Warning: Cannot call ' + methodName +
+  if (this._query.wasExecuted) {
+    this._shell.insertResponseLine('Warning: Cannot call ' + methodName +
         ' on already executed mongo.Cursor.' + this);
     console.warn('Cannot call', methodName, 'on already executed ' +
         'mongo.Cursor.', this);
