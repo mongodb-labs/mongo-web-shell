@@ -1,6 +1,8 @@
-/* global afterEach, beforeEach, describe, expect, it, mongo, sinon */
+/* jshint loopfunc: true */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
 /* global xdescribe, xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
+var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
 var CONST = {
   css: {
@@ -253,6 +255,71 @@ describe('A Shell', function () {
 describe('The util module', function () {
   var KeyValProto = function () {};
   KeyValProto.prototype.key = 'val';
+
+  describe('when providing console protection', function () {
+    var CONSOLE_EXPANDED_FUNC = ['debug', 'error', 'info', 'warn'];
+    var consoleStore;
+
+    beforeEach(function () {
+      consoleStore = console;
+    });
+
+    afterEach(function () {
+      console = consoleStore;
+      consoleStore = null;
+    });
+
+    it('does nothing if all of the console methods exist', function () {
+      console = {log: function () {} };
+      CONSOLE_EXPANDED_FUNC.forEach(function (key) {
+        console[key] = function () {};
+      });
+      var old = console;
+      mongo.util.enableConsoleProtection();
+      expect(old).toEqual(console);
+    });
+
+    it('sets the expanded methods to log if one does not exist', function () {
+      var logFunc = function () { return 'aoeu'; };
+      var expected = {log: logFunc};
+      CONSOLE_EXPANDED_FUNC.forEach(function (key) {
+        expected[key] = logFunc;
+      });
+
+      for (var i = 0; i < CONSOLE_EXPANDED_FUNC.length; i++) {
+        // Setup: Reset the console and remove one expanded method from the
+        // console.
+        console = {log: logFunc};
+        var removeIndex = i;
+        CONSOLE_EXPANDED_FUNC.forEach(function (key, index) {
+          if (index === removeIndex) { return; }
+          console[key] = function () {};
+        });
+
+        mongo.util.enableConsoleProtection();
+        expect(console).toEqual(expected);
+      }
+    });
+
+    var expectConsoleKeysToEqualFunction = function () {
+      expect(console.log).toEqual(jasmine.any(Function));
+      CONSOLE_EXPANDED_FUNC.forEach(function (key) {
+        expect(console[key]).toEqual(jasmine.any(Function));
+      });
+    };
+
+    it('sets all methods to a function if log doesn\'t exist', function () {
+      console = {};
+      mongo.util.enableConsoleProtection();
+      expectConsoleKeysToEqualFunction();
+    });
+
+    it('sets all methods to a function if console is undefined', function () {
+      console = undefined;
+      mongo.util.enableConsoleProtection();
+      expectConsoleKeysToEqualFunction();
+    });
+  });
 
   it('determines if a given variable is numeric', function () {
     var isNumeric = mongo.util.isNumeric;
