@@ -132,6 +132,16 @@ describe('A Readline instance', function () {
     expect(instance.keydown).toHaveBeenCalled();
   });
 
+  describe('with an empty command history', function () {
+    it('gets newer history entries', function () {
+      expect(instance.getNewerHistoryEntry()).toBeUndefined();
+    });
+
+    it('gets older history entries', function () {
+      expect(instance.getOlderHistoryEntry()).toBeUndefined();
+    });
+  });
+
   describe('with a non-empty command history', function () {
     var expectedHistory = ['shaken', 'not', 'stirred'];
 
