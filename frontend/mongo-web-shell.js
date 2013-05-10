@@ -68,7 +68,6 @@ mongo.const = (function () {
  */
 mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
   this._shell = mwsQuery.shell;
-  this._database = mwsQuery.database;
   this._collection = mwsQuery.collection;
   this._query = {
     wasExecuted: false,
@@ -593,8 +592,6 @@ mongo.mutateSource = (function () {
 mongo.Query = function (shell, collection) {
   this.shell = shell;
   this.collection = collection;
-  // The shell can change the active DB but a query's DB should be static.
-  this.database = this.shell.database;
   console.debug('Create mongo.Query', this);
 };
 
