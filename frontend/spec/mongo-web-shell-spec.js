@@ -251,6 +251,9 @@ describe('A Shell', function () {
 
 
 describe('The util module', function () {
+  var KeyValProto = function () {};
+  KeyValProto.prototype.key = 'val';
+
   it('determines if a given variable is numeric', function () {
     var isNumeric = mongo.util.isNumeric;
     // 9007199254740992 is the max value in JavaScript's number type.
@@ -282,14 +285,32 @@ describe('The util module', function () {
     var collideObj2 = {key: 'values', gd: 'top'};
     expect(mergeObj(obj1, collideObj1, collideObj2)).toEqual(mergedObj);
 
-    var TestProto = function () {};
-    TestProto.prototype.key = 'val';
-    var proto = new TestProto();
+    var proto = new KeyValProto();
     expect(mergeObj(proto)).toEqual({});
     proto.iu = 'jjang';
     expect(mergeObj(proto)).toEqual({iu: 'jjang'});
     expect(mergeObj(proto, {key: 'value'})).toEqual({iu: 'jjang',
         key: 'value'});
+  });
+
+  it('adds the own properties of one object to another', function() {
+    var aop = mongo.util._addOwnProperties;
+
+    var obj = {};
+    aop(obj, {});
+    expect(obj).toEqual({});
+    aop(obj, {key: 'val'});
+    expect(obj).toEqual({key: 'val'});
+    aop(obj, {iu: 'jjang', gd: 'top'});
+    expect(obj).toEqual({key: 'val', iu: 'jjang', gd: 'top'});
+
+    var proto = new KeyValProto();
+    obj = {iu: 'jjang'};
+    aop(obj, proto);
+    expect(obj).toEqual({iu: 'jjang'});
+    proto.gd = 'top';
+    aop(obj, proto);
+    expect(obj).toEqual({iu: 'jjang', gd: 'top'});
   });
 
   it('divides source code into statements based on range indicies',
