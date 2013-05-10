@@ -132,6 +132,50 @@ describe('A Readline instance', function () {
     expect(instance.keydown).toHaveBeenCalled();
   });
 
+  describe('listening for keystrokes', function () {
+    var AFTER = 'after';
+    var BEFORE = 'before';
+    var KEYCODES = {up: 0, down: 1, enter: 2};
+    var constStore;
+
+    beforeEach(function () {
+      constStore = mongo.const;
+      mongo.const = {keycodes: KEYCODES};
+      $input.val(BEFORE);
+    });
+
+    afterEach(function () {
+      mongo.const = constStore;
+      $input.val('');
+    });
+
+    describe('that are down', function () {
+      var EVENT = {keyCode: KEYCODES.down};
+
+      it('only gets a newer history entry', function () {
+        spyOn(instance, 'getNewerHistoryEntry');
+        spyOn(instance, 'getOlderHistoryEntry');
+        spyOn(instance, 'submit');
+        instance.keydown(EVENT);
+        expect(instance.getNewerHistoryEntry).toHaveBeenCalled();
+        expect(instance.getOlderHistoryEntry).not.toHaveBeenCalled();
+        expect(instance.submit).not.toHaveBeenCalled();
+      });
+
+      it('clears the input when returning a string', function () {
+        spyOn(instance, 'getNewerHistoryEntry').andReturn(AFTER);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(AFTER);
+      });
+
+      it('does not clear the input when returning undefined', function () {
+        spyOn(instance, 'getNewerHistoryEntry').andReturn(undefined);
+        instance.keydown(EVENT);
+        expect($input.val()).toBe(BEFORE);
+      });
+    });
+  });
+
   describe('with an empty command history', function () {
     it('gets newer history entries', function () {
       expect(instance.getNewerHistoryEntry()).toBeUndefined();
