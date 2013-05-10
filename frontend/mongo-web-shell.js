@@ -56,7 +56,8 @@ mongo.const = (function () {
 
   return {
     keycodes: KEYCODES,
-    keepAliveTime: 30000
+    keepAliveTime: 30000,
+    shellBatchSize: 20
   };
 }());
 
@@ -101,14 +102,7 @@ mongo.Cursor.prototype._printBatch = function () {
   this._executeQuery(function () {
     cursor._shell.lastUsedCursor = cursor;
 
-    var setSize = DBQuery.shellBatchSize;
-    if (!mongo.util.isNumeric(setSize)) {
-      cursor._shell.insertResponseLine('ERROR: Please set ' +
-        'DBQuery.shellBatchSize to a valid numerical value.');
-      console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
-          'value.');
-      return;
-    }
+    var setSize = cursor._shell.getShellBatchSize();
     var batch = [];
     for (var i = 0; i < setSize; i++) {
       // pop() setSize times rather than splice(-setSize) to preserve order.
@@ -823,9 +817,13 @@ mongo.Shell = function (rootElement, shellID) {
 
   this.id = shellID;
   this.mwsResourceID = null;
-  this.vars = {};
   this.readline = null;
   this.lastUsedCursor = null;
+  this.vars = {
+    DBQuery: {
+      shellBatchSize: mongo.const.shellBatchSize
+    }
+  };
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -978,6 +976,23 @@ mongo.Shell.prototype.keepAlive = function () {
   mongo.request.keepAlive(this);
 };
 
+/**
+ * Returns the shellBatchSize from the shell's local vars if it's valid,
+ * otherwise throws an error.
+ */
+mongo.Shell.prototype.getShellBatchSize = function () {
+  var size = this.vars.DBQuery.shellBatchSize;
+  if (!mongo.util.isNumeric(size)) {
+    this.insertResponseLine('ERROR: Please set ' +
+      'DBQuery.shellBatchSize to a valid numerical value.');
+    console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
+        'value.');
+    // TODO: Make the error throwing more robust.
+    throw 'Bad shell batch size.';
+  }
+  return size;
+};
+
 mongo.util = (function () {
   /**
    * Enables protection from undefined console references on older browsers
@@ -1039,12 +1054,5 @@ mongo.util = (function () {
     _addOwnProperties: addOwnProperties
   };
 }());
-
-// TODO: Move this into the shell's local variables when implemented. This will
-// allow both multiple shells to have different values and reduce the global
-// variable use back to just "mongo".
-var DBQuery = {
-  shellBatchSize: 20
-};
 
 $(document).ready(mongo.init);

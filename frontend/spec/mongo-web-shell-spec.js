@@ -794,6 +794,23 @@ describe('A Shell', function () {
       expect(function () { instance.evalStatements(['invalid']); }).toThrow();
     });
   });
+
+  it('gets the shellBatchSize', function () {
+    var shell = shells[0];
+    var expected = [0, 20, 40];
+    expected.forEach(function (val) {
+      shell.vars.DBQuery.shellBatchSize = val;
+      expect(shell.getShellBatchSize()).toBe(val);
+    });
+
+    expected = [null, undefined, NaN, '', [], {}, 'iu'];
+    expected.forEach(function (val) {
+      // TODO: Check insertResponseLine.
+      shell.vars.DBQuery.shellBatchSize = val;
+      var willThrow = function () { shell.getShellBatchSize(); };
+      expect(willThrow).toThrow();
+    });
+  });
 });
 
 
