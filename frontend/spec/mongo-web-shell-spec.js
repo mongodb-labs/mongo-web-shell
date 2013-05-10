@@ -69,12 +69,13 @@ describe('The const module', function () {
 
 
 describe('A Cursor', function () {
-  var instance, queryFuncSpy, queryArgs;
+  var instance, insertResponseLineSpy, queryFuncSpy, queryArgs;
 
   beforeEach(function () {
+    insertResponseLineSpy = jasmine.createSpy('insertResponseLine');
     var mwsQuery = {
       shell: {
-        insertResponseLine: jasmine.createSpy('insertResponseLine'),
+        insertResponseLine: insertResponseLineSpy,
         lastUsedCursor: null
       },
       collection: null
@@ -95,6 +96,43 @@ describe('A Cursor', function () {
     expect(instance._query.result).toBeNull();
     instance._storeQueryResult([str, 'does', 'not', 'matter']);
     expect(instance._query.result).toContain(str);
+  });
+
+  describe('depending on query state', function () {
+    var stateStore;
+
+    beforeEach(function () {
+      stateStore = instance._query.wasExecuted;
+    });
+
+    afterEach(function () {
+      instance._query.wasExecuted = stateStore;
+      stateStore = null;
+    });
+
+    describe('before execution', function () {
+      beforeEach(function () {
+        instance._query.wasExecuted = false;
+      });
+
+      it('does not warn the user and returns false', function () {
+        var actual = instance._warnIfExecuted('methodName');
+        expect(actual).toBe(false);
+        expect(insertResponseLineSpy).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('after execution', function () {
+      beforeEach(function () {
+        instance._query.wasExecuted = true;
+      });
+
+      it('warns the user and returns true', function () {
+        var actual = instance._warnIfExecuted('methodName');
+        expect(actual).toBe(true);
+        expect(insertResponseLineSpy).toHaveBeenCalled();
+      });
+    });
   });
 });
 
