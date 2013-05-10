@@ -151,7 +151,7 @@ describe('A Readline instance', function () {
 
     // When adding additional keys, be sure to update the other keys' 'only
     // gets' methods.
-    describe('that are down', function () {
+    describe('that are the down arrow', function () {
       var EVENT = {keyCode: KEYCODES.down};
 
       it('only gets a newer history entry', function () {
@@ -177,7 +177,7 @@ describe('A Readline instance', function () {
       });
     });
 
-    describe('that are up', function () {
+    describe('that are the up arrow', function () {
       var EVENT = {keyCode: KEYCODES.up};
 
       it('only gets an older history entry', function () {
