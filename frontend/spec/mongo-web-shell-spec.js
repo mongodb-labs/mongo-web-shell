@@ -69,12 +69,18 @@ describe('The const module', function () {
 
 
 describe('A Cursor', function () {
-  var instance, insertResponseLineSpy, queryFuncSpy, queryArgs;
+  var instance, batchSize = 2, getShellBatchSizeSpy, insertResponseLineSpy,
+      queryFuncSpy, queryArgs;
 
   beforeEach(function () {
     insertResponseLineSpy = jasmine.createSpy('insertResponseLine');
+    getShellBatchSizeSpy = jasmine.createSpy('getShellBatchSize').andCallFake(
+        function () {
+      return batchSize;
+    });
     var mwsQuery = {
       shell: {
+        getShellBatchSize: getShellBatchSizeSpy,
         insertResponseLine: insertResponseLineSpy,
         lastUsedCursor: null
       },
@@ -152,6 +158,11 @@ describe('A Cursor', function () {
           spyOn(instance, '_executeQuery');
         });
 
+        it('prints the next batch of results', function () {
+          instance._printBatch();
+          expect(instance._executeQuery).toHaveBeenCalled();
+        });
+
         it('returns a boolean showing if it has another result', function () {
           instance.hasNext();
           expect(instance._executeQuery).toHaveBeenCalled();
@@ -191,11 +202,12 @@ describe('A Cursor', function () {
       });
 
       describe('calls a success callback that', function () {
-        var RESULTS = 'iu'.split('');
-        var queryStore;
+        var RESULTS = '123456'.split('');
+        var shellBatchSizeStore, queryStore;
 
         beforeEach(function () {
           queryStore = instance._query.result;
+          shellBatchSizeStore = batchSize;
           instance._query.result = RESULTS.slice(0); // A copy.
           instance._query.wasExecuted = true;
           spyOn(instance, '_executeQuery').andCallFake(function (onSuccess) {
@@ -205,7 +217,31 @@ describe('A Cursor', function () {
 
         afterEach(function () {
           instance._query.result = queryStore;
+          batchSize = shellBatchSizeStore;
           queryStore = null;
+          shellBatchSizeStore = null;
+        });
+
+        it('prints the next batch of results', function () {
+          // TODO: Check insertResponseArray when added?
+          instance._shell.lastUsedCursor = null;
+          for (var i = 1; i < 3; i++) {
+            batchSize = i + 1;
+            var oldResultLen = instance._query.result.length;
+            instance._printBatch();
+            expect(instance._shell.lastUsedCursor).toEqual(instance);
+            expect(getShellBatchSizeSpy.calls.length).toBe(i);
+            expect(instance._query.result.length).toBe(
+                oldResultLen - batchSize);
+            expect(insertResponseLineSpy).toHaveBeenCalled();
+          }
+          batchSize = instance._query.result.length + 1;
+          instance._printBatch();
+          expect(instance._query.result.length).toBe(0);
+          var oldInsertCalls = insertResponseLineSpy.calls.length;
+          instance._printBatch();
+          expect(instance._query.result.length).toBe(0);
+          expect(insertResponseLineSpy.calls.length).toBe(oldInsertCalls);
         });
 
         it('returns a boolean showing if it has another result', function () {
