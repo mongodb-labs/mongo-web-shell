@@ -393,9 +393,7 @@ describe('The request module', function () {
 
 
 describe('A Shell', function () {
-  // TODO: Test untested methods.
-  // TODO: Embed a describe that injects for multiple shells in setup.
-  var shells;
+  var shells, instance, rootElement;
   var rootElements;
   var SHELL_COUNT = 2;
 
@@ -432,6 +430,27 @@ describe('A Shell', function () {
     shells.forEach(function (shell, i) {
       shell.injectHTML();
       expectInternalLength(i + 1);
+    });
+  });
+
+  describe('that has injected its HTML', function () {
+    beforeEach(function () {
+      instance = shells[0];
+      rootElement = rootElements[0];
+      instance.injectHTML();
+      // This is cleaned up in the parent afterEach().
+    });
+
+    it('attaches an input event listener', function () {
+      spyOn(instance, 'handleInput');
+      spyOn(mongo, 'Readline').andCallThrough();
+      var resID = 'iu';
+      instance.attachInputHandler(resID);
+      expect(instance.mwsResourceID).toBe(resID);
+      $(rootElement).find('form').submit();
+      expect(instance.handleInput).toHaveBeenCalled();
+      expect(mongo.Readline).toHaveBeenCalledWith(instance.$input);
+      expect(instance.readline).toEqual(jasmine.any(mongo.Readline));
     });
   });
 });
