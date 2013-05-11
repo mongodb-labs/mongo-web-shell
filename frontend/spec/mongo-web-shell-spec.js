@@ -94,6 +94,86 @@ describe('The dom module', function () {
 
 describe('The keyword module', function () {
   // TODO: Test.
+   it('uses use,help,show to switch what function to call', function () {
+      var help = sinon.stub();
+      var show = sinon.stub();
+      var it = sinon.stub();
+      var responseLine = [];
+      var words = ['use','it','help','show'];
+      var arg = [0,'arg', 'arg2', 'unusedArg',undefined];
+    
+      function shell() {
+        this.insertResponseLine = sinon.stub();
+      }
+      mongo.keyword.shell = new shell();
+      
+      function spies(i) {
+        if(i === 0)
+          return mongo.keyword.use;
+        if(i === 1)
+          return mongo.keyword.it;
+        if(i === 2)
+          return mongo.keyword.help;
+        if(i === 3)
+          return mongo.keyword.show;
+      }
+
+      for (var i = 0;i<1;i++) {
+        spyOn(mongo.keyword, words[i]);
+        mongo.keyword.evaluate(arg[0], words[i], arg[1], arg[2], arg[3] );
+        if( i !== 1) {
+          if(i === 0)
+            expect(spies(i)).toHaveBeenCalledWith(arg[4],arg[1],arg[2],arg[3]);
+          else
+            expect(spies(i)).not.toHaveBeenCalled();
+          mongo.keyword.evaluate(arg[0], words[i], arg[1], arg[2]);
+          expect(spies(i)).toHaveBeenCalledWith(arg[4],arg[1],arg[2],arg[4]);
+        }
+        else {
+          expect(spies(i)).toHaveBeenCalledWith(arg[4]);
+        }
+      }
+      spyOn(mongo.keyword.shell,'insertResponseLine');
+      mongo.keyword.evaluate(arg[0], 'a', arg[1], arg[2], arg[3]);
+      expect(mongo.keyword.shell.insertResponseLine).toHaveBeenCalledWith('Unknown keyword: a.');
+      mongo.keyword.evaluate(arg[0], 'b', arg[1], arg[2]);   
+      expect(mongo.keyword.shell.insertResponseLine).toHaveBeenCalledWith('Unknown keyword: b.');   
+    });
+
+  it('help function', function(){
+    // TODO: Wait for javascript to be implemented.
+  });
+
+  it('it function', function(){
+    var it = mongo.keyword.it; 
+    function shell() {
+        this.insertResponseLine = sinon.stub();
+    }
+    var shell = new shell();
+    spyOn(shell,'insertResponseLine');   
+    it(shell);  
+    expect(shell.insertResponseLine).toHaveBeenCalledWith('no cursor');
+
+    function cursor() {
+        this.hasNext = sinon.stub().returns(true);
+        this._printBatch = sinon.stub();
+    }     
+    
+    shell.lastUsedCursor = new cursor();
+    spyOn(shell.lastUsedCursor,'_printBatch');
+    expect(shell.lastUsedCursor._printBatch).not.toHaveBeenCalled();  
+    it(shell);
+    expect(shell.lastUsedCursor._printBatch).toHaveBeenCalled();   
+    expect(shell.insertResponseLine.calls.length).toEqual(1);
+  });
+
+  it('show function', function(){
+    // TODO: Wait for javascript to be implemented.
+  });
+
+  it('use function', function(){
+     // TODO: Wait for javascript to be implemented.
+  });
 });
 
 
