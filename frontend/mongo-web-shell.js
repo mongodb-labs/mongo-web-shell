@@ -951,7 +951,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   scrollArea.scrollTop = scrollArea.scrollHeight;
 };
 
-mongo.Shell.prototype.keepAlive = function() {
+mongo.Shell.prototype.keepAlive = function () {
   mongo.request.keepAlive(this);
 };
 

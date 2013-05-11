@@ -407,9 +407,13 @@ describe('A Shell', function () {
       shells.push(new mongo.Shell(div, i));
       rootElements.push(div);
     }
+    instance = shells[0];
+    $rootElement = $(rootElements[0]);
   });
 
   afterEach(function () {
+    instance = null;
+    $rootElement = null;
     while (rootElements.length > 0) {
       var element = rootElements.pop();
       element.parentNode.removeChild(element);
@@ -433,10 +437,14 @@ describe('A Shell', function () {
     });
   });
 
+  it('submits a keep alive request', function () {
+    spyOn(mongo.request, 'keepAlive');
+    instance.keepAlive();
+    expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
+  });
+
   describe('that has injected its HTML', function () {
     beforeEach(function () {
-      instance = shells[0];
-      $rootElement = $(rootElements[0]);
       instance.injectHTML();
       // This is cleaned up in the parent afterEach().
     });
