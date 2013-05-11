@@ -4,6 +4,8 @@
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
+var esprima; // stubbed where applicable.
+
 var CONST = {
   css: {
     file: 'mongo-web-shell.css',
@@ -505,6 +507,83 @@ describe('A Shell', function () {
       expect(element.scrollHeight - element.scrollTop).toBe(
           element.clientHeight);
     }
+
+    describe('while handling user input', function () {
+      var SWAPPED_CALLS = 'calls', SWAPPED_KEYWORDS = 'keywords', AST = 'ast',
+          STATEMENTS = ['1', '2'];
+      var $input, swapCallsThrowsError, parseThrowsError, evalThrowsError;
+
+      beforeEach(function () {
+        var ms = mongo.mutateSource;
+        spyOn(instance, 'insertResponseLine');
+        spyOn(ms, 'swapKeywords').andReturn(SWAPPED_KEYWORDS);
+        spyOn(ms, 'swapMongoCalls').andCallFake(function () {
+          if (swapCallsThrowsError) { throw {}; }
+          return SWAPPED_CALLS;
+        });
+        esprima = jasmine.createSpyObj('esprima', ['parse']);
+        esprima.parse.andCallFake(function () {
+          if (parseThrowsError) { throw {}; }
+          return AST;
+        });
+        spyOn(mongo.util, 'sourceToStatements').andReturn(STATEMENTS);
+        spyOn(instance, 'evalStatements').andCallFake(function () {
+          if (evalThrowsError) { throw {}; }
+        });
+        $input = $rootElement.find('input');
+        swapCallsThrowsError = parseThrowsError = evalThrowsError = false;
+      });
+
+      afterEach(function () {
+        esprima = null;
+        $input = null;
+      });
+
+      it('clears the input value and inserts it into responses', function () {
+        var expected = ';';
+        $input.val(expected);
+        instance.handleInput();
+        expect($input.val()).toBe('');
+        expect(instance.insertResponseLine).toHaveBeenCalledWith(expected);
+      });
+
+      it('mutates and evalutaes the source', function () {
+        var ms = mongo.mutateSource;
+        var id = instance.id;
+        var userInput = ';';
+        $input.val(userInput);
+        instance.handleInput();
+        expect(ms.swapKeywords).toHaveBeenCalledWith(userInput, id);
+        expect(ms.swapMongoCalls).toHaveBeenCalledWith(SWAPPED_KEYWORDS, id);
+        expect(esprima.parse).toHaveBeenCalledWith(SWAPPED_CALLS,
+            {range: true});
+        expect(mongo.util.sourceToStatements).toHaveBeenCalledWith(
+            SWAPPED_CALLS, AST);
+        expect(instance.evalStatements).toHaveBeenCalledWith(STATEMENTS);
+      });
+
+      it('prints errors to the terminal on invalid output', function () {
+        var expectedIncrement = 2; // User input and error printed.
+        var calls = instance.insertResponseLine.calls;
+
+        var oldCount = calls.length;
+        swapCallsThrowsError = true;
+        instance.handleInput();
+        expect(calls.length).toBe(oldCount + expectedIncrement);
+
+        oldCount = calls.length;
+        swapCallsThrowsError = false;
+        parseThrowsError = true;
+        instance.handleInput();
+        expect(calls.length).toBe(oldCount + expectedIncrement);
+
+        oldCount = calls.length;
+        parseThrowsError = false;
+        evalThrowsError = true;
+        instance.handleInput();
+        expect(calls.length).toBe(oldCount + expectedIncrement);
+      });
+    });
   });
 
   describe('evaling JavaScript statements', function () {
