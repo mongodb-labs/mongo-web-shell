@@ -323,7 +323,42 @@ describe('The mutateSource module', function () {
 
 
 describe('A Query', function () {
-  // TODO: Test.
+  var instance, shellSpy, collectionName, requestStore;
+
+  beforeEach(function () {
+    requestStore = mongo.request;
+    mongo.request = jasmine.createSpyObj('request', ['db_collection_find',
+        'db_collection_insert']);
+    spyOn(mongo, 'Cursor').andCallThrough();
+
+    shellSpy = jasmine.createSpy('shell');
+    collectionName = 'collectionName';
+    instance = new mongo.Query(shellSpy, collectionName);
+  });
+
+  afterEach(function () {
+    mongo.request = requestStore;
+    requestStore = null;
+  });
+
+  // TODO: #105: Remove this when function name is refactored.
+  /* jshint camelcase: false */
+  it('can return a Cursor for finding within a collection', function () {
+    var query = '{iu: "jjang"}', projection = '{_id: 0}';
+    var args = {query: query, projection: projection};
+    var actual = instance.find(query, projection);
+    expect(mongo.Cursor).toHaveBeenCalledWith(instance,
+        mongo.request.db_collection_find, args);
+    expect(actual).toEqual(jasmine.any(mongo.Cursor));
+    expect(mongo.request.db_collection_find).not.toHaveBeenCalled();
+  });
+
+  it('can make a request to insert into a collection', function () {
+    var document_ = '{iu: "jjang"}';
+    instance.insert(document_);
+    expect(mongo.request.db_collection_insert).toHaveBeenCalledWith(instance,
+        document_);
+  });
 });
 
 
