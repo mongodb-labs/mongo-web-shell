@@ -506,6 +506,45 @@ describe('A Shell', function () {
           element.clientHeight);
     }
   });
+
+  describe('evaling JavaScript statements', function () {
+    beforeEach(function () {
+      spyOn(instance, 'insertResponseLine');
+      spyOn(mongo.Cursor.prototype, '_printBatch');
+      spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(function (
+          onSuccess) {
+        onSuccess();
+      });
+      // TODO: eval() should be spied upon, however, I was unable to determine
+      // how to do that without making either jshint or jasmine angry.
+    });
+
+    it('does not print valid statement output that is undefined', function () {
+      var statements = ['var i = 4;', 'function i() { };'];
+      instance.evalStatements(statements);
+      expect(instance.insertResponseLine).not.toHaveBeenCalled();
+    });
+
+    it('prints valid statement output that is not undefined', function () {
+      var statements = ['0', 'i = 1;', '(function () { return 2; }());'];
+      instance.evalStatements(statements);
+      for (var i = 0; i < statements.length; i++) {
+        expect(instance.insertResponseLine).toHaveBeenCalledWith(i);
+      }
+    });
+
+    it('executes an output Cursor query and prints a batch', function () {
+      var statements = ['new mongo.Cursor(new mongo.Query(\'shell\', ' +
+          '\'collectionName\'));'];
+      instance.evalStatements(statements);
+      expect(mongo.Cursor.prototype._executeQuery).toHaveBeenCalled();
+      expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
+    });
+
+    it('throws an error if the statement invalid', function () {
+      expect(function () { instance.evalStatements(['invalid']); }).toThrow();
+    });
+  });
 });
 
 
