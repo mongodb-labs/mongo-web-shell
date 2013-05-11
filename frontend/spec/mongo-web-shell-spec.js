@@ -19,7 +19,8 @@ var CONST = {
         '.input-li',
         '.mws-form',
         '.mws-input'
-      ]
+      ],
+      responseList: '.mws-response-list'
     }
   }
 };
@@ -469,6 +470,41 @@ describe('A Shell', function () {
       instance.enableInput(false);
       expect($input.get(0).disabled).toBe(true);
     });
+
+    it('inserts an array of lines into the shell', function () {
+      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
+          0);
+      var array = [];
+      do  {
+        array.push('line');
+        var numResponses = responseList.children.length;
+        instance.insertResponseArray(array);
+        expect(responseList.children.length).toBe(numResponses + array.length);
+        expectContentEntirelyScrolled(responseList);
+      } while (array.length < 5);
+    });
+
+    it('inserts a line into the shell', function () {
+      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
+          0);
+      for (var i = 0; i < 4; i++) {
+        var numResponses = responseList.children.length;
+        instance.insertResponseLine('line');
+        expect(responseList.children.length).toBe(numResponses + 1);
+        expectContentEntirelyScrolled(responseList);
+      }
+    });
+
+    /**
+     * Expects that the content of the given element has been entirely
+     * scrolled. Code snippet via:
+     * https://developer.mozilla.org/en-US/docs/DOM/scrollHeight
+     * #Determine_if_an_element_has_been_totally_scrolled
+     */
+    function expectContentEntirelyScrolled(element) {
+      expect(element.scrollHeight - element.scrollTop).toBe(
+          element.clientHeight);
+    }
   });
 });
 
