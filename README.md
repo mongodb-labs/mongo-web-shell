@@ -29,6 +29,18 @@ Retrieve the dependencies:
     git submodule init && git submodule update
     pip install -r requirements.txt
 
+### Dev Dependencies
+All committed code should be linted.
+
+Front-end: [jshint][]. Installation via npm is recommended:
+
+    npm install -g jshint
+
+Back-end: [pep8][]. Installation via pip within the virtual environment is
+recommended:
+
+    pip install pep8
+
 Running
 -------
 After the installation above, launch a mongod instance that will be accessed by
@@ -50,7 +62,7 @@ By default, you can connect to the running sample at
 Tests
 -----
 ### Front-end
-Open frontend/SpecRunner.html in a browser.
+Open `frontend/SpecRunner.html` in a browser.
 
 ### Back-end
 From within a virtual environment:
@@ -62,6 +74,8 @@ More info
 See the project [wiki][].
 
 [foreman]: http://ddollar.github.io/foreman/
+[jshint]: http://jshint.org/
 [mongoDB install]: http://docs.mongodb.org/manual/installation/
+[pep8]: https://github.com/jcrocholl/pep8
 [virtualenv]: http://www.virtualenv.org/en/latest/
 [wiki]: https://github.com/10gen-labs/mongo-web-shell/wiki
