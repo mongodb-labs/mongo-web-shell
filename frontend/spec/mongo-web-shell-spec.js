@@ -51,6 +51,10 @@ describe('The const module', function () {
     expect(key.right).toBe(39);
     expect(key.down).toBe(40);
   });
+
+  it('stores the keep alive timeout', function () {
+    expect(mongo.const.keepAliveTime).toBeDefined();
+  });
 });
 
 
