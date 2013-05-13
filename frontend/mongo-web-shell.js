@@ -793,11 +793,12 @@ mongo.request = (function () {
 
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
-  this.$input = null;
-  this.$inputLI = null;
-  this.$responseList = null;
   this.$hideButton = null;
   this.$body = null;
+  this.$responseList = null;
+  this.$inputLI = null;
+  this.$input = null;
+
   this.id = shellID;
   this.mwsResourceID = null;
   this.vars = {};
@@ -831,10 +832,11 @@ mongo.Shell.prototype.injectHTML = function () {
                 '</div>' +
               '</div>';
   this.$rootElement.html(html);
-  this.$input = this.$rootElement.find('.mws-input');
-  this.$inputLI = this.$rootElement.find('.input-li');
   this.$hideButton = this.$rootElement.find('.mws-hide-button');
   this.$body = this.$rootElement.find('.mws-body');
+  this.$responseList = this.$body.find('.mws-response-list');
+  this.$inputLI = this.$responseList.find('.input-li');
+  this.$input = this.$inputLI.find('.mws-input');
 };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
@@ -946,12 +948,11 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   li.innerHTML = data;
   this.$inputLI.before(li);
 
-  // scrolling
-  var scrollArea = this.$rootElement.find('.mws-response-list').get(0);
-  scrollArea.scrollTop = scrollArea.scrollHeight;
+  // Reset scroll distance so the <input> is not hidden at the bottom.
+  this.$responseList.scrollTop = this.$responseList.scrollHeight;
 };
 
-mongo.Shell.prototype.keepAlive = function() {
+mongo.Shell.prototype.keepAlive = function () {
   mongo.request.keepAlive(this);
 };
 
