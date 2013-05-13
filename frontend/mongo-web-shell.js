@@ -176,7 +176,6 @@ mongo.Cursor.prototype.sort = function (sort) {
 
 
 mongo.dom = (function () {
-  // TODO: Document these data attributes.
   // TODO: Should each shell be able to have its own host?
   // Default config values.
   var CSS_PATH = 'mongo-web-shell.css';
@@ -328,7 +327,6 @@ mongo.mutateSource = (function () {
    * Local references (i.e. declared within functions) are untouched.
    */
   function mutateIdentifier(node, shellID) {
-    // TODO: Handle `function identifier()` expressions.
     if (getLocalVariableIdentifiers(node)[node.name]) { return; }
 
     // Match any expression not of form '...a.iden...'.
@@ -913,10 +911,7 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     this.evalStatements(statements);
   } catch (err) {
-    // TODO: This is probably an unknown identifier error. We should be hiding
-    // the identifiers from the global object by hand (to be implemented
-    // later) so so this is likely our fault. Figure out how to handle.
-    // TODO: "var i = 1;" throws a TypeError here. Find out why.
+    // TODO: Figure out why an error might occur here and handle it.
     this.insertResponseLine('ERROR: eval error on: ' + err.statement);
     console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
         err);
