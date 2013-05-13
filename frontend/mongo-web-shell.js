@@ -56,7 +56,8 @@ mongo.const = (function () {
 
   return {
     keycodes: KEYCODES,
-    keepAliveTime: 30000
+    keepAliveTime: 30000,
+    shellBatchSize: 20
   };
 }());
 
@@ -68,7 +69,6 @@ mongo.const = (function () {
  */
 mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
   this._shell = mwsQuery.shell;
-  this._database = mwsQuery.database;
   this._collection = mwsQuery.collection;
   this._query = {
     wasExecuted: false,
@@ -83,12 +83,14 @@ mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
  * Executes the stored query function, disabling result set format modification
  * methods such as sort() and enabling result set iteration methods such as
  * next(). Will execute onSuccess on query success, or instantly if the query
- * was previously successful.
+ * was previously successful. onSuccess will be called asynchronously by
+ * default, or synchronously if given false for the async parameter.
  */
-mongo.Cursor.prototype._executeQuery = function (onSuccess) {
+mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
+  async = typeof async !== 'undefined' ? async : true;
   if (!this._query.wasExecuted) {
     console.debug('Executing query:', this);
-    this._query.func(this, onSuccess);
+    this._query.func(this, onSuccess, async);
     this._query.wasExecuted = true;
   } else {
     onSuccess();
@@ -100,14 +102,7 @@ mongo.Cursor.prototype._printBatch = function () {
   this._executeQuery(function () {
     cursor._shell.lastUsedCursor = cursor;
 
-    var setSize = DBQuery.shellBatchSize;
-    if (!mongo.util.isNumeric(setSize)) {
-      cursor._shell.insertResponseLine('ERROR: Please set ' +
-        'DBQuery.shellBatchSize to a valid numerical value.');
-      console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
-          'value.');
-      return;
-    }
+    var setSize = cursor._shell.getShellBatchSize();
     var batch = [];
     for (var i = 0; i < setSize; i++) {
       // pop() setSize times rather than splice(-setSize) to preserve order.
@@ -144,8 +139,8 @@ mongo.Cursor.prototype._storeQueryResult = function (result) {
  * returns true. Otherwise returns false.
  */
 mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
-  if (this.query.wasExecuted) {
-    this.shell.insertResponseLine('Warning: Cannot call ' + methodName +
+  if (this._query.wasExecuted) {
+    this._shell.insertResponseLine('Warning: Cannot call ' + methodName +
         ' on already executed mongo.Cursor.' + this);
     console.warn('Cannot call', methodName, 'on already executed ' +
         'mongo.Cursor.', this);
@@ -154,19 +149,23 @@ mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
 };
 
 mongo.Cursor.prototype.hasNext = function () {
-  var retval, cursor = this;
-  this._executeQuery(function () { retval = cursor._query.result.length; });
-  return retval === 0 ? false : true;
+  var hasNext, cursor = this, failure = false;
+  this._executeQuery(function () {
+    hasNext = cursor._query.result.length === 0 ? false : true;
+  }, false);
+  return hasNext;
 };
 
 mongo.Cursor.prototype.next = function () {
-  var retval, cursor = this;
-  this._executeQuery(function () { retval = cursor._query.result.pop(); });
-  if (retval === undefined) {
-    cursor._shell.insertResponseLine('ERROR: no more results to show');
-    console.warn('Cursor error hasNext: false', this);
+  var nextVal, cursor = this;
+  this._executeQuery(function () {
+    nextVal = cursor._query.result.pop();
+  }, false);
+  if (nextVal !== undefined) {
+    return nextVal;
   }
-  return retval;
+  cursor._shell.insertResponseLine('ERROR: no more results to show');
+  console.warn('Cursor error hasNext: false', this);
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
@@ -593,8 +592,6 @@ mongo.mutateSource = (function () {
 mongo.Query = function (shell, collection) {
   this.shell = shell;
   this.collection = collection;
-  // The shell can change the active DB but a query's DB should be static.
-  this.database = this.shell.database;
   console.debug('Create mongo.Query', this);
 };
 
@@ -685,7 +682,14 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
-  function db_collection_find(cursor, onSuccess) {
+  /**
+   * Makes a find request to the mongod instance on the backing server. On
+   * success, the result is stored and onSuccess is called, otherwise a failure
+   * message is printed and an error is thrown. The request is optionally
+   * async, as determined by the given parameter, as some functions (e.g.
+   * cursor.next()) need to return a value from the request directly into eval.
+   */
+  function db_collection_find(cursor, onSuccess, async) {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
@@ -702,18 +706,30 @@ mongo.request = (function () {
     stringifyKeys(params);
 
     console.debug('find() request:', url, params);
-    $.getJSON(url, params, function (data, textStatus, jqXHR) {
-      if (data.status === 0) {
-        console.debug('db_collection_find success');
-        cursor._storeQueryResult(data.result);
-        onSuccess();
-      } else {
-        cursor.shell.insertResponseLine('ERROR: server error occured');
-        console.debug('db_collection_find error:', data.result);
+    $.ajax({
+      async: async,
+      url: url,
+      data: params,
+      dataType: 'json',
+      success: function (data, textStatus, jqXHR) {
+        if (data.status === 0) {
+          console.debug('db_collection_find success');
+          cursor._storeQueryResult(data.result);
+          onSuccess();
+        } else {
+          cursor.shell.insertResponseLine('ERROR: server error occured');
+          console.debug('db_collection_find error:', data.result);
+        }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
-      cursor.shell.insertResponseLine('ERROR: server error occured');
+      cursor._shell.insertResponseLine('ERROR: server error occured');
       console.error('db_collection_find fail:', textStatus, errorThrown);
+      // TODO: Make this more robust (currently prints two errors, eval doesn't
+      // say why it failed, etc.).
+      // TODO: Should we throw in insert too?
+      // Throwing here will cause the query eval() to fail, rather than
+      // handling the edge cases in each query method individually.
+      throw 'db_collection_find: Server error';
     });
   }
 
@@ -801,9 +817,13 @@ mongo.Shell = function (rootElement, shellID) {
 
   this.id = shellID;
   this.mwsResourceID = null;
-  this.vars = {};
   this.readline = null;
   this.lastUsedCursor = null;
+  this.vars = {
+    DBQuery: {
+      shellBatchSize: mongo.const.shellBatchSize
+    }
+  };
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -956,6 +976,23 @@ mongo.Shell.prototype.keepAlive = function () {
   mongo.request.keepAlive(this);
 };
 
+/**
+ * Returns the shellBatchSize from the shell's local vars if it's valid,
+ * otherwise throws an error.
+ */
+mongo.Shell.prototype.getShellBatchSize = function () {
+  var size = this.vars.DBQuery.shellBatchSize;
+  if (!mongo.util.isNumeric(size)) {
+    this.insertResponseLine('ERROR: Please set ' +
+      'DBQuery.shellBatchSize to a valid numerical value.');
+    console.debug('Please set DBQuery.shellBatchSize to a valid numerical ' +
+        'value.');
+    // TODO: Make the error throwing more robust.
+    throw 'Bad shell batch size.';
+  }
+  return size;
+};
+
 mongo.util = (function () {
   /**
    * Enables protection from undefined console references on older browsers
@@ -1017,12 +1054,5 @@ mongo.util = (function () {
     _addOwnProperties: addOwnProperties
   };
 }());
-
-// TODO: Move this into the shell's local variables when implemented. This will
-// allow both multiple shells to have different values and reduce the global
-// variable use back to just "mongo".
-var DBQuery = {
-  shellBatchSize: 20
-};
 
 $(document).ready(mongo.init);
