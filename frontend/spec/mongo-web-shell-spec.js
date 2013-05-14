@@ -9,19 +9,19 @@ var esprima; // stubbed where applicable.
 var CONST = {
   css: {
     classes: {
-      root: '.mongo-web-shell',
+      root: 'mongo-web-shell',
       internal: [
-        '.mws-wrapper',
-        '.mws-topbar',
-        '.mws-hide-button',
-        '.mws-body',
-        '.mws-scrollbar-spacer',
-        '.mws-response-list',
-        '.input-li',
-        '.mws-form',
-        '.mws-input'
+        'mws-wrapper',
+        'mws-topbar',
+        'mws-hide-button',
+        'mws-body',
+        'mws-scrollbar-spacer',
+        'mws-response-list',
+        'input-li',
+        'mws-form',
+        'mws-input'
       ],
-      responseList: '.mws-response-list'
+      responseList: 'mws-response-list'
     }
   },
   domConfig: {
@@ -715,7 +715,7 @@ describe('A Shell', function () {
   it('injects its HTML into the DOM', function () {
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
-        var $element = $(cssClass);
+        var $element = $('.' + cssClass);
         expect($element.length).toBe(len);
       });
     }
@@ -772,8 +772,8 @@ describe('A Shell', function () {
     });
 
     it('inserts an array of lines into the shell', function () {
-      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
-          0);
+      var responseList = $rootElement.find('.' +
+          CONST.css.classes.responseList).get(0);
       var array = [];
       do  {
         array.push('line');
@@ -785,8 +785,8 @@ describe('A Shell', function () {
     });
 
     it('inserts a line into the shell', function () {
-      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
-          0);
+      var responseList = $rootElement.find('.' +
+          CONST.css.classes.responseList).get(0);
       for (var i = 0; i < 4; i++) {
         var numResponses = responseList.children.length;
         instance.insertResponseLine('line');
