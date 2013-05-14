@@ -55,6 +55,11 @@ describe('The init function', function () {
     spyOn(mongo.util, 'enableConsoleProtection');
   });
 
+  afterEach(function () {
+    mongo.config = null;
+    mongo.shells = [];
+  });
+
   it('enables console protection', function () {
     mongo.init();
     expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
