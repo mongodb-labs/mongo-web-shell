@@ -332,7 +332,6 @@ describe('The dom module', function () {
       });
     }
 
-    // TODO: Should the dom methods be stubbed instead?
     expectAbsentCSS(defaults.cssPath);
     mongo.dom.injectStylesheet(defaults.cssPath);
     var injected = $('head').children().get(0); // Expect to be prepended.
