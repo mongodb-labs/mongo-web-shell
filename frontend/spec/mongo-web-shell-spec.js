@@ -1,6 +1,5 @@
 /* jshint loopfunc: true */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
-/* global spyOn, xdescribe, xit */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -39,26 +38,37 @@ var CONST = {
 };
 
 
-xdescribe('The init function', function () {
-  // TODO: The calls made in mongo.init() need to be stubbed; there should be
-  // no side effects to the page (alternatively, have side effects but restore
-  // the page to the initial state on afterEach()). Then re-enable this.
-  var xhr, requests;
+describe('The init function', function () {
+  var mwsHost = 'host';
+  var expected = {
+    config: {
+      cssPath: 'css',
+      mwsHost: mwsHost,
+      baseUrl: mwsHost + CONST.domConfig.baseUrlPostfix
+    }
+  };
 
   beforeEach(function () {
-    xhr = sinon.useFakeXMLHttpRequest();
-    requests = [];
-    xhr.onCreate = function (req) { requests.push(req); };
+    spyOn(mongo.dom, 'injectStylesheet');
+    spyOn(mongo.dom, 'retrieveConfig').andReturn(expected.config);
+    spyOn(mongo.util, 'enableConsoleProtection');
   });
 
-  afterEach(function () {
-    xhr.restore();
+  it('enables console protection', function () {
+    mongo.init();
+    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
   });
 
-  xit('makes a post request for todo items', function () {
-    mongo.init(sinon.spy());
-    expect(requests.length).toBe(1);
-    expect(requests[0].url).toBe('/mws/');
+  it('retrieves and sets the script configuration', function () {
+    mongo.init();
+    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
+    expect(mongo.config).toEqual(expected.config);
+  });
+
+  it('injects the web shell stylesheet', function () {
+    mongo.init();
+    expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
+        expected.config.cssPath);
   });
 });
 
