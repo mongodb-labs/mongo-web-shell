@@ -145,6 +145,10 @@ describe('The const module', function () {
     expect(mongo.const.keepAliveTime).toBeDefined();
   });
 
+  it('stores the root element CSS selector', function () {
+    expect(mongo.const.rootElementSelector).toBeDefined();
+  });
+
   it('stores the script name', function () {
     expect(mongo.const.scriptName).toBeDefined();
   });

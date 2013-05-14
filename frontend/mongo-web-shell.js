@@ -16,7 +16,7 @@ mongo.init = function () {
   mongo.util.enableConsoleProtection();
   var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
-  $('.mongo-web-shell').each(function (index, shellElement) {
+  $(mongo.const.rootElementSelector).each(function (index, shellElement) {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
@@ -44,6 +44,7 @@ mongo.const = (function () {
   return {
     keycodes: KEYCODES,
     keepAliveTime: 30000,
+    rootElementSelector: '.mongo-web-shell',
     scriptName: 'mongo-web-shell.js',
     shellBatchSize: 20
   };
