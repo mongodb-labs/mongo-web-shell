@@ -76,6 +76,48 @@ describe('The init function', function () {
     expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
         expected.config.cssPath);
   });
+
+  describe('for each web shell div in the DOM', function () {
+    var SHELL_COUNT = 3;
+    var shellSpy, shellElements;
+
+    beforeEach(function () {
+      shellElements = [];
+      for (var i = 0; i < SHELL_COUNT; i++) {
+        var element = document.createElement('div');
+        element.className = CONST.css.classes.root;
+        document.body.appendChild(element);
+        shellElements[i] = element;
+      }
+      shellSpy = jasmine.createSpyObj('Shell', [
+        'attachClickListener',
+        'attachHideButtonHandler',
+        'attachInputHandler',
+        'enableInput',
+        'injectHTML',
+        'insertResponseLine'
+      ]);
+      spyOn(mongo, 'Shell').andReturn(shellSpy);
+    });
+
+    afterEach(function () {
+      shellElements.forEach(function (element) {
+        element.parentNode.removeChild(element);
+      });
+      shellElements = null;
+    });
+
+    it('constructs a new shell', function () {
+      mongo.init();
+      expect(mongo.Shell.calls.length).toBe(SHELL_COUNT);
+      shellElements.forEach(function (element, i) {
+        expect(mongo.Shell).toHaveBeenCalledWith(element, i);
+        expect(mongo.shells[i]).toBeDefined();
+      });
+      expect(shellSpy.injectHTML.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachClickListener.calls.length).toBe(SHELL_COUNT);
+    });
+  });
 });
 
 
