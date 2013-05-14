@@ -51,6 +51,7 @@ describe('The init function', function () {
   };
 
   beforeEach(function () {
+    jasmine.Clock.useMock();
     spyOn(mongo.dom, 'injectStylesheet');
     spyOn(mongo.dom, 'retrieveConfig').andReturn(expected.config);
     spyOn(mongo.request, 'createMWSResource').andCallFake(function (
@@ -102,7 +103,8 @@ describe('The init function', function () {
         'attachHideButtonHandler',
         'attachInputHandler',
         'enableInput',
-        'injectHTML'
+        'injectHTML',
+        'keepAlive'
       ]);
       spyOn(mongo, 'Shell').andReturn(shellSpy);
     });
@@ -132,6 +134,8 @@ describe('The init function', function () {
       mongo.init();
       expect(shellSpy.attachInputHandler).not.toHaveBeenCalled();
       expect(shellSpy.enableInput).not.toHaveBeenCalled();
+      jasmine.Clock.tick(mongo.const.keepAliveTime);
+      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
 
       creationSuccess = true;
       mongo.init();
@@ -139,7 +143,10 @@ describe('The init function', function () {
       expect(shellSpy.attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
       expect(shellSpy.enableInput.calls.length).toBe(SHELL_COUNT);
       expect(shellSpy.enableInput).toHaveBeenCalledWith(true);
-      // TODO: keepAlive.
+      jasmine.Clock.tick(mongo.const.keepAliveTime - 1);
+      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
+      jasmine.Clock.tick(1);
+      expect(shellSpy.keepAlive).toHaveBeenCalled();
     });
   });
 });
