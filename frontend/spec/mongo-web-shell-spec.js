@@ -8,7 +8,6 @@ var esprima; // stubbed where applicable.
 
 var CONST = {
   css: {
-    file: 'mongo-web-shell.css',
     classes: {
       root: '.mongo-web-shell',
       internal: [
@@ -24,7 +23,19 @@ var CONST = {
       ],
       responseList: '.mws-response-list'
     }
-  }
+  },
+  domConfig: {
+    dataAttrKeys: {
+      cssPath: 'css-path',
+      mwsHost: 'mws-host'
+    },
+    defaults: {
+      cssPath: 'mongo-web-shell.css',
+      mwsHost: '',
+      baseUrlPostfix: '/mws/'
+    }
+  },
+  scriptName: 'mongo-web-shell.js'
 };
 
 
@@ -64,6 +75,14 @@ describe('The const module', function () {
 
   it('stores the keep alive timeout', function () {
     expect(mongo.const.keepAliveTime).toBeDefined();
+  });
+
+  it('stores the script name', function () {
+    expect(mongo.const.scriptName).toBeDefined();
+  });
+
+  it('stores the shell batch size', function () {
+    expect(mongo.const.shellBatchSize).toBeDefined();
   });
 });
 
@@ -280,13 +299,30 @@ describe('A Cursor', function () {
 
 
 describe('The dom module', function () {
+  var dataAttrKeys = CONST.domConfig.dataAttrKeys;
+  var defaults = CONST.domConfig.defaults;
+
   it('retrives the shell configuration from the DOM', function () {
-    // TODO: Test more than the default values.
-    var config = mongo.dom.retrieveConfig();
-    // Default values.
-    expect(config.cssPath).toBe(CONST.css.file);
-    expect(config.mwsHost).toBe('');
-    expect(config.baseUrl).toBe('/mws/');
+    var actual = mongo.dom.retrieveConfig();
+    expect(actual.cssPath).toBe(defaults.cssPath);
+    expect(actual.mwsHost).toBe(defaults.mwsHost);
+    expect(actual.baseUrl).toBe(defaults.mwsHost + defaults.baseUrlPostfix);
+
+    var expected = {cssPath: 'css', mwsHost: 'host'};
+    expected.baseUrl = expected.mwsHost + defaults.baseUrlPostfix;
+    var $script = $('script[src*=\'' + CONST.scriptName + '\']');
+    var key;
+    for (key in dataAttrKeys) {
+      if (dataAttrKeys.hasOwnProperty(key)) {
+        $script.data(dataAttrKeys[key], expected[key]);
+      }
+    }
+    actual = mongo.dom.retrieveConfig();
+    for (key in expected) {
+      if (expected.hasOwnProperty(key)) {
+        expect(actual[key]).toBe(expected[key]);
+      }
+    }
   });
 
   it('injects a stylesheet into the DOM', function () {
@@ -297,17 +333,17 @@ describe('The dom module', function () {
     }
 
     // TODO: Should the dom methods be stubbed instead?
-    expectAbsentCSS(CONST.css.file);
-    mongo.dom.injectStylesheet(CONST.css.file);
+    expectAbsentCSS(defaults.cssPath);
+    mongo.dom.injectStylesheet(defaults.cssPath);
     var injected = $('head').children().get(0); // Expect to be prepended.
     expect(injected.tagName).toBe('LINK');
-    expect(injected.href).toMatch(CONST.css.file + '$');
+    expect(injected.href).toMatch(defaults.cssPath + '$');
     expect(injected.rel).toBe('stylesheet');
     expect(injected.type).toBe('text/css');
 
     // Clean up.
     injected.parentNode.removeChild(injected);
-    expectAbsentCSS(CONST.css.file);
+    expectAbsentCSS(defaults.cssPath);
   });
 });
 

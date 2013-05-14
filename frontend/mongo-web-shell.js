@@ -57,6 +57,7 @@ mongo.const = (function () {
   return {
     keycodes: KEYCODES,
     keepAliveTime: 30000,
+    scriptName: 'mongo-web-shell.js',
     shellBatchSize: 20
   };
 }());
@@ -182,7 +183,7 @@ mongo.dom = (function () {
   var MWS_HOST = '';
 
   function retrieveConfig() {
-    var $curScript = $('script').last();
+    var $curScript = $('script[src*=\'' + mongo.const.scriptName + '\']');
     var mwsHost = $curScript.data('mws-host') || MWS_HOST;
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,
