@@ -711,13 +711,36 @@ describe('The request module', function () {
     it('creates an MWS resource', function () {
       var baseUrl = '/mws/';
       mongo.config.baseUrl = baseUrl;
+      var callbackSpy = jasmine.createSpy('callback');
+      var shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
 
-      mongo.request.createMWSResource();
+      mongo.request.createMWSResource(shellSpy, callbackSpy);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('POST');
       expect(req.url).toBe(baseUrl);
       expect(req.requestBody).toBe(null);
+
+      var body = {res_id: 'iu'};
+      // TODO: FF23 complains 'not well-formed' for response body, but
+      // continues testing anyway. Chromium is fine.
+      req.respond(200, '', JSON.stringify(body));
+      expect(callbackSpy).toHaveBeenCalledWith(body);
+      expect(shellSpy.insertResponseLine).not.toHaveBeenCalled();
+
+      // Failure: invalid data.
+      mongo.request.createMWSResource(shellSpy, callbackSpy);
+      req = requests[1];
+      req.respond(200, '', JSON.stringify({daebak: 'iu'}));
+      expect(shellSpy.insertResponseLine).toHaveBeenCalled();
+
+      // Failure: HTTP error.
+      mongo.request.createMWSResource(shellSpy, callbackSpy);
+      req = requests[2];
+      req.respond(404, '', '');
+      expect(shellSpy.insertResponseLine.calls.length).toBe(2);
+
+      expect(callbackSpy.calls.length).toBe(1);
     });
 
     it('calls db.collection.find() on the database', function () {
