@@ -723,7 +723,7 @@ mongo.request = (function () {
           cursor._storeQueryResult(data.result);
           onSuccess();
         } else {
-          cursor.shell.insertResponseLine('ERROR: server error occured');
+          cursor._shell.insertResponseLine('ERROR: server error occured');
           console.debug('dbCollectionFind error:', data.result);
         }
       }
