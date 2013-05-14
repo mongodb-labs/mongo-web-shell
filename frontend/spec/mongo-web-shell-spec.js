@@ -1,6 +1,6 @@
-/* jshint loopfunc: true */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
-/* global spyOn, xdescribe, xit */
+/* jshint camelcase: false, loopfunc: true */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/* global xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -9,19 +9,19 @@ var esprima; // stubbed where applicable.
 var CONST = {
   css: {
     classes: {
-      root: '.mongo-web-shell',
+      root: 'mongo-web-shell',
       internal: [
-        '.mws-wrapper',
-        '.mws-topbar',
-        '.mws-hide-button',
-        '.mws-body',
-        '.mws-scrollbar-spacer',
-        '.mws-response-list',
-        '.input-li',
-        '.mws-form',
-        '.mws-input'
+        'mws-wrapper',
+        'mws-topbar',
+        'mws-hide-button',
+        'mws-body',
+        'mws-scrollbar-spacer',
+        'mws-response-list',
+        'input-li',
+        'mws-form',
+        'mws-input'
       ],
-      responseList: '.mws-response-list'
+      responseList: 'mws-response-list'
     }
   },
   domConfig: {
@@ -39,26 +39,115 @@ var CONST = {
 };
 
 
-xdescribe('The init function', function () {
-  // TODO: The calls made in mongo.init() need to be stubbed; there should be
-  // no side effects to the page (alternatively, have side effects but restore
-  // the page to the initial state on afterEach()). Then re-enable this.
-  var xhr, requests;
+describe('The init function', function () {
+  var creationSuccess, dataObj = {res_id: 'iu'};
+  var mwsHost = 'host';
+  var expected = {
+    config: {
+      cssPath: 'css',
+      mwsHost: mwsHost,
+      baseUrl: mwsHost + CONST.domConfig.baseUrlPostfix
+    }
+  };
 
   beforeEach(function () {
-    xhr = sinon.useFakeXMLHttpRequest();
-    requests = [];
-    xhr.onCreate = function (req) { requests.push(req); };
+    jasmine.Clock.useMock();
+    spyOn(mongo.dom, 'injectStylesheet');
+    spyOn(mongo.dom, 'retrieveConfig').andReturn(expected.config);
+    spyOn(mongo.request, 'createMWSResource').andCallFake(function (
+        shell, onSuccess) {
+      if (creationSuccess) {
+        onSuccess(dataObj);
+      }
+    });
+    spyOn(mongo.util, 'enableConsoleProtection');
+    creationSuccess = false; // Avoids running additional code on each request.
   });
 
   afterEach(function () {
-    xhr.restore();
+    mongo.config = null;
+    mongo.shells = [];
   });
 
-  xit('makes a post request for todo items', function () {
-    mongo.init(sinon.spy());
-    expect(requests.length).toBe(1);
-    expect(requests[0].url).toBe('/mws/');
+  it('enables console protection', function () {
+    mongo.init();
+    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
+  });
+
+  it('retrieves and sets the script configuration', function () {
+    mongo.init();
+    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
+    expect(mongo.config).toEqual(expected.config);
+  });
+
+  it('injects the web shell stylesheet', function () {
+    mongo.init();
+    expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
+        expected.config.cssPath);
+  });
+
+  describe('for each web shell div in the DOM', function () {
+    var SHELL_COUNT = 3;
+    var shellSpy, shellElements;
+
+    beforeEach(function () {
+      shellElements = [];
+      for (var i = 0; i < SHELL_COUNT; i++) {
+        var element = document.createElement('div');
+        element.className = CONST.css.classes.root;
+        document.body.appendChild(element);
+        shellElements[i] = element;
+      }
+      shellSpy = jasmine.createSpyObj('Shell', [
+        'attachClickListener',
+        'attachHideButtonHandler',
+        'attachInputHandler',
+        'enableInput',
+        'injectHTML',
+        'keepAlive'
+      ]);
+      spyOn(mongo, 'Shell').andReturn(shellSpy);
+    });
+
+    afterEach(function () {
+      shellElements.forEach(function (element) {
+        element.parentNode.removeChild(element);
+      });
+      shellElements = null;
+    });
+
+    it('constructs a new shell', function () {
+      mongo.init();
+      expect(mongo.Shell.calls.length).toBe(SHELL_COUNT);
+      shellElements.forEach(function (element, i) {
+        expect(mongo.Shell).toHaveBeenCalledWith(element, i);
+        expect(mongo.shells[i]).toBeDefined();
+      });
+      expect(shellSpy.injectHTML.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachClickListener.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachHideButtonHandler.calls.length).toBe(SHELL_COUNT);
+    });
+
+    it('attaches and enables input handlers on mws resource creation',
+        function () {
+      // Unsuccessful creation.
+      mongo.init();
+      expect(shellSpy.attachInputHandler).not.toHaveBeenCalled();
+      expect(shellSpy.enableInput).not.toHaveBeenCalled();
+      jasmine.Clock.tick(mongo.const.keepAliveTime);
+      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
+
+      creationSuccess = true;
+      mongo.init();
+      expect(shellSpy.attachInputHandler.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
+      expect(shellSpy.enableInput.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.enableInput).toHaveBeenCalledWith(true);
+      jasmine.Clock.tick(mongo.const.keepAliveTime - 1);
+      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
+      jasmine.Clock.tick(1);
+      expect(shellSpy.keepAlive).toHaveBeenCalled();
+    });
   });
 });
 
@@ -75,6 +164,10 @@ describe('The const module', function () {
 
   it('stores the keep alive timeout', function () {
     expect(mongo.const.keepAliveTime).toBeDefined();
+  });
+
+  it('stores the root element CSS selector', function () {
+    expect(mongo.const.rootElementSelector).toBeDefined();
   });
 
   it('stores the script name', function () {
@@ -704,7 +797,7 @@ describe('A Shell', function () {
   it('injects its HTML into the DOM', function () {
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
-        var $element = $(cssClass);
+        var $element = $('.' + cssClass);
         expect($element.length).toBe(len);
       });
     }
@@ -726,6 +819,17 @@ describe('A Shell', function () {
     beforeEach(function () {
       instance.injectHTML();
       // This is cleaned up in the parent afterEach().
+    });
+
+    it('attaches a click listener', function () {
+      spyOn(instance, 'onClick');
+      instance.attachClickListener();
+      instance.$body.trigger('click');
+      expect(instance.onClick).toHaveBeenCalled();
+    });
+
+    xit('focuses the input when clicked', function () {
+      // TODO: Is it possible to test this?
     });
 
     it('attaches an input event listener', function () {
@@ -750,8 +854,8 @@ describe('A Shell', function () {
     });
 
     it('inserts an array of lines into the shell', function () {
-      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
-          0);
+      var responseList = $rootElement.find('.' +
+          CONST.css.classes.responseList).get(0);
       var array = [];
       do  {
         array.push('line');
@@ -763,8 +867,8 @@ describe('A Shell', function () {
     });
 
     it('inserts a line into the shell', function () {
-      var responseList = $rootElement.find(CONST.css.classes.responseList).get(
-          0);
+      var responseList = $rootElement.find('.' +
+          CONST.css.classes.responseList).get(0);
       for (var i = 0; i < 4; i++) {
         var numResponses = responseList.children.length;
         instance.insertResponseLine('line');

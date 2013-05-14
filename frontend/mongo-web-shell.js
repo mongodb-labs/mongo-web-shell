@@ -16,30 +16,17 @@ mongo.init = function () {
   mongo.util.enableConsoleProtection();
   var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
-  $('.mongo-web-shell').each(function (index, shellElement) {
+  $(mongo.const.rootElementSelector).each(function (index, shellElement) {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
-    $(shell.$rootElement.find('.mws-body')).click(function() {
-      shell.$input.focus();
-    });
-
-    // Attempt to create MWS resource on remote server.
-    $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
-      if (!data.res_id) {
-        shell.insertResponseLine('ERROR: No res_id recieved! Shell disabled.');
-        console.warn('No res_id received! Shell disabled.', data);
-        return;
-      }
-      console.info('/mws/' + data.res_id, 'was created succssfully.');
+    shell.attachClickListener();
+    shell.attachHideButtonHandler(shell);
+    mongo.request.createMWSResource(shell, function (data) {
       shell.attachInputHandler(data.res_id);
-      shell.attachHideButtonHandler(shell);
       shell.enableInput(true);
       setInterval(function () { shell.keepAlive(); },
           mongo.const.keepAliveTime);
-    },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      shell.insertResponseLine('Failed to create resources on DB on server');
-      console.error('AJAX request failed:', textStatus, errorThrown);
     });
   });
 };
@@ -57,6 +44,7 @@ mongo.const = (function () {
   return {
     keycodes: KEYCODES,
     keepAliveTime: 30000,
+    rootElementSelector: '.mongo-web-shell',
     scriptName: 'mongo-web-shell.js',
     shellBatchSize: 20
   };
@@ -681,6 +669,25 @@ mongo.Readline.prototype.submit = function (line) {
 
 
 mongo.request = (function () {
+  /*
+   * Creates an MWS resource on the remote server. Calls onSuccess if the data
+   * received is valid. Otherwise, prints an error to the given shell.
+   */
+  function createMWSResource(shell, onSuccess) {
+    $.post(mongo.config.baseUrl, null, function (data, textStatus, jqXHR) {
+      if (!data.res_id) {
+        shell.insertResponseLine('ERROR: No res_id recieved! Shell disabled.');
+        console.warn('No res_id received! Shell disabled.', data);
+        return;
+      }
+      console.info('/mws/' + data.res_id, 'was created succssfully.');
+      onSuccess(data);
+    },'json').fail(function (jqXHR, textStatus, errorThrown) {
+      shell.insertResponseLine('Failed to create resources on DB on server');
+      console.error('AJAX request failed:', textStatus, errorThrown);
+    });
+  }
+
   /**
    * Makes a find request to the mongod instance on the backing server. On
    * success, the result is stored and onSuccess is called, otherwise a failure
@@ -795,6 +802,7 @@ mongo.request = (function () {
   }
 
   return {
+    createMWSResource: createMWSResource,
     db_collection_find: db_collection_find,
     db_collection_insert: db_collection_insert,
     keepAlive: keepAlive,
@@ -857,6 +865,12 @@ mongo.Shell.prototype.injectHTML = function () {
   this.$inputLI = this.$responseList.find('.input-li');
   this.$input = this.$inputLI.find('.mws-input');
 };
+
+mongo.Shell.prototype.attachClickListener = function () {
+  this.$body.click(this.onClick.bind(this));
+};
+
+mongo.Shell.prototype.onClick = function () { this.$input.focus(); };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   var shell = this;
