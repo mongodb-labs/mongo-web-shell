@@ -584,11 +584,11 @@ mongo.Query = function (shell, collection) {
 
 mongo.Query.prototype.find = function (query, projection) {
   var args = {query: query, projection: projection};
-  return new mongo.Cursor(this, mongo.request.db_collection_find, args);
+  return new mongo.Cursor(this, mongo.request.dbCollectionFind, args);
 };
 
 mongo.Query.prototype.insert = function (document_) {
-  mongo.request.db_collection_insert(this, document_);
+  mongo.request.dbCollectionInsert(this, document_);
 };
 
 
@@ -695,7 +695,7 @@ mongo.request = (function () {
    * async, as determined by the given parameter, as some functions (e.g.
    * cursor.next()) need to return a value from the request directly into eval.
    */
-  function db_collection_find(cursor, onSuccess, async) {
+  function dbCollectionFind(cursor, onSuccess, async) {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
@@ -719,27 +719,27 @@ mongo.request = (function () {
       dataType: 'json',
       success: function (data, textStatus, jqXHR) {
         if (data.status === 0) {
-          console.debug('db_collection_find success');
+          console.debug('dbCollectionFind success');
           cursor._storeQueryResult(data.result);
           onSuccess();
         } else {
           cursor.shell.insertResponseLine('ERROR: server error occured');
-          console.debug('db_collection_find error:', data.result);
+          console.debug('dbCollectionFind error:', data.result);
         }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       cursor._shell.insertResponseLine('ERROR: server error occured');
-      console.error('db_collection_find fail:', textStatus, errorThrown);
+      console.error('dbCollectionFind fail:', textStatus, errorThrown);
       // TODO: Make this more robust (currently prints two errors, eval doesn't
       // say why it failed, etc.).
       // TODO: Should we throw in insert too?
       // Throwing here will cause the query eval() to fail, rather than
       // handling the edge cases in each query method individually.
-      throw 'db_collection_find: Server error';
+      throw 'dbCollectionFind: Server error';
     });
   }
 
-  function db_collection_insert(query, document_) {
+  function dbCollectionInsert(query, document_) {
     var resID = query.shell.mwsResourceID;
     var url = getResURL(resID, query.collection) + 'insert';
     var params = {
@@ -757,12 +757,12 @@ mongo.request = (function () {
         if (data.status === 0) {
           console.info('Insertion successful:', data);
         } else {
-          console.debug('db_collection_insert error', data.result);
+          console.debug('dbCollectionInsert error', data.result);
         }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       query.shell.insertResponseLine('ERROR: server error occured');
-      console.error('db_collection_insert fail:', textStatus, errorThrown);
+      console.error('dbCollectionInsert fail:', textStatus, errorThrown);
     });
   }
 
@@ -803,8 +803,8 @@ mongo.request = (function () {
 
   return {
     createMWSResource: createMWSResource,
-    db_collection_find: db_collection_find,
-    db_collection_insert: db_collection_insert,
+    dbCollectionFind: dbCollectionFind,
+    dbCollectionInsert: dbCollectionInsert,
     keepAlive: keepAlive,
 
     _getResURL: getResURL,
