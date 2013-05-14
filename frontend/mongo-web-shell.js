@@ -772,10 +772,10 @@ mongo.request = (function () {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
-      },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      console.err('ERROR: keep alive failed: ' + errorThrown +
-          ' STATUS: ' + textStatus);
-    });
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        console.err('ERROR: keep alive failed: ' + errorThrown +
+            ' STATUS: ' + textStatus);
+      });
   }
 
   return {
