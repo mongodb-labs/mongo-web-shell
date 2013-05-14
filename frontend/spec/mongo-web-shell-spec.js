@@ -1,6 +1,6 @@
 /* jshint camelcase: false, loopfunc: true */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
-/* global spyOn, xit */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/* global xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -40,6 +40,7 @@ var CONST = {
 
 
 describe('The init function', function () {
+  var creationSuccess, dataObj = {res_id: 'iu'};
   var mwsHost = 'host';
   var expected = {
     config: {
@@ -52,7 +53,14 @@ describe('The init function', function () {
   beforeEach(function () {
     spyOn(mongo.dom, 'injectStylesheet');
     spyOn(mongo.dom, 'retrieveConfig').andReturn(expected.config);
+    spyOn(mongo.request, 'createMWSResource').andCallFake(function (
+        shell, onSuccess) {
+      if (creationSuccess) {
+        onSuccess(dataObj);
+      }
+    });
     spyOn(mongo.util, 'enableConsoleProtection');
+    creationSuccess = false; // Avoids running additional code on each request.
   });
 
   afterEach(function () {
@@ -79,7 +87,7 @@ describe('The init function', function () {
 
   describe('for each web shell div in the DOM', function () {
     var SHELL_COUNT = 3;
-    var shellSpy, shellElements, dataObj = {res_id: 'iu'};
+    var shellSpy, shellElements;
 
     beforeEach(function () {
       shellElements = [];
@@ -97,7 +105,6 @@ describe('The init function', function () {
         'injectHTML'
       ]);
       spyOn(mongo, 'Shell').andReturn(shellSpy);
-      sinon.stub(mongo.request, 'createMWSResource').yields(dataObj);
     });
 
     afterEach(function () {
@@ -105,7 +112,6 @@ describe('The init function', function () {
         element.parentNode.removeChild(element);
       });
       shellElements = null;
-      mongo.request.createMWSResource.restore();
     });
 
     it('constructs a new shell', function () {
@@ -120,12 +126,20 @@ describe('The init function', function () {
       expect(shellSpy.attachHideButtonHandler.calls.length).toBe(SHELL_COUNT);
     });
 
-    it('attaches input handlers on mws resource creation', function () {
+    it('attaches and enables input handlers on mws resource creation',
+        function () {
+      // Unsuccessful creation.
+      mongo.init();
+      expect(shellSpy.attachInputHandler).not.toHaveBeenCalled();
+      expect(shellSpy.enableInput).not.toHaveBeenCalled();
+
+      creationSuccess = true;
       mongo.init();
       expect(shellSpy.attachInputHandler.calls.length).toBe(SHELL_COUNT);
       expect(shellSpy.attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
       expect(shellSpy.enableInput.calls.length).toBe(SHELL_COUNT);
       expect(shellSpy.enableInput).toHaveBeenCalledWith(true);
+      // TODO: keepAlive.
     });
   });
 });
