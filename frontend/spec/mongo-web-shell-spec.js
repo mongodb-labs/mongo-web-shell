@@ -1,6 +1,6 @@
-/* jshint loopfunc: true */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
-/* global xit */
+/* jshint camelcase: false, loopfunc: true */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
+/* global spyOn, xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -79,7 +79,7 @@ describe('The init function', function () {
 
   describe('for each web shell div in the DOM', function () {
     var SHELL_COUNT = 3;
-    var shellSpy, shellElements;
+    var shellSpy, shellElements, dataObj = {res_id: 'iu'};
 
     beforeEach(function () {
       shellElements = [];
@@ -94,10 +94,10 @@ describe('The init function', function () {
         'attachHideButtonHandler',
         'attachInputHandler',
         'enableInput',
-        'injectHTML',
-        'insertResponseLine'
+        'injectHTML'
       ]);
       spyOn(mongo, 'Shell').andReturn(shellSpy);
+      sinon.stub(mongo.request, 'createMWSResource').yields(dataObj);
     });
 
     afterEach(function () {
@@ -105,6 +105,7 @@ describe('The init function', function () {
         element.parentNode.removeChild(element);
       });
       shellElements = null;
+      mongo.request.createMWSResource.restore();
     });
 
     it('constructs a new shell', function () {
@@ -116,6 +117,15 @@ describe('The init function', function () {
       });
       expect(shellSpy.injectHTML.calls.length).toBe(SHELL_COUNT);
       expect(shellSpy.attachClickListener.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachHideButtonHandler.calls.length).toBe(SHELL_COUNT);
+    });
+
+    it('attaches input handlers on mws resource creation', function () {
+      mongo.init();
+      expect(shellSpy.attachInputHandler.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
+      expect(shellSpy.enableInput.calls.length).toBe(SHELL_COUNT);
+      expect(shellSpy.enableInput).toHaveBeenCalledWith(true);
     });
   });
 });

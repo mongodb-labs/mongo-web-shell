@@ -21,9 +21,9 @@ mongo.init = function () {
     mongo.shells[index] = shell;
     shell.injectHTML();
     shell.attachClickListener();
+    shell.attachHideButtonHandler(shell);
     mongo.request.createMWSResource(shell, function (data) {
       shell.attachInputHandler(data.res_id);
-      shell.attachHideButtonHandler(shell);
       shell.enableInput(true);
       setInterval(function () { shell.keepAlive(); },
           mongo.const.keepAliveTime);
