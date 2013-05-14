@@ -1,6 +1,6 @@
 /* jshint camelcase: false, loopfunc: true */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
-/* global xit */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
+/* global spyOn, xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -674,7 +674,107 @@ describe('A Readline instance', function () {
 
 
 describe('The request module', function () {
-  // TODO: Test.
+  var RES_URL = 'resURL/';
+  var configStore;
+
+  beforeEach(function () {
+    spyOn(mongo.util, 'getDBCollectionResURL').andReturn(RES_URL);
+    spyOn(mongo.util, 'pruneKeys');
+    spyOn(mongo.util, 'stringifyKeys');
+    configStore = mongo.config;
+    mongo.config = {};
+  });
+
+  afterEach(function () {
+    mongo.config = configStore;
+    configStore = null;
+  });
+
+  /**
+   * Valids the requests themselves, rather than the actions taken upon their
+   * failure or success.
+   */
+  describe('creates a request that', function () {
+    var requests, xhr;
+
+    beforeEach(function () {
+      xhr = sinon.useFakeXMLHttpRequest();
+      xhr.onCreate = function (xhr) { requests.push(xhr); };
+      requests = [];
+    });
+
+    afterEach(function () {
+      requests = null;
+      xhr.restore();
+    });
+
+    it('creates an MWS resource', function () {
+      var baseUrl = '/mws/';
+      mongo.config.baseUrl = baseUrl;
+
+      mongo.request.createMWSResource();
+      expect(requests.length).toBe(1);
+      var req = requests[0];
+      expect(req.method).toBe('POST');
+      expect(req.url).toBe(baseUrl);
+      expect(req.requestBody).toBe(null);
+    });
+
+    it('calls db.collection.find() on the database', function () {
+      var cursor = {
+        _query: {args: {projection: {_id: 0}, query: {iu: 'jjang'}}},
+        _shell: {}
+      };
+      var onSuccess = null;
+      var async = true;
+
+      mongo.request.dbCollectionFind(cursor, onSuccess, async);
+      expect(requests.length).toBe(1);
+      var req = requests[0];
+      expect(req.method).toBe('GET');
+      var actualURL = decodeURIComponent(req.url);
+      expect(actualURL).toMatch('^' + RES_URL + 'find?');
+      expect(actualURL).toMatch('find?.*projection\\[_id\\]=' +
+          cursor._query.args.projection._id);
+      expect(actualURL).toMatch('find?.*query\\[iu\\]=' +
+          cursor._query.args.query.iu);
+      expect(req.requestBody).toBe(null);
+      expect(req.async).toBe(async);
+      expect(req.requestHeaders.Accept).toMatch('application/json');
+
+      async = false;
+      mongo.request.dbCollectionFind(cursor, onSuccess, async);
+      req = requests[1];
+      expect(req.async).toBe(async);
+    });
+
+    it('calls db.collection.insert() on the database', function () {
+      var query = {shell: {}};
+      var document_ = 'doc';
+      mongo.request.dbCollectionInsert(query, document_);
+      expect(requests.length).toBe(1);
+      var req = requests[0];
+      expect(req.method).toBe('POST');
+      expect(req.url).toBe(RES_URL + 'insert');
+      var expectedParams = JSON.stringify({document: document_});
+      expect(req.requestBody).toMatch(expectedParams);
+      expect(req.requestHeaders.Accept).toMatch('application/json');
+      expect(req.requestHeaders['Content-Type']).toMatch('application/json');
+    });
+
+    it('keeps the shell mws resource alive', function () {
+      mongo.config.baseUrl = 'base';
+      var shell = {mwsResourceID: 'iu'};
+      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
+          '/keep-alive';
+      mongo.request.keepAlive(shell);
+      expect(requests.length).toBe(1);
+      var req = requests[0];
+      expect(req.method).toBe('POST');
+      expect(req.url).toBe(expectedURL);
+      expect(req.requestBody).toBe(null);
+    });
+  });
 });
 
 
