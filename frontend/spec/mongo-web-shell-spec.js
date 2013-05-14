@@ -1,5 +1,6 @@
 /* jshint loopfunc: true */
 /* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/* global xit */
 $.ready = function () {}; // Prevent mongo.init() from running.
 var console; // Avoid errors from util.enableConsoleProtection if console DNE.
 
@@ -736,6 +737,17 @@ describe('A Shell', function () {
     beforeEach(function () {
       instance.injectHTML();
       // This is cleaned up in the parent afterEach().
+    });
+
+    it('attaches a click listener', function () {
+      spyOn(instance, 'onClick');
+      instance.attachClickListener();
+      instance.$body.trigger('click');
+      expect(instance.onClick).toHaveBeenCalled();
+    });
+
+    xit('focuses the input when clicked', function () {
+      // TODO: Is it possible to test this?
     });
 
     it('attaches an input event listener', function () {

@@ -20,9 +20,7 @@ mongo.init = function () {
     var shell = new mongo.Shell(shellElement, index);
     mongo.shells[index] = shell;
     shell.injectHTML();
-    $(shell.$rootElement.find('.mws-body')).click(function() {
-      shell.$input.focus();
-    });
+    shell.attachClickListener();
 
     // Attempt to create MWS resource on remote server.
     $.post(config.baseUrl, null, function (data, textStatus, jqXHR) {
@@ -857,6 +855,12 @@ mongo.Shell.prototype.injectHTML = function () {
   this.$inputLI = this.$responseList.find('.input-li');
   this.$input = this.$inputLI.find('.mws-input');
 };
+
+mongo.Shell.prototype.attachClickListener = function () {
+  this.$body.click(this.onClick.bind(this));
+};
+
+mongo.Shell.prototype.onClick = function () { this.$input.focus(); };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   var shell = this;
