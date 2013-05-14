@@ -699,17 +699,18 @@ mongo.request = (function () {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
-    var url = getResURL(resID, cursor._collection) + 'find';
+    var url = mongo.util.getDBCollectionResURL(resID, cursor._collection) +
+        'find';
     var params = {
       query: args.query,
       projection: args.projection
     };
-    pruneKeys(params, ['query', 'projection']);
+    mongo.util.pruneKeys(params, ['query', 'projection']);
     // For a GET request, jQuery divides each key in a JSON object into params
     // (i.e. var obj = {one: 1, two: 2} => ?obj[one]=1&obj[two]=2 ), which is
     // harder to reconstruct on the backend than just stringifying the values
     // individually, which is what we do here.
-    stringifyKeys(params);
+    mongo.util.stringifyKeys(params);
 
     console.debug('find() request:', url, params);
     $.ajax({
@@ -741,7 +742,8 @@ mongo.request = (function () {
 
   function dbCollectionInsert(query, document_) {
     var resID = query.shell.mwsResourceID;
-    var url = getResURL(resID, query.collection) + 'insert';
+    var url = mongo.util.getDBCollectionResURL(resID, query.collection) +
+        'insert';
     var params = {
       document: document_
     };
@@ -766,31 +768,6 @@ mongo.request = (function () {
     });
   }
 
-  function getResURL(resID, collection) {
-    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
-  }
-
-  /**
-   * Removes the given keys from the given object if they are undefined or
-   * null. This can be used to make requests with optional args more compact.
-   */
-  function pruneKeys(obj, keys) {
-    keys.forEach(function (key, index, array) {
-      var val = obj[key];
-      if (val === undefined || val === null) {
-        delete obj[key];
-      }
-    });
-  }
-
-  function stringifyKeys(obj) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        obj[key] = JSON.stringify(obj[key]);
-      }
-    }
-  }
-
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
@@ -805,11 +782,7 @@ mongo.request = (function () {
     createMWSResource: createMWSResource,
     dbCollectionFind: dbCollectionFind,
     dbCollectionInsert: dbCollectionInsert,
-    keepAlive: keepAlive,
-
-    _getResURL: getResURL,
-    _pruneKeys: pruneKeys,
-    _stringifyKeys: stringifyKeys
+    keepAlive: keepAlive
   };
 }());
 
@@ -1055,11 +1028,39 @@ mongo.util = (function () {
     return statements;
   }
 
+  function getDBCollectionResURL(resID, collection) {
+    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
+  }
+
+  /**
+   * Removes the given keys from the given object if they are undefined or
+   * null. This can be used to make requests with optional args more compact.
+   */
+  function pruneKeys(obj, keys) {
+    keys.forEach(function (key, index, array) {
+      var val = obj[key];
+      if (val === undefined || val === null) {
+        delete obj[key];
+      }
+    });
+  }
+
+  function stringifyKeys(obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        obj[key] = JSON.stringify(obj[key]);
+      }
+    }
+  }
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
     mergeObjects: mergeObjects,
     sourceToStatements: sourceToStatements,
+    getDBCollectionResURL: getDBCollectionResURL,
+    pruneKeys: pruneKeys,
+    stringifyKeys: stringifyKeys,
 
     _addOwnProperties: addOwnProperties
   };

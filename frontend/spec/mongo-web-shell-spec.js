@@ -674,91 +674,7 @@ describe('A Readline instance', function () {
 
 
 describe('The request module', function () {
-  // TODO: Test untested methods.
-  describe('relying on mongo.config', function () {
-    var configStore;
-
-    beforeEach(function () {
-      configStore = mongo.config;
-      mongo.config = {};
-    });
-
-    afterEach(function () {
-      mongo.config = configStore;
-    });
-
-    it('creates a resource URL from the given parameters', function () {
-      var gru = mongo.request._getResURL;
-      mongo.config = {baseUrl: '/kpop/'};
-      expect(gru('iu', 'jjang')).toBe('/kpop/iu/db/jjang/');
-      mongo.config = {baseUrl: 'mws/'};
-      expect(gru(30, 2)).toBe('mws/30/db/2/');
-      expect(gru(null)).toBe('mws/null/db/undefined/');
-      mongo.config = {baseUrl: 123};
-      expect(gru('a', 'b')).toBe('123a/db/b/');
-    });
-  });
-
-  it('prunes the given keys from the given object if undefined or null',
-      function () {
-    function Parent() {
-      this.a = 'a';
-      this.b = null;
-    }
-    function Child(y, z) {
-      this.y = y;
-      this.z = z;
-    }
-    Child.prototype = Parent;
-
-    var keysToDelete = ['b', 'z'];
-    var actual = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', b: undefined, y: undefined, z: null}, // 1
-      {a: 'a'}, // 2
-      {}, // 3
-      new Parent(), // 4
-      new Child('y', 'z'), // 5
-      new Child('y') // 6
-    ];
-    var expected = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', y: undefined}, // 1
-      {a: 'a'}, // 2
-      {} // 3
-    ];
-    var tmp = new Parent();
-    delete tmp.b;
-    expected.push(tmp);  // 4
-    expected.push(new Child('y', 'z')); // 5
-    tmp = new Child('y');
-    delete tmp.z;
-    expected.push(tmp); // 6
-
-    actual.forEach(function (obj, i) {
-      mongo.request._pruneKeys(obj, keysToDelete);
-      expect(obj).toEqual(expected[i]);
-    });
-    actual = {a: 'a', b: 'b'};
-    mongo.request._pruneKeys(actual, []);
-    expect(actual).toEqual({a: 'a', b: 'b'});
-  });
-
-  it('stringifies the keys of the given object', function () {
-    var js = JSON.stringify;
-    var actual =  [
-      {str: 'a', number: 0, obj: {key: 'val'}},
-      {}
-    ];
-    var expected = [
-      {str: js('a'), number: js(0), obj: JSON.stringify({key: 'val'})},
-      {}
-    ];
-    actual.forEach(function (obj, i) {
-      mongo.request._stringifyKeys(obj);
-      expect(obj).toEqual(expected[i]);
-    });
-  });
+  // TODO: Test.
 });
 
 
@@ -1171,6 +1087,80 @@ describe('The util module', function () {
     var statements = mongo.util.sourceToStatements(source, ast);
     statements.forEach(function (statement, i) {
       expect(statement).toBe(expected[i]);
+    });
+  });
+
+  it('creates a resource URL from the given parameters', function () {
+    var configStore = mongo.config;
+    var gru = mongo.util.getDBCollectionResURL;
+    mongo.config = {baseUrl: '/kpop/'};
+    expect(gru('iu', 'jjang')).toBe('/kpop/iu/db/jjang/');
+    mongo.config = {baseUrl: 'mws/'};
+    expect(gru(30, 2)).toBe('mws/30/db/2/');
+    expect(gru(null)).toBe('mws/null/db/undefined/');
+    mongo.config = {baseUrl: 123};
+    expect(gru('a', 'b')).toBe('123a/db/b/');
+    mongo.config = configStore;
+  });
+
+  it('prunes the given keys from the given object if undefined or null',
+      function () {
+    function Parent() {
+      this.a = 'a';
+      this.b = null;
+    }
+    function Child(y, z) {
+      this.y = y;
+      this.z = z;
+    }
+    Child.prototype = Parent;
+
+    var keysToDelete = ['b', 'z'];
+    var actual = [
+      {b: 'b', z: 'z'}, // 0
+      {a: 'a', b: undefined, y: undefined, z: null}, // 1
+      {a: 'a'}, // 2
+      {}, // 3
+      new Parent(), // 4
+      new Child('y', 'z'), // 5
+      new Child('y') // 6
+    ];
+    var expected = [
+      {b: 'b', z: 'z'}, // 0
+      {a: 'a', y: undefined}, // 1
+      {a: 'a'}, // 2
+      {} // 3
+    ];
+    var tmp = new Parent();
+    delete tmp.b;
+    expected.push(tmp);  // 4
+    expected.push(new Child('y', 'z')); // 5
+    tmp = new Child('y');
+    delete tmp.z;
+    expected.push(tmp); // 6
+
+    actual.forEach(function (obj, i) {
+      mongo.util.pruneKeys(obj, keysToDelete);
+      expect(obj).toEqual(expected[i]);
+    });
+    actual = {a: 'a', b: 'b'};
+    mongo.util.pruneKeys(actual, []);
+    expect(actual).toEqual({a: 'a', b: 'b'});
+  });
+
+  it('stringifies the keys of the given object', function () {
+    var js = JSON.stringify;
+    var actual =  [
+      {str: 'a', number: 0, obj: {key: 'val'}},
+      {}
+    ];
+    var expected = [
+      {str: js('a'), number: js(0), obj: JSON.stringify({key: 'val'})},
+      {}
+    ];
+    actual.forEach(function (obj, i) {
+      mongo.util.stringifyKeys(obj);
+      expect(obj).toEqual(expected[i]);
     });
   });
 });
