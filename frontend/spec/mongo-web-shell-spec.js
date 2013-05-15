@@ -669,6 +669,42 @@ describe('The mutateSource module', function () {
         /\s+/g, '');
     expect(actual).toEqual(expected);
   });
+
+  it('replaces keywords with valid JavaScript calls', function () {
+    var shellID = 0;
+    function getResult() {
+      var args = Array.prototype.slice.call(arguments).map(function (arg) {
+        return '\'' + arg + '\'';
+      }).join(', ');
+      args = [shellID].concat(args);
+      return 'mongo.keyword.evaluate(' + args + ')';
+    }
+    var source = [
+      'help', 'it', 'show', 'use',
+      'help arg1',
+      'help arg1 arg2',
+      'help arg1 arg2 unusedArg',
+      'not a keyword'
+    ].join('; ');
+    var expected = [
+      getResult('help'), getResult('it'), getResult('show'), getResult('use'),
+      getResult('help', 'arg1'),
+      getResult('help', 'arg1', 'arg2'),
+      getResult('help', 'arg1', 'arg2', 'unusedArg'),
+      'not a keyword'
+    ].join('; ').replace(/\s+/g, '');
+    var actual = ms.swapKeywords(source, shellID).replace(/\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
+
+  it('converts the given tokens into a mongo.keyword call', function () {
+    var shellID = 0;
+    var tokens = ['one', 'two', 'three'];
+    var expected = 'mongo.keyword.evaluate(' + shellID + ', \'one\', ' +
+        '\'two\', \'three\')';
+    var actual = ms._convertTokensToKeywordCall(shellID, tokens);
+    expect(actual).toEqual(expected);
+  });
 });
 
 
