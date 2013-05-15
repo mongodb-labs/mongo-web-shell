@@ -460,6 +460,38 @@ describe('The mutateSource module', function () {
     return root;
   }
 
+  it('gets the local variable identifiers of the current node', function () {
+    var source =
+        'var global;' +
+        'global2 = 2;' +
+        'function one(a) {' +
+          'global3 = 3;' +
+          'var b, c = 3;' +
+          'var d = function (x) {' +
+            'global4 = 4;' +
+            'var y, z = 4;' +
+          '}' +
+        '}';
+    var ast = getFalafelAST(source);
+    var scope = {
+      top: ast.body[0],
+      mid: ast.body[2].body.body[0],
+      bottom: ast.body[2].body.body[2].declarations[0].init.body.body[0]
+    };
+    var expected = {
+      top: {},
+      mid: {one: true, a: true, b: true, c: true, d: true},
+      bottom: {one: true, a: true, b: true, c: true, d: true, x: true, y: true,
+        z: true}
+    };
+    for (var key in expected) {
+      if (expected.hasOwnProperty(key)) {
+        expect(ms._getLocalVariableIdentifiers(scope[key])).toEqual(
+            expected[key]);
+      }
+    }
+  });
+
   describe('working with containing functions', function () {
     var varDeclNode, topFnNode, bottomFnNode, returnNode;
 
