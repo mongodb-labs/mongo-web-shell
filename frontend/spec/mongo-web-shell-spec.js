@@ -11,11 +11,6 @@ var CONST = {
     classes: {
       root: 'mongo-web-shell',
       internal: [
-        'mws-wrapper',
-        'mws-topbar',
-        'mws-hide-button',
-        'mws-body',
-        'mws-scrollbar-spacer',
         'mws-response-list',
         'input-li',
         'mws-form',
@@ -100,7 +95,6 @@ describe('The init function', function () {
       }
       shellSpy = jasmine.createSpyObj('Shell', [
         'attachClickListener',
-        'attachHideButtonHandler',
         'attachInputHandler',
         'enableInput',
         'injectHTML',
@@ -125,7 +119,6 @@ describe('The init function', function () {
       });
       expect(shellSpy.injectHTML.calls.length).toBe(SHELL_COUNT);
       expect(shellSpy.attachClickListener.calls.length).toBe(SHELL_COUNT);
-      expect(shellSpy.attachHideButtonHandler.calls.length).toBe(SHELL_COUNT);
     });
 
     it('attaches and enables input handlers on mws resource creation',
@@ -1162,7 +1155,7 @@ describe('A Shell', function () {
     it('attaches a click listener', function () {
       spyOn(instance, 'onClick');
       instance.attachClickListener();
-      instance.$body.trigger('click');
+      instance.$rootElement.trigger('click');
       expect(instance.onClick).toHaveBeenCalled();
     });
 
