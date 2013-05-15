@@ -210,15 +210,6 @@ mongo.keyword = (function () {
   function evaluate(shellID, keyword, arg, arg2, unusedArg) {
     var shell = mongo.shells[shellID];
     switch (keyword) {
-    case 'use':
-      // Since use is disabled, we don't care how many args so call right away.
-      mongo.keyword.use(shell, arg, arg2, unusedArg);
-      break;
-
-    case 'it':
-      mongo.keyword.it(shell); // it ignores other arguments.
-      break;
-
     case 'help':
     case 'show':
       if (unusedArg) {
@@ -226,13 +217,18 @@ mongo.keyword = (function () {
         console.debug('Too many parameters to', keyword + '.');
         return;
       }
-      mongo.keyword[keyword](shell, arg, arg2);
+      break;
+
+    case 'it': // 'it' ignores other arguments.
+    case 'use': // 'use' is disabled so the arguments don't matter.
       break;
 
     default:
       shell.insertResponseLine('Unknown keyword: ' + keyword + '.');
       console.debug('Unknown keyword', keyword);
+      return;
     }
+    mongo.keyword[keyword](shell, arg, arg2);
   }
 
   function help(shell, arg, arg2) {
