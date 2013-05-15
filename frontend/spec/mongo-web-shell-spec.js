@@ -476,6 +476,30 @@ describe('The mutateSource module', function () {
     expect(actual).toEqual(expected);
   });
 
+  it('hides global identifiers within a Shell variable', function () {
+    var source = 'var a; b = 0; function c(d) { e = f; var g; } h.h = 2; ' +
+        'i = {j: 3}; mongo.keyword = 4; mongo.keyword.evaluate();';
+    var shellID = 0;
+    var shell = 'mongo.shells[' + shellID + '].vars.';
+    var expected = 'var ' + shell + 'a; ' + shell + 'b = 0; function c(d) { ' +
+        shell + 'e = ' + shell + 'f; var g; } ' + shell + 'h.h = 2; ' + shell +
+        'i ' + '= {j: 3}; ' + shell + 'mongo.keyword = 4; ' +
+        'mongo.keyword.evaluate();';
+    expected = expected.replace(/\s+/g, '');
+    var ast;
+    var idenNodes = [];
+    falafel(source, function (node) {
+      if (node.type === 'Identifier') { idenNodes.push(node); }
+      ast = node; // Get the root.
+    });
+
+    idenNodes.forEach(function (node) {
+      ms._mutateIdentifier(node, shellID);
+    });
+    var actual = ast.source().replace(/\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
+
   it('gets the local variable identifiers of the current node', function () {
     var source =
         'var global;' +
