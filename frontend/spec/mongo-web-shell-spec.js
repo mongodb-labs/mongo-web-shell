@@ -696,6 +696,15 @@ describe('The mutateSource module', function () {
     var actual = ms.swapKeywords(source, shellID).replace(/\s+/g, '');
     expect(actual).toEqual(expected);
   });
+
+  it('converts the given tokens into a mongo.keyword call', function () {
+    var shellID = 0;
+    var tokens = ['one', 'two', 'three'];
+    var expected = 'mongo.keyword.evaluate(' + shellID + ', \'one\', ' +
+        '\'two\', \'three\')';
+    var actual = ms._convertTokensToKeywordCall(shellID, tokens);
+    expect(actual).toEqual(expected);
+  });
 });
 
 
