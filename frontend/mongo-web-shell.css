@@ -1,99 +1,41 @@
-.mws-wrapper {
-  resize: both;
-  overflow: hidden;
-  height: 400px;
-  min-height: 200px;
-  min-width: 500px;
-}
-
-.mws-wrapper * {
-  font-family: Terminal, monospace;
-}
-
-.mws-topbar {
-  background-color: transparent;
+.mongo-web-shell {
   border-radius: 10px;
-  height: 3em;
-  color: #00000;
+  height: 30em;
+  padding: 8px 16px;
 }
 
-.mws-topbar span {
-  display: inline-block;
-  line-height: 50px;
-  font-size: 35px;
-  width: 90%;
-}
-
-.mws-hide-button {
-  display: inline-block;
-  background-color: transparent;
-  border: none;
-  padding: 0;
-}
-
-.mws-hide-button:hover {
-  text-decoration: underline;
-}
-
-.mws-body {
-  resize: none;
-  border-radius: 10px;
-  height: -moz-calc(100% - 50px);
-  height: -webkit-calc(100% - 50px);
-  height: -o-calc(100% - 50px);
-  height: calc(100% - 50px);
-}
-
-.mws-body, .mws-body * {
+.mongo-web-shell, .mongo-web-shell * {
   background-color: #000000;
   color: #00e500;
   font-size: 15px;
 }
 
-.mws-body p {
-  padding: 0px;
-  margin: 0px;
-}
-
-.mws-scrollbar-spacer {
-  height: 20px;
-  border-radius: 10px;
+.mongo-web-shell p {
+  padding: 0;
+  margin: 0;
 }
 
 .mws-response-list {
-  resize: none;
   list-style-type: none;
-  /* Firefox */
-  height: -moz-calc(100% - 40px);
-  /* WebKit */
-  height: -webkit-calc(100% - 40px);
-  /* Opera */
-  height: -o-calc(100% - 40px);
-  /* Standard */
-  height: calc(100% - 40px);
-  padding-left: 20px;
-  padding-bottom: 0;
-  padding-top: 0;
+  padding: 0;
   margin: 0;
   overflow-y: auto;
   word-wrap: break-word;
 }
 
 .mws-response-list li {
-  margin-top: 3px;
-  margin-bottom: 3px;
+  margin: 3px 0;
 }
 
 .mws-form {
   display: inline-block;
-  margin-left: 5px;
-  width: 95%
+  margin-left: 1ex; /* Space before the PS1 */
+  width: 95%; /* TODO: This doesn't fill the space properly. */
 }
 
 .mws-input {
-  resize: none;
   border: none;
-  width: 100%;
+  width: 95%;
   padding: 0;
   margin: 0;
 }
