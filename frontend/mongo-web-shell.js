@@ -801,7 +801,7 @@ mongo.Shell.prototype.injectHTML = function () {
   var html =
       '<ul class="mws-response-list">' +
         '<li>' + this.$rootElement.html() + '</li>' +
-        '<li class="input-li">' +
+        '<li class="mws-input-li">' +
           '&gt;' +
           '<form class="mws-form">' +
             '<input type="text" class="mws-input" disabled="true">' +
@@ -810,7 +810,7 @@ mongo.Shell.prototype.injectHTML = function () {
       '</ul>';
   this.$rootElement.html(html);
   this.$responseList = this.$rootElement.find('.mws-response-list');
-  this.$inputLI = this.$responseList.find('.input-li');
+  this.$inputLI = this.$responseList.find('.mws-input-li');
   this.$input = this.$inputLI.find('.mws-input');
 };
 

@@ -12,7 +12,7 @@ var CONST = {
       root: 'mongo-web-shell',
       internal: [
         'mws-response-list',
-        'input-li',
+        'mws-input-li',
         'mws-form',
         'mws-input'
       ],
