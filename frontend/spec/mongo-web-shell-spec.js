@@ -500,6 +500,28 @@ describe('The mutateSource module', function () {
     expect(actual).toEqual(expected);
   });
 
+  it('replaces db.collection member expressions with a Query', function () {
+    var source = [
+      'a.collection;',
+      'db.col;',
+      'db[iu].find(\'joeun nal\');'
+    ].join(' ');
+    var shellID = 0;
+    var query = 'new mongo.Query(mongo.shells[' + shellID + '], ';
+    var expected = [
+      'a.collection;',
+      query + '"col");',
+      query + 'iu).find(\'joeun nal\');'
+    ].join(' ').replace(/\s+/g, '');
+
+    var out = getFalafelAST(source, 'MemberExpression');
+    out.nodes.forEach(function (node) {
+      ms._mutateMemberExpression(node, shellID);
+    });
+    var actual = out.ast.source().replace(/\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
+
   it('gets the local variable identifiers of the current node', function () {
     var source =
         'var global;' +
