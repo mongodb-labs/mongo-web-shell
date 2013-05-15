@@ -522,6 +522,27 @@ describe('The mutateSource module', function () {
     expect(actual).toEqual(expected);
   });
 
+  it('mutates variable declarations', function () {
+    var source = [
+      'a = 0;',
+      'var b;',
+      'var c = 1;',
+      'function d(e) { var f; g = 4; }'
+    ].join(' ');
+    var expected = [
+      'a = 0;',
+      '(function () { }());',
+      '(function () { c = 1; }());',
+      'function d(e) { var f; g = 4; }'
+    ].join(' ').replace(/\s+/g, '');
+    var out = getFalafelAST(source, 'VariableDeclaration');
+    out.nodes.forEach(function (node) {
+      ms._mutateVariableDeclaration(node);
+    });
+    var actual = out.ast.source().replace(/\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
+
   it('gets the local variable identifiers of the current node', function () {
     var source =
         'var global;' +
