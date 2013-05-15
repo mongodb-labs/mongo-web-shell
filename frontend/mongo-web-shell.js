@@ -719,6 +719,7 @@ mongo.request = (function () {
       data: params,
       dataType: 'json',
       success: function (data, textStatus, jqXHR) {
+        // TODO: This status code is undocumented.
         if (data.status === 0) {
           console.debug('dbCollectionFind success');
           cursor._storeQueryResult(data.result);
@@ -734,8 +735,8 @@ mongo.request = (function () {
       // TODO: Make this more robust (currently prints two errors, eval doesn't
       // say why it failed, etc.).
       // TODO: Should we throw in insert too?
-      // Throwing here will cause the query eval() to fail, rather than
-      // handling the edge cases in each query method individually.
+      // Throwing here will cause the query eval() to fail if not async, rather
+      // than handling the edge cases in each query method individually.
       throw 'dbCollectionFind: Server error';
     });
   }
