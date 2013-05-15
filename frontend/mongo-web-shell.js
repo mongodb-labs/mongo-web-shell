@@ -222,8 +222,7 @@ mongo.keyword = (function () {
     case 'help':
     case 'show':
       if (unusedArg) {
-        this.shell.insertResponseLine('Too many parameters to '+
-            keyword + '.');
+        shell.insertResponseLine('Too many parameters to ' + keyword + '.');
         console.debug('Too many parameters to', keyword + '.');
         return;
       }
@@ -231,7 +230,7 @@ mongo.keyword = (function () {
       break;
 
     default:
-      this.shell.insertResponseLine('Unknown keyword: ' + keyword + '.');
+      shell.insertResponseLine('Unknown keyword: ' + keyword + '.');
       console.debug('Unknown keyword', keyword);
     }
   }
@@ -258,7 +257,7 @@ mongo.keyword = (function () {
 
   function use(shell, arg, arg2) {
     console.debug('cannot change db: functionality disabled.');
-    this.shell.insertResponseLine('Cannot change db: functionality disabled.');
+    shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
   return {
