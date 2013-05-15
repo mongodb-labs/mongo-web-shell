@@ -757,9 +757,11 @@ mongo.request = (function () {
       dataType: 'json',
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {
+        // TODO: This code is undocumented.
         if (data.status === 0) {
           console.info('Insertion successful:', data);
         } else {
+          // TODO: Alert the user.
           console.debug('dbCollectionInsert error', data.result);
         }
       }

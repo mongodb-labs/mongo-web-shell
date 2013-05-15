@@ -803,7 +803,9 @@ describe('The request module', function () {
     });
 
     it('calls db.collection.insert() on the database', function () {
-      var query = {shell: {}};
+      var query = {
+        shell: jasmine.createSpyObj('Shell', ['insertResponseLine'])
+      };
       var document_ = 'doc';
       mongo.request.dbCollectionInsert(query, document_);
       expect(requests.length).toBe(1);
@@ -814,6 +816,15 @@ describe('The request module', function () {
       expect(req.requestBody).toMatch(expectedParams);
       expect(req.requestHeaders.Accept).toMatch('application/json');
       expect(req.requestHeaders['Content-Type']).toMatch('application/json');
+
+      req.respond(200, '', '{}');
+      expect(query.shell.insertResponseLine).not.toHaveBeenCalled();
+
+      // Failure: HTTP error.
+      mongo.request.dbCollectionInsert(query, document_);
+      req = requests[1];
+      req.respond(404, '', '{}');
+      expect(query.shell.insertResponseLine).toHaveBeenCalled();
     });
 
     it('keeps the shell mws resource alive', function () {
@@ -827,6 +838,7 @@ describe('The request module', function () {
       expect(req.method).toBe('POST');
       expect(req.url).toBe(expectedURL);
       expect(req.requestBody).toBe(null);
+      // There is nothing to test for if the request succeeds or not.
     });
   });
 });
