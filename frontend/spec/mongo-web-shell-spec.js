@@ -652,6 +652,23 @@ describe('The mutateSource module', function () {
       expect(ms._nodeIsInsideFunction(returnNode)).toBe(true);
     });
   });
+
+  it('swaps user input calls ', function () {
+    // XXX: If the output of this method were to be tested thoroughly without
+    // stubbing methods, we would be doing a lot of repetitive work as this
+    // method is essentially a wrapper. However, we cannot stub these methods
+    // directly since they are called from within the module closure and
+    // moving to an external reference would be unsafe and thus in bad taste.
+    // As such, a basic test exists here but it is not thorough - that is left
+    // for the node-specific methods it calls.
+    var userInput = 'a = 4;';
+    var shellID = 0;
+    var expected = 'mongo.shells[' + shellID + '].vars.a = 4;';
+    expected = expected.replace(/\s+/g, '');
+    var actual = mongo.mutateSource.swapMongoCalls(userInput, shellID).replace(
+        /\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
 });
 
 
