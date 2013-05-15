@@ -746,12 +746,13 @@ describe('The request module', function () {
     it('calls db.collection.find() on the database', function () {
       var cursor = {
         _query: {args: {projection: {_id: 0}, query: {iu: 'jjang'}}},
-        _shell: {}
+        _shell: jasmine.createSpyObj('Shell', ['insertResponseLine']),
+        _storeQueryResult: jasmine.createSpy('storeQueryResult')
       };
-      var onSuccess = null;
+      var callbackSpy = jasmine.createSpy('callback');
       var async = true;
 
-      mongo.request.dbCollectionFind(cursor, onSuccess, async);
+      mongo.request.dbCollectionFind(cursor, callbackSpy, async);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('GET');
@@ -764,11 +765,41 @@ describe('The request module', function () {
       expect(req.requestBody).toBe(null);
       expect(req.async).toBe(async);
       expect(req.requestHeaders.Accept).toMatch('application/json');
+      expect(callbackSpy).not.toHaveBeenCalled();
 
       async = false;
-      mongo.request.dbCollectionFind(cursor, onSuccess, async);
+      mongo.request.dbCollectionFind(cursor, callbackSpy, async);
       req = requests[1];
       expect(req.async).toBe(async);
+      expect(callbackSpy).not.toHaveBeenCalled();
+
+      req = requests[0];
+      var expectedResult = [{iu: 'jjang'}, {exo: 'k'}];
+      // TODO: This status code is undocumented.
+      var body = {status: 0, result: expectedResult};
+      req.respond(200, '', JSON.stringify(body));
+      expect(cursor._storeQueryResult).toHaveBeenCalledWith(expectedResult);
+      expect(callbackSpy).toHaveBeenCalled();
+      expect(cursor._shell.insertResponseLine).not.toHaveBeenCalled();
+
+      // Failure: HTTP Error.
+      // XXX: req.respond only seems to work if async === true.
+      mongo.request.dbCollectionFind(cursor, callbackSpy, true);
+      req = requests[2];
+      req.respond(404, '', JSON.stringify(body));
+      expect(cursor._storeQueryResult.call.length).toBe(1);
+      expect(callbackSpy.calls.length).toBe(1);
+      expect(cursor._shell.insertResponseLine).toHaveBeenCalled();
+      // TODO: How to catch the exception?
+
+      // Failure: Bad status code.
+      body = {status: -1, result: expectedResult};
+      mongo.request.dbCollectionFind(cursor, callbackSpy, true);
+      req = requests[3];
+      req.respond(200, '', JSON.stringify(body));
+      expect(cursor._storeQueryResult.call.length).toBe(1);
+      expect(callbackSpy.calls.length).toBe(1);
+      expect(cursor._shell.insertResponseLine.calls.length).toBe(2);
     });
 
     it('calls db.collection.insert() on the database', function () {
