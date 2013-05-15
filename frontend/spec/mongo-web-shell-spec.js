@@ -460,6 +460,22 @@ describe('The mutateSource module', function () {
     return root;
   }
 
+  it('hides global func declarations within a Shell variable', function () {
+    var source = 'function a(b, c) { function d(e) { return 4; } }';
+    var shellID = 0;
+    var expected = 'mongo.shells[' + shellID + '].vars.a = function (b, c) ' +
+        '{ function d(e) { return 4; } }';
+    expected = expected.replace(/\s+/g, '');
+    var ast = getFalafelAST(source);
+    var topFnNode = ast.body[0];
+    var bottomFnNode = topFnNode.body.body[0];
+    // Order matters: the tree is traversed leaf to root.
+    ms._mutateFunctionDeclaration(bottomFnNode, shellID);
+    ms._mutateFunctionDeclaration(topFnNode, shellID);
+    var actual = ast.source().replace(/\s+/g, '');
+    expect(actual).toEqual(expected);
+  });
+
   it('gets the local variable identifiers of the current node', function () {
     var source =
         'var global;' +
