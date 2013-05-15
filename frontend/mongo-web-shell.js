@@ -584,11 +584,11 @@ mongo.Query = function (shell, collection) {
 
 mongo.Query.prototype.find = function (query, projection) {
   var args = {query: query, projection: projection};
-  return new mongo.Cursor(this, mongo.request.db_collection_find, args);
+  return new mongo.Cursor(this, mongo.request.dbCollectionFind, args);
 };
 
 mongo.Query.prototype.insert = function (document_) {
-  mongo.request.db_collection_insert(this, document_);
+  mongo.request.dbCollectionInsert(this, document_);
 };
 
 
@@ -695,21 +695,22 @@ mongo.request = (function () {
    * async, as determined by the given parameter, as some functions (e.g.
    * cursor.next()) need to return a value from the request directly into eval.
    */
-  function db_collection_find(cursor, onSuccess, async) {
+  function dbCollectionFind(cursor, onSuccess, async) {
     var resID = cursor._shell.mwsResourceID;
     var args = cursor._query.args;
 
-    var url = getResURL(resID, cursor._collection) + 'find';
+    var url = mongo.util.getDBCollectionResURL(resID, cursor._collection) +
+        'find';
     var params = {
       query: args.query,
       projection: args.projection
     };
-    pruneKeys(params, ['query', 'projection']);
+    mongo.util.pruneKeys(params, ['query', 'projection']);
     // For a GET request, jQuery divides each key in a JSON object into params
     // (i.e. var obj = {one: 1, two: 2} => ?obj[one]=1&obj[two]=2 ), which is
     // harder to reconstruct on the backend than just stringifying the values
     // individually, which is what we do here.
-    stringifyKeys(params);
+    mongo.util.stringifyKeys(params);
 
     console.debug('find() request:', url, params);
     $.ajax({
@@ -718,30 +719,32 @@ mongo.request = (function () {
       data: params,
       dataType: 'json',
       success: function (data, textStatus, jqXHR) {
+        // TODO: This status code is undocumented.
         if (data.status === 0) {
-          console.debug('db_collection_find success');
+          console.debug('dbCollectionFind success');
           cursor._storeQueryResult(data.result);
           onSuccess();
         } else {
-          cursor.shell.insertResponseLine('ERROR: server error occured');
-          console.debug('db_collection_find error:', data.result);
+          cursor._shell.insertResponseLine('ERROR: server error occured');
+          console.debug('dbCollectionFind error:', data.result);
         }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       cursor._shell.insertResponseLine('ERROR: server error occured');
-      console.error('db_collection_find fail:', textStatus, errorThrown);
+      console.error('dbCollectionFind fail:', textStatus, errorThrown);
       // TODO: Make this more robust (currently prints two errors, eval doesn't
       // say why it failed, etc.).
       // TODO: Should we throw in insert too?
-      // Throwing here will cause the query eval() to fail, rather than
-      // handling the edge cases in each query method individually.
-      throw 'db_collection_find: Server error';
+      // Throwing here will cause the query eval() to fail if not async, rather
+      // than handling the edge cases in each query method individually.
+      throw 'dbCollectionFind: Server error';
     });
   }
 
-  function db_collection_insert(query, document_) {
+  function dbCollectionInsert(query, document_) {
     var resID = query.shell.mwsResourceID;
-    var url = getResURL(resID, query.collection) + 'insert';
+    var url = mongo.util.getDBCollectionResURL(resID, query.collection) +
+        'insert';
     var params = {
       document: document_
     };
@@ -754,62 +757,35 @@ mongo.request = (function () {
       dataType: 'json',
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {
+        // TODO: This code is undocumented.
         if (data.status === 0) {
           console.info('Insertion successful:', data);
         } else {
-          console.debug('db_collection_insert error', data.result);
+          // TODO: Alert the user.
+          console.debug('dbCollectionInsert error', data.result);
         }
       }
     }).fail(function (jqXHR, textStatus, errorThrown) {
       query.shell.insertResponseLine('ERROR: server error occured');
-      console.error('db_collection_insert fail:', textStatus, errorThrown);
+      console.error('dbCollectionInsert fail:', textStatus, errorThrown);
     });
-  }
-
-  function getResURL(resID, collection) {
-    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
-  }
-
-  /**
-   * Removes the given keys from the given object if they are undefined or
-   * null. This can be used to make requests with optional args more compact.
-   */
-  function pruneKeys(obj, keys) {
-    keys.forEach(function (key, index, array) {
-      var val = obj[key];
-      if (val === undefined || val === null) {
-        delete obj[key];
-      }
-    });
-  }
-
-  function stringifyKeys(obj) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        obj[key] = JSON.stringify(obj[key]);
-      }
-    }
   }
 
   function keepAlive(shell) {
-    var url = mongo.config.baseUrl + this.mwsResourceID + '/keep-alive';
+    var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
-      },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      console.err('ERROR: keep alive failed: ' + errorThrown +
-          ' STATUS: ' + textStatus);
-    });
+      }).fail(function (jqXHR, textStatus, errorThrown) {
+        console.err('ERROR: keep alive failed: ' + errorThrown +
+            ' STATUS: ' + textStatus);
+      });
   }
 
   return {
     createMWSResource: createMWSResource,
-    db_collection_find: db_collection_find,
-    db_collection_insert: db_collection_insert,
-    keepAlive: keepAlive,
-
-    _getResURL: getResURL,
-    _pruneKeys: pruneKeys,
-    _stringifyKeys: stringifyKeys
+    dbCollectionFind: dbCollectionFind,
+    dbCollectionInsert: dbCollectionInsert,
+    keepAlive: keepAlive
   };
 }());
 
@@ -1055,11 +1031,39 @@ mongo.util = (function () {
     return statements;
   }
 
+  function getDBCollectionResURL(resID, collection) {
+    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
+  }
+
+  /**
+   * Removes the given keys from the given object if they are undefined or
+   * null. This can be used to make requests with optional args more compact.
+   */
+  function pruneKeys(obj, keys) {
+    keys.forEach(function (key, index, array) {
+      var val = obj[key];
+      if (val === undefined || val === null) {
+        delete obj[key];
+      }
+    });
+  }
+
+  function stringifyKeys(obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        obj[key] = JSON.stringify(obj[key]);
+      }
+    }
+  }
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
     mergeObjects: mergeObjects,
     sourceToStatements: sourceToStatements,
+    getDBCollectionResURL: getDBCollectionResURL,
+    pruneKeys: pruneKeys,
+    stringifyKeys: stringifyKeys,
 
     _addOwnProperties: addOwnProperties
   };
