@@ -492,6 +492,51 @@ describe('The mutateSource module', function () {
     }
   });
 
+  describe('working with identifiers', function () {
+    var funcNode;
+
+    beforeEach(function () {
+      var source = 'function a(aa, bb, cc) { var b, c; var d; }' +
+          'var e = function f(dd, ee, ff) { var g; };';
+      var ast = getFalafelAST(source);
+      funcNode = {
+        a: ast.body[0],
+        f: ast.body[1].declarations[0].init
+      };
+    });
+
+    afterEach(function () {
+      funcNode = null;
+    });
+
+    it('extracts identifiers of parameters to a function', function () {
+      var expected = {
+        a: {aa: true, bb: true, cc: true},
+        f: {dd: true, ee: true, ff: true}
+      };
+      for (var key in expected) {
+        if (expected.hasOwnProperty(key)) {
+          var paramsNode = funcNode[key].params;
+          expect(ms._extractParamsIdentifiers(paramsNode)).toEqual(
+              expected[key]);
+        }
+      }
+    });
+
+    it('extracts identifiers in the body of a function', function () {
+      var expected = {
+        a: {b: true, c: true, d: true},
+        f: {g: true}
+      };
+      for (var key in expected) {
+        if (expected.hasOwnProperty(key)) {
+          var bodyNode = funcNode[key].body;
+          expect(ms._extractBodyIdentifiers(bodyNode)).toEqual(expected[key]);
+        }
+      }
+    });
+  });
+
   describe('working with containing functions', function () {
     var varDeclNode, topFnNode, bottomFnNode, returnNode;
 
