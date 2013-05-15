@@ -21,7 +21,6 @@ mongo.init = function () {
     mongo.shells[index] = shell;
     shell.injectHTML();
     shell.attachClickListener();
-    shell.attachHideButtonHandler(shell);
     mongo.request.createMWSResource(shell, function (data) {
       shell.attachInputHandler(data.res_id);
       shell.enableInput(true);
@@ -188,20 +187,9 @@ mongo.dom = (function () {
     $('head').prepend(linkElement); // Prepend so css can be overridden.
   }
 
-  function toggleShellVisibility(shell) {
-    if (shell.$rootElement.find('.mws-body').is(':visible')) {
-      shell.$body.hide();
-      shell.$hideButton.html('[Show]');
-    } else {
-      shell.$body.show();
-      shell.$hideButton.html('[Hide]');
-    }
-  }
-
   return {
     retrieveConfig: retrieveConfig,
-    injectStylesheet: injectStylesheet,
-    toggleShellVisibility: toggleShellVisibility
+    injectStylesheet: injectStylesheet
   };
 }());
 
@@ -791,8 +779,6 @@ mongo.request = (function () {
 
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
-  this.$hideButton = null;
-  this.$body = null;
   this.$responseList = null;
   this.$inputLI = null;
   this.$input = null;
@@ -810,39 +796,26 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  var html =  '<div class="mws-wrapper">' +
-                '<div class="mws-topbar">' +
-                  '<span> mongoDb web shell </span>' +
-                  '<button type="button" class="mws-hide-button">' +
-                    '[Hide]' +
-                  '</button>' +
-                '</div>' +
-                '<div class="mws-body">' +
-                  '<div class="mws-scrollbar-spacer"/>' +
-                  '<ul class="mws-response-list">' +
-                    '<li>' +
-                      this.$rootElement.html() +
-                    '</li>' +
-                    '<li class="input-li">' +
-                      '&gt;' +
-                      '<form class="mws-form">' +
-                        '<input type="text"' +
-                        'class="mws-input" disabled="true">' +
-                      '</form>' +
-                    '</li>' +
-                  '</ul>' +
-                '</div>' +
-              '</div>';
+  // We're injecting into <div class="mongo-web-shell">. The previous HTML
+  // content is used to fill the shell.
+  var html =
+      '<ul class="mws-response-list">' +
+        '<li>' + this.$rootElement.html() + '</li>' +
+        '<li class="input-li">' +
+          '&gt;' +
+          '<form class="mws-form">' +
+            '<input type="text" class="mws-input" disabled="true">' +
+          '</form>' +
+        '</li>' +
+      '</ul>';
   this.$rootElement.html(html);
-  this.$hideButton = this.$rootElement.find('.mws-hide-button');
-  this.$body = this.$rootElement.find('.mws-body');
-  this.$responseList = this.$body.find('.mws-response-list');
+  this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.input-li');
   this.$input = this.$inputLI.find('.mws-input');
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
-  this.$body.click(this.onClick.bind(this));
+  this.$rootElement.click(this.onClick.bind(this));
 };
 
 mongo.Shell.prototype.onClick = function () { this.$input.focus(); };
@@ -855,12 +828,6 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
     shell.handleInput();
   });
   this.readline = new mongo.Readline(this.$input);
-};
-
-mongo.Shell.prototype.attachHideButtonHandler = function (shell) {
-  this.$hideButton.click(function () {
-    mongo.dom.toggleShellVisibility(shell);
-  });
 };
 
 /**
