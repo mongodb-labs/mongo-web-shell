@@ -200,7 +200,7 @@ mongo.keyword = (function () {
     switch (keyword) {
     case 'help':
     case 'show':
-      if (unusedArg) {
+      if (unusedArg !== undefined) {
         shell.insertResponseLine('Too many parameters to ' + keyword + '.');
         console.debug('Too many parameters to', keyword + '.');
         return;
@@ -239,7 +239,7 @@ mongo.keyword = (function () {
     console.debug('keyword.show called.');
   }
 
-  function use(shell, arg, arg2) {
+  function use(shell) {
     console.debug('cannot change db: functionality disabled.');
     shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
