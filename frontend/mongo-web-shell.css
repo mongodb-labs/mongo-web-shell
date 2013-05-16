@@ -8,6 +8,7 @@
   background-color: #000000;
   color: #00e500;
   font-size: 15px;
+  font-family: monospace;
 }
 
 .mongo-web-shell p {
