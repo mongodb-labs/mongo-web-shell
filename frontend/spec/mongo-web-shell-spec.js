@@ -495,6 +495,10 @@ describe('The keyword module', function () {
     });
   });
 
+  xit('mongo.keyword.help', function () {
+    // TODO: Implement this when the function is implemented.
+  });
+
   it('prints a batch from the last used cursor', function () {
     var hasNext;
     var cursorSpy = jasmine.createSpyObj('Cursor', ['hasNext', '_printBatch']);
@@ -512,6 +516,10 @@ describe('The keyword module', function () {
     hasNext = true;
     mk.it(shellSpy);
     expect(cursorSpy._printBatch).toHaveBeenCalled();
+  });
+
+  xit('mongo.keyword.show', function () {
+    // TODO: Implement this when the function is implemented.
   });
 
   it('warns the user that the "use" keyword is disabled', function () {
