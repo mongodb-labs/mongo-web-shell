@@ -435,10 +435,18 @@ describe('The dom module', function () {
 
 describe('The keyword module', function () {
   var mk = mongo.keyword;
+  var shellSpy;
+
+  beforeEach(function () {
+    shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
+  });
+
+  afterEach(function () {
+    shellSpy = null;
+  });
 
   it('switches over which keyword function to call', function () {
     var shellID = 0;
-    var shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
     mongo.shells[shellID] = shellSpy;
     var old;
     var keywords = ['help', 'it', 'show', 'use'];
@@ -485,6 +493,15 @@ describe('The keyword module', function () {
     keywords.forEach(function (keyword) {
       expect(mk[keyword].calls.length).toBe(old[keyword]);
     });
+  });
+
+  it('warns the user that the "use" keyword is disabled', function () {
+    var args = [];
+    for (var i = 0; i < 3; i++) {
+      mk.use(shellSpy, args[0], args[1]);
+      expect(shellSpy.insertResponseLine.calls.length).toBe(i + 1);
+      args.push(i);
+    }
   });
 });
 
