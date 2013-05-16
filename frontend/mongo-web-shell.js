@@ -200,7 +200,7 @@ mongo.keyword = (function () {
     switch (keyword) {
     case 'help':
     case 'show':
-      if (unusedArg) {
+      if (unusedArg !== undefined) {
         shell.insertResponseLine('Too many parameters to ' + keyword + '.');
         console.debug('Too many parameters to', keyword + '.');
         return;
