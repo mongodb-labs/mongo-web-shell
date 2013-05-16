@@ -495,6 +495,25 @@ describe('The keyword module', function () {
     });
   });
 
+  it('prints a batch from the last used cursor', function () {
+    var hasNext;
+    var cursorSpy = jasmine.createSpyObj('Cursor', ['hasNext', '_printBatch']);
+    cursorSpy.hasNext.andCallFake(function () { return hasNext; });
+
+    shellSpy.lastUsedCursor = null;
+    mk.it(shellSpy);
+    expect(shellSpy.insertResponseLine).toHaveBeenCalled();
+
+    shellSpy.lastUsedCursor = cursorSpy;
+    hasNext = false;
+    mk.it(shellSpy);
+    expect(shellSpy.insertResponseLine.calls.length).toBe(2);
+
+    hasNext = true;
+    mk.it(shellSpy);
+    expect(cursorSpy._printBatch).toHaveBeenCalled();
+  });
+
   it('warns the user that the "use" keyword is disabled', function () {
     var args = [];
     for (var i = 0; i < 3; i++) {
