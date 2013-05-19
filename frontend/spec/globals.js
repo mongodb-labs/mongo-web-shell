@@ -24,7 +24,7 @@ var CONST = {
       mwsHost: 'mws-host'
     },
     defaults: {
-      cssPath: 'mongo-web-shell.css',
+      cssPath: 'mongoWebShell.css',
       mwsHost: '',
       baseUrlPostfix: '/mws/'
     }
