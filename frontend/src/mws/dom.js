@@ -2,7 +2,7 @@
 mongo.dom = (function () {
   // TODO: Should each shell be able to have its own host?
   // Default config values.
-  var CSS_PATH = 'mongo-web-shell.css';
+  var CSS_PATH = 'mongoWebShell.css';
   var MWS_HOST = '';
 
   function retrieveConfig() {
