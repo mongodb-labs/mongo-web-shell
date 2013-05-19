@@ -29,5 +29,5 @@ var CONST = {
       baseUrlPostfix: '/mws/'
     }
   },
-  scriptName: 'mongo-web-shell.js'
+  scriptName: 'mongoWebShell.js'
 };
