@@ -1,0 +1,7 @@
+frontend/spec/
+tests/
+
+standalone_sample/
+
+# XXX: Prevent heroku from detecting a node app.
+package.json
