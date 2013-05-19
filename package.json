@@ -1,0 +1,12 @@
+{
+  "name": "mongo-web-shell",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/10gen-labs/mongo-web-shell"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-concat": "~0.3.0"
+  }
+}

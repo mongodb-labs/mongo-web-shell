@@ -1,6 +1,13 @@
+# local settings
 .env
+
+# packages
+node_modules/
 venv/
 
+# build
+frontend/dist/
 *.pyc
 
+# misc
 .DS_Store
