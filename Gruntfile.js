@@ -32,7 +32,8 @@ module.exports = function (grunt) {
           specs: SPEC_DIR + '**/*.spec.js',
           helpers: [
             SPEC_DIR + 'disableConsole.js',
-            SPEC_DIR + 'globals.js'
+            SPEC_DIR + 'globals.js',
+            SPEC_DIR + 'phantomJSWorkarounds.js'
           ],
           vendor: [
             'http://sinonjs.org/releases/sinon-1.6.0.js',
@@ -67,5 +68,5 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   grunt.registerTask('default', ['concat']);
-  grunt.registerTask('test', ['concat', 'jasmine']);
+  grunt.registerTask('test', ['jshint', 'concat', 'jasmine']);
 };
