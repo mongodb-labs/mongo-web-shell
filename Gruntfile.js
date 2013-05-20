@@ -30,7 +30,10 @@ module.exports = function (grunt) {
         src: DIST_DIR + '**/*.js',
         options: {
           specs: SPEC_DIR + '**/*.spec.js',
-          helpers: SPEC_DIR + 'globals.js',
+          helpers: [
+            SPEC_DIR + 'disableConsole.js',
+            SPEC_DIR + 'globals.js'
+          ],
           vendor: [
             'http://sinonjs.org/releases/sinon-1.6.0.js',
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
