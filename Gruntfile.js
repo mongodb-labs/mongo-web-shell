@@ -1,5 +1,6 @@
 /* jshint node: true */
 var FRONTEND_DIR = 'frontend/';
+var SPEC_DIR = FRONTEND_DIR + 'spec/';
 var SRC_DIR = FRONTEND_DIR + 'src/';
 var DIST_DIR = FRONTEND_DIR + 'dist/';
 
@@ -19,6 +20,15 @@ module.exports = function (grunt) {
       }
     },
 
+    jshint: {
+      gruntfile: {src: ['Gruntfile.js']},
+      spec: {src: [SPEC_DIR + '**/*.js']},
+      src: {src: [SRC_DIR + '**/*.js']},
+      options: {
+        jshintrc: FRONTEND_DIR + '.jshintrc'
+      }
+    },
+
     watch: {
       dist: {
         files: [SRC_DIR + '**/*'],
@@ -28,6 +38,7 @@ module.exports = function (grunt) {
   });
 
   grunt.loadNpmTasks('grunt-contrib-concat');
+  grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
 
   grunt.registerTask('default', ['concat']);

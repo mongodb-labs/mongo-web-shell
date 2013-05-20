@@ -39,9 +39,8 @@ pip, while the front-end dependencies are managed via npm.
 ### Linters
 All committed code should be linted.
 
-Front-end: [jshint][]. Installation via npm is recommended:
-
-    npm install -g jshint
+Front-end: [jshint][]. Installation will occur in the `package.json`
+dependencies.
 
 Back-end: [pep8][]. Installation via pip within the virtual environment is
 recommended:
@@ -92,9 +91,9 @@ Tests
 ### Front-end
 Open `frontend/SpecRunner.html` in a browser.
 
-Lint via jshint.
+Lint via the `jshint` target.
 
-    jshint frontend
+    grunt jshint
 
 ### Back-end
 From within a virtual environment:
