@@ -7,6 +7,8 @@ venv/
 
 # build
 frontend/dist/
+.grunt/
+_SpecRunner.html
 *.pyc
 
 # misc
