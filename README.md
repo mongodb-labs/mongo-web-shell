@@ -89,11 +89,15 @@ example.
 Tests
 -----
 ### Front-end
-Open `frontend/SpecRunner.html` in a browser.
+Lint the code and run the test suite via the `test` target.
 
-Lint via the `jshint` target.
+    grunt test
+
+To lint by hand, use the `jshint` target.
 
     grunt jshint
+
+To test in a browser environment, open `frontend/SpecRunner.html`.
 
 ### Back-end
 From within a virtual environment:
