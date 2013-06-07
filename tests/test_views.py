@@ -32,7 +32,6 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         rv = self.app.post(url)
         self.assertIn('{}', rv.data)
 
-
 class ViewsFindUnitTestCase(MongoWSTestCase):
     def setUp(self):
         super(ViewsFindUnitTestCase, self).setUp()
@@ -136,6 +135,8 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
 
 
 def _make_find_request(app, res_id, collection, query=None, projection=None):
+    # TODO: Should we be passing in None for query and projection here? The
+    # frontend should never pass 'None' so it might be incorrect.
     url = '/mws/' + res_id + '/db/' + collection + '/find'
     data = json.dumps({'query': query, 'projection': projection})
     return app.get(url, data=data, content_type='application/json')
