@@ -20,6 +20,12 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         res_id = response_dict['res_id']
         self.assertIsNotNone(res_id)
 
+        # check if res_id is unique
+        rv = self.app.post(url)
+        new_res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(new_res_id)
+        self.assertNotEqual(res_id, new_res_id)
+
     def test_keep_mws_alive(self):
         # TODO: After this method is completed we should test it better
         url = '/mws/res_id/keep-alive'
