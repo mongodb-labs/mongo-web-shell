@@ -123,6 +123,59 @@ class ViewsInsertUnitTestCase(MongoWSTestCase):
         self.assertEqual(json_rv_data['status'], -1)
         self.assertEqual(json_rv_data['result'], error)
 
+class ViewsRemoveUnitTestCase(MongoWSTestCase):
+    def setUp(self):
+        super(ViewsRemoveUnitTestCase, self).setUp()
+        rv = self.app.post('/mws/')
+        response_dict = json.loads(rv.data)
+        self.assertIn('res_id', response_dict)
+        self.res_id = response_dict['res_id']
+
+    def tearDown(self):
+        super(ViewsRemoveUnitTestCase, self).tearDown()
+
+    def test_db_collection_remove(self):
+        document = [{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}]
+        rv = _make_insert_request(self.app, self.res_id, 'test_collection',
+                                  document)
+
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(len(json_rv_data['result']), 3)
+        self.assertIn('$oid', json_rv_data['result'][0])
+
+        document = {'name': 'Mongo'}
+        rv = _make_remove_request(self.app, self.res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+
+        rv = _make_find_request(self.app, self.res_id, 'test_collection', {})
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(len(json_rv_data['result']), 1)
+        self.assertEqual(json_rv_data['result'][0]['name'], 'NotMongo')
+
+    def test_db_collection_removeOne(self):
+        document = [{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}]
+        rv = _make_insert_request(self.app, self.res_id, 'test_collection',
+                                  document)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+        self.assertEqual(len(json_rv_data['result']), 3)
+        self.assertIn('$oid', json_rv_data['result'][0])
+
+        document = {'name': 'Mongo'}
+        rv = _make_remove_request(self.app, self.res_id, 'test_collection',
+                                  document, True)
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(json_rv_data['status'], 0)
+
+        rv = _make_find_request(self.app, self.res_id, 'test_collection', {})
+        json_rv_data = json.loads(rv.data)
+        self.assertEqual(len(json_rv_data['result']), 2)
+
+        names = [x['name'] for x in json_rv_data['result']]
+        self.assertItemsEqual(names, ['Mongo', 'NotMongo'])
 
 class ViewsIntegrationTestCase(MongoWSTestCase):
     def setUp(self):
@@ -163,3 +216,8 @@ def _make_insert_request(app, res_id, collection, document):
     url = '/mws/' + res_id + '/db/' + collection + '/insert'
     data = json.dumps({'document': document})
     return app.post(url, data=data, content_type='application/json')
+
+def _make_remove_request(app, res_id, collection, constraint, justOne=False):
+    url = '/mws/' + res_id + '/db/' + collection + '/remove'
+    data = json.dumps({'constraint': constraint, 'justOne': justOne})
+    return app.delete(url, data=data, content_type='application/json')
