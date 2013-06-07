@@ -147,6 +147,36 @@ def db_collection_insert(res_id, collection_name):
         return jsonify(status=-1, result=error)
     return result
 
+@mws.route('/<res_id>/db/<collection_name>/remove',
+           methods=['DELETE', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+def db_collection_remove(res_id, collection_name):
+    constraint = request.json.get('constraint') if request.json else {}
+    justOne = request.json and 'justOne' in request.json and request.json['justOne']
+
+    session_id = session.get('session_id', None)
+    if session_id is None:
+        error = 'There is no session_id cookie'
+        return jsonify(status=-1, result=error)
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    if not user_has_access(res_id, session_id):
+        error = 'Session error. User does not have access to res_id'
+        return jsonify(status=-1, result=error)
+
+    if justOne:
+       db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
+    else:
+       db.get_db()[internal_collection_name].remove(constraint)
+    result = {'status': 0}
+    try:
+        result = dumps(result)
+    except ValueError:
+        error = 'Error in insert function while trying to convert the ' + \
+            'results to JSON format.'
+        return jsonify(status=-1, result=error)
+    return result
+
 
 def get_internal_collection_name(res_id, collection_name):
     return res_id + collection_name
