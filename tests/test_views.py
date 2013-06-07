@@ -20,12 +20,34 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         res_id = response_dict['res_id']
         self.assertIsNotNone(res_id)
 
+        # check if res_id is unchanged
+        rv = self.app.post(url)
+        new_res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(new_res_id)
+        self.assertEqual(res_id, new_res_id)
+
+    def test_create_mws_resource_new_session(self):
+        url = '/mws/'
+        rv = self.app.post(url)
+        response_dict = json.loads(rv.data)
+        self.assertIn('res_id', response_dict)
+        res_id = response_dict['res_id']
+        self.assertIsNotNone(res_id)
+
+        with self.app.session_transaction() as sess:
+            del sess['session_id']
+
+        # check if res_id is unique
+        rv = self.app.post(url)
+        new_res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(new_res_id)
+        self.assertNotEqual(res_id, new_res_id)
+
     def test_keep_mws_alive(self):
         # TODO: After this method is completed we should test it better
         url = '/mws/res_id/keep-alive'
         rv = self.app.post(url)
         self.assertIn('{}', rv.data)
-
 
 class ViewsFindUnitTestCase(MongoWSTestCase):
     def setUp(self):
@@ -40,22 +62,17 @@ class ViewsFindUnitTestCase(MongoWSTestCase):
 
     def test_find(self):
         self.assertIsNotNone(self.res_id)
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_find_request(self.app, self.res_id, 'test_collection',
                                 document)
         json_rv_data = json.loads(rv.data)
-        error = 'Session error. User does not have access to res_id'
         self.assertEqual(json_rv_data['status'], 0)
 
     def test_invalid_find_session(self):
         self.assertIsNotNone(self.res_id)
         with self.app.session_transaction() as sess:
             sess['session_id'] = 'value'
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_find_request(self.app, self.res_id, 'test_collection',
                                 document)
         json_rv_data = json.loads(rv.data)
@@ -98,9 +115,7 @@ class ViewsInsertUnitTestCase(MongoWSTestCase):
         self.assertIsNotNone(self.res_id)
         with self.app.session_transaction() as sess:
             sess['session_id'] = 'value'
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_insert_request(self.app, self.res_id, 'test_collection',
                                   document)
         json_rv_data = json.loads(rv.data)
@@ -122,9 +137,7 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
 
     def test_insert_find(self):
         self.assertIsNotNone(self.res_id)
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_insert_request(self.app, self.res_id, 'test_collection',
                                   document)
         json_rv_data = json.loads(rv.data)
@@ -139,6 +152,8 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
 
 
 def _make_find_request(app, res_id, collection, query=None, projection=None):
+    # TODO: Should we be passing in None for query and projection here? The
+    # frontend should never pass 'None' so it might be incorrect.
     url = '/mws/' + res_id + '/db/' + collection + '/find'
     data = json.dumps({'query': query, 'projection': projection})
     return app.get(url, data=data, content_type='application/json')
