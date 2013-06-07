@@ -20,6 +20,23 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         res_id = response_dict['res_id']
         self.assertIsNotNone(res_id)
 
+        # check if res_id is unchanged
+        rv = self.app.post(url)
+        new_res_id = json.loads(rv.data)['res_id']
+        self.assertIsNotNone(new_res_id)
+        self.assertEqual(res_id, new_res_id)
+
+    def test_create_mws_resource_new_session(self):
+        url = '/mws/'
+        rv = self.app.post(url)
+        response_dict = json.loads(rv.data)
+        self.assertIn('res_id', response_dict)
+        res_id = response_dict['res_id']
+        self.assertIsNotNone(res_id)
+
+        with self.app.session_transaction() as sess:
+            del sess['session_id']
+
         # check if res_id is unique
         rv = self.app.post(url)
         new_res_id = json.loads(rv.data)['res_id']
