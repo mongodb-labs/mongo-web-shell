@@ -159,14 +159,8 @@ def db_collection_remove(res_id, collection_name):
        db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
     else:
        db.get_db()[internal_collection_name].remove(constraint)
-    result = {'status': 0}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in insert function while trying to convert the ' + \
-            'results to JSON format.'
-        return jsonify(status=-1, result=error)
-    return result
+
+    return dumps({'status': 0})
 
 
 def get_internal_collection_name(res_id, collection_name):
