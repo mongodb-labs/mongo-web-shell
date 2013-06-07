@@ -62,11 +62,17 @@ def crossdomain(origin=None, methods=None, headers=None,
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
-    res_id = generate_res_id()
     session_id = session.get('session_id', str(uuid.uuid4()))
     session['session_id'] = session_id
-    result = {'res_id': res_id, 'session_id': session_id}
-    db.get_db()[CLIENTS_COLLECTION].insert(result)
+    clients = db.get_db()[CLIENTS_COLLECTION]
+
+    cursor = clients.find({'session_id': session_id}, {'res_id': 1, '_id': 0})
+    if cursor.count():
+        # TODO: handle multiple res_id per session
+        res_id = cursor[0]['res_id']
+    else:
+        res_id = generate_res_id()
+        clients.insert({'res_id': res_id, 'session_id': session_id})
     return jsonify(res_id=res_id)
 
 
