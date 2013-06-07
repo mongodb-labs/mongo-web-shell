@@ -1,33 +1,29 @@
-import json
+from bson.json_util import loads, dumps
+from mongows.mws.db import get_db
+from mongows.mws.views import get_internal_collection_name
 
 from tests import MongoWSTestCase
 
 
 class ViewsSetUpUnitTestCase(MongoWSTestCase):
-    def setUp(self):
-        super(ViewsSetUpUnitTestCase, self).setUp()
-
-    def tearDown(self):
-        super(ViewsSetUpUnitTestCase, self).tearDown()
-
     def test_create_mws_resource(self):
         url = '/mws/'
         rv = self.app.post(url)
-        response_dict = json.loads(rv.data)
+        response_dict = loads(rv.data)
         self.assertIn('res_id', response_dict)
         res_id = response_dict['res_id']
         self.assertIsNotNone(res_id)
 
         # check if res_id is unchanged
         rv = self.app.post(url)
-        new_res_id = json.loads(rv.data)['res_id']
+        new_res_id = loads(rv.data)['res_id']
         self.assertIsNotNone(new_res_id)
         self.assertEqual(res_id, new_res_id)
 
     def test_create_mws_resource_new_session(self):
         url = '/mws/'
         rv = self.app.post(url)
-        response_dict = json.loads(rv.data)
+        response_dict = loads(rv.data)
         self.assertIn('res_id', response_dict)
         res_id = response_dict['res_id']
         self.assertIsNotNone(res_id)
@@ -37,7 +33,7 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 
         # check if res_id is unique
         rv = self.app.post(url)
-        new_res_id = json.loads(rv.data)['res_id']
+        new_res_id = loads(rv.data)['res_id']
         self.assertIsNotNone(new_res_id)
         self.assertNotEqual(res_id, new_res_id)
 
@@ -51,59 +47,71 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 class DBCollectionTestCase(MongoWSTestCase):
     def setUp(self):
         super(DBCollectionTestCase, self).setUp()
+        # Todo: For stuff that isn't checking authentication,
+        # we probably don't want to rely on/use the authentication code
         rv = self.app.post('/mws/')
-        response_dict = json.loads(rv.data)
+        response_dict = loads(rv.data)
         self.assertIn('res_id', response_dict)
         self.res_id = response_dict['res_id']
         self.assertIsNotNone(self.res_id)
-
+        
+        self.collection_name = 'test_collection'
+        internal_collection_name = get_internal_collection_name(self.res_id, self.collection_name)
+        self.db_collection = get_db()[internal_collection_name]
+        
     def tearDown(self):
-        super(DBCollectionTestCase, self).tearDown()
-
-    def _make_request(self, collection, endpoint, data, method, expected_status, return_result=True):
-        url = '/mws/%s/db/%s/%s' % (self.res_id, collection, endpoint)
+        super(DBCollectionTestCase, self).setUp()
+        self.db_collection.drop()
+        
+    def _make_request(self, endpoint, data, method, expected_status, require_result=True):
+        url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
-        result_dict = json.loads(result.data)
+        result_dict = loads(result.data)
         actual_status = result_dict['status']
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" % (expected_status, actual_status))
-        if return_result:
+        try:
             return result_dict['result']
-        else:
-            return None
+        except KeyError:
+            if not require_result:
+                return None
+            raise
 
-    def make_find_request(self, collection, query=None, projection=None, expected_status=0):
+    def make_find_request(self, query=None, projection=None, expected_status=0):
         data = {}
         if query:
             data['query'] = query
         if projection:
             data['projection'] = projection
-        data = json.dumps(data)
-        return self._make_request(collection, 'find', data, self.app.get, expected_status)
+        data = dumps(data)
+        return self._make_request('find', data, self.app.get, expected_status)
 
-    def make_insert_request(self, collection, document, expected_status=0):
-        data = json.dumps({'document': document})
-        return self._make_request(collection, 'insert', data, self.app.post, expected_status)
+    def make_insert_request(self, document, expected_status=0):
+        data = dumps({'document': document})
+        return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
 
-    def make_remove_request(self, collection, constraint, justOne=False, expected_status=0):
-        data = json.dumps({'constraint': constraint, 'justOne': justOne})
-        self._make_request(collection, 'remove', data, self.app.delete, expected_status, return_result=False)
+    def make_remove_request(self, constraint, justOne=False, expected_status=0):
+        data = dumps({'constraint': constraint, 'justOne': justOne})
+        self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
             sess['session_id'] = new_id
 
 
-class ViewsFindUnitTestCase(DBCollectionTestCase):
+class FindUnitTestCase(DBCollectionTestCase):
     def test_find(self):
         query = {'name': 'mongo'}
-        # Todo: Actually test find. This doesn't really test any functionality right now
-        self.make_find_request('test_collection', query, expected_status=0)
+        self.db_collection.insert(query)
+
+        result = self.make_find_request(query, expected_status=0)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]['name'], 'mongo')
 
     def test_invalid_find_session(self):
         self.set_session_id('invalid_id')
         document = {'name': 'mongo'}
-        result = self.make_find_request('test_collection', document, expected_status=-1)
+        result = self.make_find_request(document, expected_status=-1)
         # Todo: Seems like brittle, declarative testing. Would be great if
         # we could verify the type of error without testing against the error
         # string itself, maybe by using a different status.
@@ -111,61 +119,63 @@ class ViewsFindUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result, error)
 
 
-class ViewsInsertUnitTestCase(DBCollectionTestCase):
-    def test_db_collection_simple_insert(self):
+class InsertUnitTestCase(DBCollectionTestCase):
+    def test_simple_insert(self):
         document = {'name': 'Mongo'}
-        result = self.make_insert_request('test_collection', document)
-        self.assertIn('$oid', result)
+        self.make_insert_request(document)
+        
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result[0]['name'], 'Mongo')
 
     def test_multiple_document_insert(self):
         document = [{'name': 'Mongo'}, {'name': '10gen'}]
-        result = self.make_insert_request('test_collection', document)
-        self.assertEqual(len(result), 2)
-        self.assertIn('$oid', result[0])
+        self.make_insert_request(document)
+
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 2)
+        names = [r['name'] for r in result]
+        self.assertItemsEqual(names, ['Mongo', '10gen'])
 
     def test_invalid_insert_session(self):
         self.set_session_id('invalid_session')
         document = {'name': 'mongo'}
-        result = self.make_insert_request('test_collection', document, expected_status=-1)
+        result = self.make_insert_request(document, expected_status=-1)
         # See note above about brittle testing
         error = 'Session error. User does not have access to res_id'
         self.assertEqual(result, error)
 
 
-class ViewsRemoveUnitTestCase(DBCollectionTestCase):
-    def test_db_collection_remove(self):
-        document = [{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}]
-        result = self.make_insert_request('test_collection', document)
-        self.assertEqual(len(result), 3)
-        self.assertIn('$oid', result[0])
+class RemoveUnitTestCase(DBCollectionTestCase):
+    def test_remove(self):
+        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
         document = {'name': 'Mongo'}
-        self.make_remove_request('test_collection', document)
+        self.make_remove_request(document)
 
-        result = self.make_find_request('test_collection', {})
-        self.assertEqual(len(result), 1)
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 1)
         self.assertEqual(result[0]['name'], 'NotMongo')
 
-    def test_db_collection_removeOne(self):
-        document = [{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}]
-        result = self.make_insert_request('test_collection', document)
-        self.assertEqual(len(result), 3)
-        self.assertIn('$oid', result[0])
+    def test_removeOne(self):
+        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
         document = {'name': 'Mongo'}
-        self.make_remove_request('test_collection', document, justOne=True)
+        self.make_remove_request(document, justOne=True)
 
-        result = self.make_find_request('test_collection', {})
-        # self.assertEqual(len(result), 2)
+        result = self.db_collection.find()
         names = [r['name'] for r in result]
         self.assertItemsEqual(names, ['Mongo', 'NotMongo'])
 
+    def test_remove_requires_valid_res_id(self):
+        self.set_session_id('invalid_session')
+        self.make_remove_request({}, expected_status=-1)
 
-class ViewsIntegrationTestCase(DBCollectionTestCase):
+
+class IntegrationTestCase(DBCollectionTestCase):
     def test_insert_find(self):
         document = {'name': 'mongo'}
-        result = self.make_insert_request('test_collection', document)
-        self.assertIn('$oid', result)
+        self.make_insert_request(document)
 
-        result = self.make_find_request('test_collection', document)
+        result = self.make_find_request(document)
         self.assertDictContainsSubset(document, result[0])
