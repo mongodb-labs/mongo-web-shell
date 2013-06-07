@@ -46,22 +46,17 @@ class ViewsFindUnitTestCase(MongoWSTestCase):
 
     def test_find(self):
         self.assertIsNotNone(self.res_id)
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_find_request(self.app, self.res_id, 'test_collection',
                                 document)
         json_rv_data = json.loads(rv.data)
-        error = 'Session error. User does not have access to res_id'
         self.assertEqual(json_rv_data['status'], 0)
 
     def test_invalid_find_session(self):
         self.assertIsNotNone(self.res_id)
         with self.app.session_transaction() as sess:
             sess['session_id'] = 'value'
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_find_request(self.app, self.res_id, 'test_collection',
                                 document)
         json_rv_data = json.loads(rv.data)
@@ -104,9 +99,7 @@ class ViewsInsertUnitTestCase(MongoWSTestCase):
         self.assertIsNotNone(self.res_id)
         with self.app.session_transaction() as sess:
             sess['session_id'] = 'value'
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_insert_request(self.app, self.res_id, 'test_collection',
                                   document)
         json_rv_data = json.loads(rv.data)
@@ -128,9 +121,7 @@ class ViewsIntegrationTestCase(MongoWSTestCase):
 
     def test_insert_find(self):
         self.assertIsNotNone(self.res_id)
-        key = 'name'
-        value = 'mongo'
-        document = {key: value}
+        document = {'name': 'mongo'}
         rv = _make_insert_request(self.app, self.res_id, 'test_collection',
                                   document)
         json_rv_data = json.loads(rv.data)
