@@ -18,3 +18,7 @@ mongo.Query.prototype.find = function (query, projection) {
 mongo.Query.prototype.insert = function (doc) {
   mongo.request.dbCollectionInsert(this, doc);
 };
+
+mongo.Query.prototype.remove = function(constraint, justOne) {
+	mongo.request.dbCollectionRemove(this, constraint, justOne);
+};

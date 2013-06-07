@@ -103,6 +103,39 @@ mongo.request = (function () {
     });
   }
 
+  /**
+   * Makes a remove request to the mongod instance on the backing server. On
+   * success, the item(s) are removed from the collection, otherwise a failure
+   * message is printed and an error is thrown.
+   */
+  function dbCollectionRemove(query, constraint, justOne) {
+    var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
+                                               query.collection) + 'remove';
+    var params = {constraint: constraint, justOne: justOne};
+
+    console.debug('remove() request:', url, constraint, justOne);
+    $.ajax({
+      type: 'DELETE',
+      url: url,
+      data: JSON.stringify(params),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        // TODO: This status code is undocumented.
+        if (data.status === 0) {
+          console.debug('dbCollectionRemove success');
+        } else {
+          query.shell.insertResponseLine('ERROR: server error occured');
+          console.debug('dbCollectionRemove error:', data.result);
+        }
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      query.shell.insertResponseLine('ERROR: server error occured');
+      console.error('dbCollectionRemove fail:', textStatus, errorThrown);
+      throw 'dbCollectionRemove: Server error';
+    });
+  }
+
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
@@ -117,6 +150,7 @@ mongo.request = (function () {
     createMWSResource: createMWSResource,
     dbCollectionFind: dbCollectionFind,
     dbCollectionInsert: dbCollectionInsert,
+    dbCollectionRemove: dbCollectionRemove,
     keepAlive: keepAlive
   };
 }());
