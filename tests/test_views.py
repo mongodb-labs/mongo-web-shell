@@ -64,6 +64,7 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.db_collection.drop()
         
     def _make_request(self, endpoint, data, method, expected_status, require_result=True):
+        data = dumps({k: v for k, v in data.iteritems() if v})
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
@@ -78,20 +79,15 @@ class DBCollectionTestCase(MongoWSTestCase):
             raise
 
     def make_find_request(self, query=None, projection=None, expected_status=0):
-        data = {}
-        if query:
-            data['query'] = query
-        if projection:
-            data['projection'] = projection
-        data = dumps(data)
+        data = {'query': query, 'projection': projection}
         return self._make_request('find', data, self.app.get, expected_status)
 
     def make_insert_request(self, document, expected_status=0):
-        data = dumps({'document': document})
+        data = {'document': document}
         return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
 
-    def make_remove_request(self, constraint, justOne=False, expected_status=0):
-        data = dumps({'constraint': constraint, 'justOne': justOne})
+    def make_remove_request(self, constraint, just_one=False, expected_status=0):
+        data = {'constraint': constraint, 'just_one': just_one}
         self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
 
     def set_session_id(self, new_id):
@@ -104,7 +100,7 @@ class FindUnitTestCase(DBCollectionTestCase):
         query = {'name': 'mongo'}
         self.db_collection.insert(query)
 
-        result = self.make_find_request(query, expected_status=0)
+        result = self.make_find_request(query)
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['name'], 'mongo')
 
@@ -161,7 +157,7 @@ class RemoveUnitTestCase(DBCollectionTestCase):
         self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
         document = {'name': 'Mongo'}
-        self.make_remove_request(document, justOne=True)
+        self.make_remove_request(document, just_one=True)
 
         result = self.db_collection.find()
         names = [r['name'] for r in result]
