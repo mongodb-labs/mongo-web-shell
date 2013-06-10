@@ -22,3 +22,7 @@ mongo.Query.prototype.insert = function (doc) {
 mongo.Query.prototype.remove = function(constraint, justOne) {
 	mongo.request.dbCollectionRemove(this, constraint, justOne);
 };
+
+mongo.Query.prototype.update = function(query, update, upsert, multi) {
+	mongo.request.dbCollectionUpdate(this, query, update, upsert, multi);
+};

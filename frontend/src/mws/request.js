@@ -136,6 +136,45 @@ mongo.request = (function () {
     });
   }
 
+  /**
+   * Makes an update request to the mongod instance on the backing server. On
+   * success, the item(s) are updated in the collection, otherwise a failure
+   * message is printed and an error is thrown.
+   */
+  function dbCollectionUpdate(query, constraint, update, upsert, multi) {
+    var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
+                                               query.collection) + 'update';
+    // handle options document for 2.2+
+    if (typeof upsert == 'object'){
+      multi = upsert['multi'];
+      upsert = upsert['upsert'];
+    }
+
+    var params = {query: constraint, update: update, upsert: !!upsert, multi: !!multi};
+
+    console.debug('update() request:', url, params);
+    $.ajax({
+      type: 'PUT',
+      url: url,
+      data: JSON.stringify(params),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        // TODO: This status code is undocumented.
+        if (data.status === 0) {
+          console.debug('dbCollectionUpdate success');
+        } else {
+          query.shell.insertResponseLine('ERROR: server error occured');
+          console.debug('dbCollectionUpdate error:', data.result);
+        }
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      query.shell.insertResponseLine('ERROR: server error occured');
+      console.error('dbCollectionUpdate fail:', textStatus, errorThrown);
+      throw 'dbCollectionUpdate: Server error';
+    });
+  }
+
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
@@ -151,6 +190,7 @@ mongo.request = (function () {
     dbCollectionFind: dbCollectionFind,
     dbCollectionInsert: dbCollectionInsert,
     dbCollectionRemove: dbCollectionRemove,
+    dbCollectionUpdate: dbCollectionUpdate,
     keepAlive: keepAlive
   };
 }());
