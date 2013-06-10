@@ -54,17 +54,17 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.assertIn('res_id', response_dict)
         self.res_id = response_dict['res_id']
         self.assertIsNotNone(self.res_id)
-        
+
         self.collection_name = 'test_collection'
         internal_collection_name = get_internal_collection_name(self.res_id, self.collection_name)
         self.db_collection = get_db()[internal_collection_name]
-        
+
     def tearDown(self):
         super(DBCollectionTestCase, self).setUp()
         self.db_collection.drop()
-        
+
     def _make_request(self, endpoint, data, method, expected_status, require_result=True):
-        data = dumps({k: v for k, v in data.iteritems() if v})
+        data = dumps({k: v for k, v in data.iteritems() if v is not None})
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
@@ -89,6 +89,10 @@ class DBCollectionTestCase(MongoWSTestCase):
     def make_remove_request(self, constraint, just_one=False, expected_status=0):
         data = {'constraint': constraint, 'just_one': just_one}
         self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
+
+    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=0):
+        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
+        self._make_request('update', data, self.app.put, expected_status, require_result=False)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
@@ -119,7 +123,7 @@ class InsertUnitTestCase(DBCollectionTestCase):
     def test_simple_insert(self):
         document = {'name': 'Mongo'}
         self.make_insert_request(document)
-        
+
         result = self.db_collection.find()
         self.assertEqual(result.count(), 1)
         self.assertEqual(result[0]['name'], 'Mongo')
@@ -166,6 +170,50 @@ class RemoveUnitTestCase(DBCollectionTestCase):
     def test_remove_requires_valid_res_id(self):
         self.set_session_id('invalid_session')
         self.make_remove_request({}, expected_status=-1)
+
+
+class UpdateUnitTestCase(DBCollectionTestCase):
+    def test_upsert(self):
+        result = self.db_collection.find({'name': 'Mongo'})
+        self.assertEqual(result.count(), 0)
+
+        self.make_update_request({}, {'name': 'Mongo'}, True)
+
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result[0]['name'], 'Mongo')
+
+    def test_update_one(self):
+        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.make_update_request({'name': 'Mongo'}, {'name': 'Mongo2'}, True)
+
+        result = self.db_collection.find()
+        names = [r['name'] for r in result]
+        self.assertItemsEqual(names, ['Mongo', 'Mongo2', 'NotMongo'])
+
+    def test_update_multi(self):
+        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.make_update_request({'name': 'Mongo'}, {'$set': {'name': 'Mongo2'}}, False, True)
+
+        result = self.db_collection.find()
+        names = [r['name'] for r in result]
+        self.assertItemsEqual(names, ['Mongo2', 'Mongo2', 'NotMongo'])
+
+    def test_multi_upsert(self):
+        # Does not exist - upsert
+        self.make_update_request({}, {'$set': {'name': 'Mongo'}}, True, True)
+
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 1)
+        self.assertEqual(result[0]['name'], 'Mongo')
+
+        # Exists - multi-update
+        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.make_update_request({'name': 'Mongo'}, {'$set': {'name': 'Mongo2'}}, True, True)
+
+        result = self.db_collection.find()
+        names = [r['name'] for r in result]
+        self.assertItemsEqual(names, ['Mongo2', 'Mongo2', 'NotMongo'])
 
 
 class IntegrationTestCase(DBCollectionTestCase):

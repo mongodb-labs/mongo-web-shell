@@ -136,6 +136,55 @@ mongo.request = (function () {
     });
   }
 
+  /**
+   * Makes an update request to the mongod instance on the backing server. On
+   * success, the item(s) are updated in the collection, otherwise a failure
+   * message is printed and an error is thrown.
+   *
+   * Optionally, an object which specifies whether to perform an upsert and/or
+   * a multiple update may be used instead of the individual upsert and multi
+   * parameters.
+   *
+   */
+  function dbCollectionUpdate(query, constraint, update, upsert, multi) {
+    var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
+                                               query.collection) + 'update';
+    // handle options document for 2.2+
+    if (typeof upsert == 'object'){
+      if (multi != undefined){
+        query.shell.insertResponseLine('ERROR: Fourth argument must be empty when specifying upsert and multi with an object');
+        console.error('dbCollectionUpdate fail: Fourth argument must be empty when specifying upsert and multi with an object');
+        throw {statement: 'dbCollectionUpdate: Syntax error'};
+      }
+      multi = upsert['multi'];
+      upsert = upsert['upsert'];
+    }
+
+    var params = {query: constraint, update: update, upsert: !!upsert, multi: !!multi};
+
+    console.debug('update() request:', url, params);
+    $.ajax({
+      type: 'PUT',
+      url: url,
+      data: JSON.stringify(params),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        // TODO: This status code is undocumented.
+        if (data.status === 0) {
+          console.debug('dbCollectionUpdate success');
+        } else {
+          query.shell.insertResponseLine('ERROR: server error occured');
+          console.debug('dbCollectionUpdate error:', data.result);
+        }
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
+      query.shell.insertResponseLine('ERROR: server error occured');
+      console.error('dbCollectionUpdate fail:', textStatus, errorThrown);
+      throw 'dbCollectionUpdate: Server error';
+    });
+  }
+
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
@@ -151,6 +200,7 @@ mongo.request = (function () {
     dbCollectionFind: dbCollectionFind,
     dbCollectionInsert: dbCollectionInsert,
     dbCollectionRemove: dbCollectionRemove,
+    dbCollectionUpdate: dbCollectionUpdate,
     keepAlive: keepAlive
   };
 }());
