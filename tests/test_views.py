@@ -157,7 +157,7 @@ class RemoveUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result.count(), 1)
         self.assertEqual(result[0]['name'], 'NotMongo')
 
-    def test_removeOne(self):
+    def test_remove_one(self):
         self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
         document = {'name': 'Mongo'}
