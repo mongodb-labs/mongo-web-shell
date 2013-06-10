@@ -174,6 +174,9 @@ class RemoveUnitTestCase(DBCollectionTestCase):
 
 class UpdateUnitTestCase(DBCollectionTestCase):
     def test_upsert(self):
+        result = self.db_collection.find({'name': 'Mongo'})
+        self.assertEqual(result.count(), 0)
+
         self.make_update_request({}, {'name': 'Mongo'}, True)
 
         result = self.db_collection.find()
