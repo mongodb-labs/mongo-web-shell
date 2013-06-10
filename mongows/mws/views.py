@@ -1,10 +1,9 @@
 from datetime import timedelta
 from functools import update_wrapper
-import json
 import uuid
 
-from bson.json_util import dumps
-from flask import Blueprint, current_app, jsonify, make_response, request
+from bson.json_util import dumps, loads
+from flask import Blueprint, current_app, make_response, request
 from flask import session
 
 from . import db
@@ -58,6 +57,17 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
+def check_session_id(f):
+    def wrapped_function(*args, **kwargs):
+        session_id = session.get('session_id')
+        if session_id is None:
+            error = 'There is no session_id cookie'
+            return dumps({'status': -1, 'result': error})
+        if not user_has_access(kwargs['res_id'], session_id):
+            error = 'Session error. User does not have access to res_id'
+            return dumps({'status': -1, 'result': error})
+        return f(*args, **kwargs)
+    return update_wrapper(wrapped_function, f)
 
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -73,7 +83,7 @@ def create_mws_resource():
     else:
         res_id = generate_res_id()
         clients.insert({'res_id': res_id, 'session_id': session_id})
-    return jsonify(res_id=res_id)
+    return to_json({'res_id': res_id})
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -85,97 +95,58 @@ def keep_mws_alive(res_id):
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
+@check_session_id
 def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
     # TODO: Is there an easier way to convert these JSON args? Automatically?
     try:
-        query = json.loads(request.args.get('query', '{}')) or None
-        projection = json.loads(request.args.get('projection', '{}')) or None
+        query = loads(request.args.get('query', '{}')) or None
+        projection = loads(request.args.get('projection', '{}')) or None
     except ValueError:
         # TODO: Return proper error to client.
         error = 'Error parsing JSON parameters.'
-        return jsonify(status=-1, result=error)
-    session_id = session.get('session_id', None)
-    if session_id is None:
-        error = 'There is no session_id cookie'
-        return jsonify(status=-1, result=error)
+        return dumps({'status': 1, 'result': error})
+
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
-    if not user_has_access(res_id, session_id):
-        error = 'Session error. User does not have access to res_id'
-        return jsonify(status=-1, result=error)
     cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in find while trying to convert the results to ' + \
-            'JSON format.'
-        return jsonify(status=-1, result=error)
-    return result
+    return to_json(result)
 
-
-@mws.route('/<res_id>/db/<collection_name>/insert',
-           methods=['POST', 'OPTIONS'])
+@mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
 def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
     else:
         error = '\'document\' argument not found in the insert request.'
-        return jsonify(status=-1, result=error)
-    session_id = session.get('session_id', None)
-    if session_id is None:
-        error = 'There is no session_id cookie'
-        return jsonify(status=-1, result=error)
-    internal_collection_name = get_internal_collection_name(res_id,
-                                                            collection_name)
-    if not user_has_access(res_id, session_id):
-        error = 'Session error. User does not have access to res_id'
-        return jsonify(status=-1, result=error)
+        return dumps({'status': -1, 'result': error})
+
+    internal_collection_name = get_internal_collection_name(res_id, collection_name)
     objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in insert function while trying to convert the ' + \
-            'results to JSON format.'
-        return jsonify(status=-1, result=error)
-    return result
+    return to_json(result)
 
-@mws.route('/<res_id>/db/<collection_name>/remove',
-           methods=['DELETE', 'OPTIONS'])
+@mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
 def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
     just_one = request.json and 'just_one' in request.json and request.json['just_one']
 
-    session_id = session.get('session_id', None)
-    if session_id is None:
-        error = 'There is no session_id cookie'
-        return jsonify(status=-1, result=error)
-    internal_collection_name = get_internal_collection_name(res_id,
-                                                            collection_name)
-    if not user_has_access(res_id, session_id):
-        error = 'Session error. User does not have access to res_id'
-        return jsonify(status=-1, result=error)
+    internal_collection_name = get_internal_collection_name(res_id, collection_name)
 
     if just_one:
        db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
     else:
        db.get_db()[internal_collection_name].remove(constraint)
-    result = {'status': 0}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in insert function while trying to convert the ' + \
-            'results to JSON format.'
-        return jsonify(status=-1, result=error)
-    return result
+
+    return to_json({'status': 0})
 
 
 def get_internal_collection_name(res_id, collection_name):
@@ -190,3 +161,11 @@ def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True
+
+def to_json(result):
+    try:
+        return dumps(result)
+    except ValueError:
+        error = 'Error in find while trying to convert the results to ' + \
+                'JSON format.'
+        return dumps({'status': -1, 'result': error})
