@@ -148,6 +148,24 @@ def db_collection_remove(res_id, collection_name):
 
     return to_json({'status': 0})
 
+@mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+def db_collection_update(res_id, collection_name):
+    if request.json:
+        query = request.json.get('query')
+        update = request.json.get('update')
+        upsert = request.json.get('upsert', False)
+        multi = request.json.get('multi', False)
+    else:
+        error = 'update requires spec and document arguments'
+        return dumps({'status': -1, 'result': error})
+
+    internal_collection_name = get_internal_collection_name(res_id, collection_name)
+    db.get_db()[internal_collection_name].update(query, update, upsert, multi=multi)
+
+    return to_json({'status': 0})
+
 
 def get_internal_collection_name(res_id, collection_name):
     return res_id + collection_name
