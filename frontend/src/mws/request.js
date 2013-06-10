@@ -146,6 +146,11 @@ mongo.request = (function () {
                                                query.collection) + 'update';
     // handle options document for 2.2+
     if (typeof upsert == 'object'){
+      if (multi != undefined){
+        query.shell.insertResponseLine('ERROR: Fourth argument must be empty when specifying upsert and multi with an object');
+        console.error('dbCollectionUpdate fail: Fourth argument must be empty when specifying upsert and multi with an object');
+        throw {statement: 'dbCollectionUpdate: Syntax error'};
+      }
       multi = upsert['multi'];
       upsert = upsert['upsert'];
     }
