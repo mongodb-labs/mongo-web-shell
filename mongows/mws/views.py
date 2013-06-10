@@ -137,11 +137,11 @@ def db_collection_insert(res_id, collection_name):
 @check_session_id
 def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
-    justOne = request.json and 'justOne' in request.json and request.json['justOne']
+    just_one = request.json and 'just_one' in request.json and request.json['just_one']
 
     internal_collection_name = get_internal_collection_name(res_id, collection_name)
 
-    if justOne:
+    if just_one:
        db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
     else:
        db.get_db()[internal_collection_name].remove(constraint)
