@@ -152,12 +152,13 @@ def db_collection_remove(res_id, collection_name):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_update(res_id, collection_name):
+    query = update = None
     if request.json:
         query = request.json.get('query')
         update = request.json.get('update')
         upsert = request.json.get('upsert', False)
         multi = request.json.get('multi', False)
-    else:
+    if query == None or update == None:
         error = 'update requires spec and document arguments'
         return dumps({'status': -1, 'result': error})
 
