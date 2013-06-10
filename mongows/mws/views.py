@@ -87,7 +87,7 @@ def create_mws_resource():
     else:
         res_id = generate_res_id()
         clients.insert({'res_id': res_id, 'session_id': session_id})
-    return dumps({'res_id': res_id})
+    return to_json({'res_id': res_id})
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
@@ -116,14 +116,7 @@ def db_collection_find(collection_name):
     cursor = db.get_db()[collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in find while trying to convert the results to ' + \
-                'JSON format.'
-        return dumps({'status': -1, 'result': error})
-    return result
-
+    return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
@@ -138,13 +131,7 @@ def db_collection_insert(collection_name):
 
     objIDs = db.get_db()[collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
-    try:
-        result = dumps(result)
-    except ValueError:
-        error = 'Error in insert function while trying to convert the ' + \
-            'results to JSON format.'
-        return dumps({'status': -1, 'result': error})
-    return result
+    return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
@@ -158,7 +145,7 @@ def db_collection_remove(collection_name):
     else:
        db.get_db()[collection_name].remove(constraint)
 
-    return dumps({'status': 0})
+    return to_json({'status': 0})
 
 
 def generate_res_id():
@@ -169,3 +156,11 @@ def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True
+
+def to_json(result):
+    try:
+        return dumps(result)
+    except ValueError:
+        error = 'Error in find while trying to convert the results to ' + \
+                'JSON format.'
+        return dumps({'status': -1, 'result': error})
