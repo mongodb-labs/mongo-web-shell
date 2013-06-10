@@ -111,7 +111,7 @@ mongo.request = (function () {
   function dbCollectionRemove(query, constraint, justOne) {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'remove';
-    var params = {constraint: constraint, justOne: justOne};
+    var params = {constraint: constraint, just_one: justOne};
 
     console.debug('remove() request:', url, constraint, justOne);
     $.ajax({
