@@ -155,7 +155,7 @@ class ViewsRemoveUnitTestCase(MongoWSTestCase):
         self.assertEqual(len(json_rv_data['result']), 1)
         self.assertEqual(json_rv_data['result'][0]['name'], 'NotMongo')
 
-    def test_db_collection_removeOne(self):
+    def test_db_collection_remove_one(self):
         document = [{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}]
         rv = _make_insert_request(self.app, self.res_id, 'test_collection',
                                   document)
