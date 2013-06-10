@@ -140,6 +140,11 @@ mongo.request = (function () {
    * Makes an update request to the mongod instance on the backing server. On
    * success, the item(s) are updated in the collection, otherwise a failure
    * message is printed and an error is thrown.
+   *
+   * Optionally, an object which specifies whether to perform an upsert and/or
+   * a multiple update may be used instead of the individual upsert and multi
+   * parameters.
+   *
    */
   function dbCollectionUpdate(query, constraint, update, upsert, multi) {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
