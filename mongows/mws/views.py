@@ -57,20 +57,16 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
-def map_to_internal_collection(f):
+def check_session_id(f):
     def wrapped_function(*args, **kwargs):
-        res_id = kwargs['res_id']
-        collection_name = kwargs['collection_name']
         session_id = session.get('session_id')
         if session_id is None:
             error = 'There is no session_id cookie'
             return dumps({'status': -1, 'result': error})
-        if not user_has_access(res_id, session_id):
+        if not user_has_access(kwargs['res_id'], session_id):
             error = 'Session error. User does not have access to res_id'
             return dumps({'status': -1, 'result': error})
-
-        internal_collection_name = res_id + collection_name
-        return f(*args, collection_name=internal_collection_name)
+        return f(*args, **kwargs)
     return update_wrapper(wrapped_function, f)
 
 @mws.route('/', methods=['POST'])
@@ -99,8 +95,8 @@ def keep_mws_alive(res_id):
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
-@map_to_internal_collection
-def db_collection_find(collection_name):
+@check_session_id
+def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
@@ -113,15 +109,17 @@ def db_collection_find(collection_name):
         error = 'Error parsing JSON parameters.'
         return dumps({'status': 1, 'result': error})
 
-    cursor = db.get_db()[collection_name].find(query, projection)
+    internal_collection_name = get_internal_collection_name(res_id,
+                                                            collection_name)
+    cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
     result = {'status': 0, 'result': documents}
     return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
-@map_to_internal_collection
-def db_collection_insert(collection_name):
+@check_session_id
+def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
@@ -129,23 +127,30 @@ def db_collection_insert(collection_name):
         error = '\'document\' argument not found in the insert request.'
         return dumps({'status': -1, 'result': error})
 
-    objIDs = db.get_db()[collection_name].insert(document)
+    internal_collection_name = get_internal_collection_name(res_id, collection_name)
+    objIDs = db.get_db()[internal_collection_name].insert(document)
     result = {'status': 0, 'result': objIDs}
     return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
-@map_to_internal_collection
-def db_collection_remove(collection_name):
+@check_session_id
+def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
     justOne = request.json and 'justOne' in request.json and request.json['justOne']
 
+    internal_collection_name = get_internal_collection_name(res_id, collection_name)
+
     if justOne:
-       db.get_db()[collection_name].find_and_modify(constraint, remove=True)
+       db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
     else:
-       db.get_db()[collection_name].remove(constraint)
+       db.get_db()[internal_collection_name].remove(constraint)
 
     return to_json({'status': 0})
+
+
+def get_internal_collection_name(res_id, collection_name):
+    return res_id + collection_name
 
 
 def generate_res_id():
