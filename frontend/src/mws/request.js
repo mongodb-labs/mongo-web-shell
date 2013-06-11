@@ -39,7 +39,8 @@ mongo.request = (function () {
       cursor._storeQueryResult(data.result);
       onSuccess(data);
     };
-    makeRequest(url, params, 'GET', 'dbCollectionFind', cursor._shell, success, async);
+    mongo.request.__makeRequest(url, params, 'GET', 'dbCollectionFind', cursor._shell,
+      success, async);
   }
 
   function dbCollectionInsert(query, document_) {
@@ -47,7 +48,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(resID, query.collection) +
         'insert';
     var params = {document: document_};
-    makeRequest(url, params, 'POST', 'dbCollectionInsert', query.shell);
+    mongo.request.__makeRequest(url, params, 'POST', 'dbCollectionInsert', query.shell);
   }
 
   /**
@@ -59,7 +60,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'remove';
     var params = {constraint: constraint, just_one: justOne};
-    makeRequest(url, params, 'DELETE', 'dbCollectionRemove', query.shell);
+    mongo.request.__makeRequest(url, params, 'DELETE', 'dbCollectionRemove', query.shell);
   }
 
   /**
@@ -88,7 +89,7 @@ mongo.request = (function () {
     }
 
     var params = {query: constraint, update: update, upsert: !!upsert, multi: !!multi};
-    makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
+    mongo.request.__makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
   }
 
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
@@ -112,7 +113,11 @@ mongo.request = (function () {
       },
       error: function (jqXHR, textStatus, errorThrown) {
         var response = $.parseJSON(jqXHR.responseText);
-        shell.insertResponseLine('ERROR: ' + response.reason + '\n' + response.detail);
+        var message = 'ERROR: ' + response.reason;
+        if (response.detail) {
+          message += '\n' + response.detail;
+        }
+        shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);
         throw {};
       }
@@ -135,6 +140,7 @@ mongo.request = (function () {
     dbCollectionInsert: dbCollectionInsert,
     dbCollectionRemove: dbCollectionRemove,
     dbCollectionUpdate: dbCollectionUpdate,
-    keepAlive: keepAlive
+    keepAlive: keepAlive,
+    __makeRequest: makeRequest
   };
 }());

@@ -18,6 +18,195 @@ describe('The request module', function () {
     configStore = null;
   });
 
+  describe('making a request', function () {
+    var requests, xhr;
+    var url_, data_, method_, name_, shell_;
+
+    beforeEach(function () {
+      xhr = sinon.useFakeXMLHttpRequest();
+      xhr.onCreate = function (xhr) { requests.push(xhr); };
+      requests = [];
+
+      url_ = 'http://test.com/';
+      data_ = {test: 'my data'};
+      method_ = 'POST';
+      name_ = 'test';
+      shell_ = {insertResponseLine: function () {}};
+    });
+
+    afterEach(function () {
+      requests = null;
+      xhr.restore();
+    });
+
+    it('uses the given url and HTTP method', function () {
+      var url = 'http://test.com/';
+      var method = 'POST';
+      mongo.request.__makeRequest(url, data_, method, name_);
+
+      expect(requests[0].url).toEqual(url);
+      expect(requests[0].method).toEqual(method);
+    });
+
+    it('stringifies JSON', function () {
+      var data = {foo: 'mydata'};
+      mongo.request.__makeRequest(url_, data, method_, name_);
+
+      var stringifiedData = JSON.stringify(data);
+      expect(requests[0].requestBody).toEqual(stringifiedData);
+      expect(requests[0].requestHeaders['Content-Type']).toMatch('application/json');
+      expect(requests[0].requestHeaders.Accept).toMatch('^application/json, text/javascript');
+    });
+
+    it('calls onSuccess appropriately', function () {
+      var onSuccess = jasmine.createSpy();
+
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      requests[0].respond(500, '', 'INTERNAL SERVER ERROR');
+      expect(onSuccess).not.toHaveBeenCalled();
+
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      expect(onSuccess).not.toHaveBeenCalled();
+      var originalData = {msg: 'Success'};
+      var responseBody = JSON.stringify(originalData);
+      requests[1].respond(200, '', responseBody);
+      expect(onSuccess).toHaveBeenCalledWith(originalData);
+    });
+
+    it('writes failure reasons to the shell', function () {
+      var shell = {insertResponseLine: jasmine.createSpy()};
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      requests[0].respond(200, '', JSON.stringify({foo: 'bar'}));
+      expect(shell.insertResponseLine).not.toHaveBeenCalled();
+
+      // Error, no details
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      var errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: ''});
+      requests[1].respond(400, '', errResponse);
+      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason');
+
+      // Error with details
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: 'Some details'});
+      requests[2].respond(400, '', errResponse);
+      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason\nSome details');
+
+      expect(shell.insertResponseLine.calls.length).toEqual(2);
+    });
+
+    it('is asynchronous by default', function () {
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null);
+      expect(requests[0].async).toBe(true);
+
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null, true);
+      expect(requests[1].async).toBe(true);
+
+      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null, false);
+      expect(requests[2].async).toBe(false);
+    });
+  });
+
+  describe('remove', function () {
+    var makeRequest;
+    var query_;
+    beforeEach(function () {
+      spyOn(mongo.request, '__makeRequest');
+      makeRequest = mongo.request.__makeRequest;
+
+      query_ = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+    });
+
+    it('constructs and uses the collection url', function () {
+      var getUrl = mongo.util.getDBCollectionResURL;
+      getUrl.andReturn('my_test_url/');
+      var query = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+
+      mongo.request.dbCollectionRemove(query, {}, true);
+      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
+      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/remove');
+    });
+
+    it('constructs appropriate params', function () {
+      var constraint = {a: 1, b: {$gt: 2}};
+      mongo.request.dbCollectionRemove(query_, constraint, false);
+      var params = makeRequest.calls[0].args[1];
+      expect(params.constraint).toEqual(constraint);
+      expect(params.just_one).toBe(false);
+    });
+
+    it('uses the delete HTTP method', function () {
+      mongo.request.dbCollectionRemove(query_, {}, true);
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the supplied shell', function () {
+      var shell = {mwsResourceID: 'my_resource'};
+      var query = {
+        shell: shell,
+        collection: 'my_collection'
+      };
+      mongo.request.dbCollectionRemove(query, {}, true);
+      expect(makeRequest.calls[0].args[4]).toBe(shell);
+    });
+  });
+
+  describe('update', function () {
+    var makeRequest;
+    var query_;
+    beforeEach(function () {
+      spyOn(mongo.request, '__makeRequest');
+      makeRequest = mongo.request.__makeRequest;
+
+      query_ = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+    });
+
+    it('constructs and uses the collection url', function () {
+      var getUrl = mongo.util.getDBCollectionResURL;
+      getUrl.andReturn('my_test_url/');
+      var query = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+
+      mongo.request.dbCollectionUpdate(query, {}, true);
+      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
+      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/update');
+    });
+
+    it('constructs appropriate params', function () {
+      // Todo: Finish this
+//      var constraint = {a: 1, b: {$gt: 2}};
+//      mongo.request.dbCollectionUpdate(query_, constraint, false);
+//      var params = makeRequest.calls[0].args[1];
+//      expect(params.constraint).toEqual(constraint);
+//      expect(params.just_one).toBe(false);
+    });
+
+    it('uses the put HTTP method', function () {
+      mongo.request.dbCollectionUpdate(query_, {}, true);
+      expect(makeRequest.calls[0].args[2]).toEqual('PUT');
+    });
+
+    it('uses the supplied shell', function () {
+      var shell = {mwsResourceID: 'my_resource'};
+      var query = {
+        shell: shell,
+        collection: 'my_collection'
+      };
+      mongo.request.dbCollectionUpdate(query, {}, true);
+      expect(makeRequest.calls[0].args[4]).toBe(shell);
+    });
+  });
+
   /**
    * Valids the requests themselves, rather than the actions taken upon their
    * failure or success.
