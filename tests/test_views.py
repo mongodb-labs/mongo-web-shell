@@ -64,7 +64,8 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.db_collection.drop()
 
     def _make_request(self, endpoint, data, method, expected_status, require_result=True):
-        data = dumps({k: v for k, v in data.iteritems() if v is not None})
+        if data:
+            data = dumps({k: v for k, v in data.iteritems() if v is not None})
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
@@ -85,8 +86,8 @@ class DBCollectionTestCase(MongoWSTestCase):
 
 class FindUnitTestCase(DBCollectionTestCase):
     def make_find_request(self, query=None, projection=None, expected_status=0):
-        data = {'query': query, 'projection': projection}
-        return self._make_request('find', data, self.app.get, expected_status)
+        data = dumps({'query': query, 'projection': projection})
+        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
 
     def test_find(self):
         query = {'name': 'mongo'}
