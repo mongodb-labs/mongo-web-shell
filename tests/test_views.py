@@ -79,16 +79,28 @@ class DBCollectionTestCase(MongoWSTestCase):
                 return None
             raise
 
+    def make_find_request(self, query=None, projection=None, expected_status=0):
+        data = {'query': query, 'projection': projection}
+        return self._make_request('find', data, self.app.get, expected_status)
+
+    def make_insert_request(self, document, expected_status=0):
+        data = {'document': document}
+        return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
+
+    def make_remove_request(self, constraint, just_one=False, expected_status=0):
+        data = {'constraint': constraint, 'just_one': just_one}
+        self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
+
+    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=0):
+        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
+        self._make_request('update', data, self.app.put, expected_status, require_result=False)
+
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
             sess['session_id'] = new_id
 
 
 class FindUnitTestCase(DBCollectionTestCase):
-    def make_find_request(self, query=None, projection=None, expected_status=0):
-        data = dumps({'query': query, 'projection': projection})
-        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
-
     def test_find(self):
         query = {'name': 'mongo'}
         self.db_collection.insert(query)
@@ -109,10 +121,6 @@ class FindUnitTestCase(DBCollectionTestCase):
 
 
 class InsertUnitTestCase(DBCollectionTestCase):
-    def make_insert_request(self, document, expected_status=0):
-        data = {'document': document}
-        return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
-
     def test_simple_insert(self):
         document = {'name': 'Mongo'}
         self.make_insert_request(document)
@@ -140,10 +148,6 @@ class InsertUnitTestCase(DBCollectionTestCase):
 
 
 class RemoveUnitTestCase(DBCollectionTestCase):
-    def make_remove_request(self, constraint, just_one=False, expected_status=0):
-        data = {'constraint': constraint, 'just_one': just_one}
-        self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
-
     def test_remove(self):
         self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
@@ -170,10 +174,6 @@ class RemoveUnitTestCase(DBCollectionTestCase):
 
 
 class UpdateUnitTestCase(DBCollectionTestCase):
-    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=0):
-        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
-        self._make_request('update', data, self.app.put, expected_status, require_result=False)
-
     def test_upsert(self):
         result = self.db_collection.find({'name': 'Mongo'})
         self.assertEqual(result.count(), 0)
