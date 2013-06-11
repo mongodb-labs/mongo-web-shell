@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, make_response, request
 from flask import session
 
 from . import db
+from werkzeug.exceptions import BadRequest
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
@@ -100,14 +101,9 @@ def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    # TODO: Is there an easier way to convert these JSON args? Automatically?
-    try:
-        query = loads(request.args.get('query', '{}')) or None
-        projection = loads(request.args.get('projection', '{}')) or None
-    except ValueError:
-        # TODO: Return proper error to client.
-        error = 'Error parsing JSON parameters.'
-        return dumps({'status': 1, 'result': error})
+    parse_get_json(request)
+    query = request.json.get('query')
+    projection = request.json.get('projection')
 
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
@@ -180,6 +176,7 @@ def user_has_access(res_id, session_id):
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True
 
+
 def to_json(result):
     try:
         return dumps(result)
@@ -187,3 +184,12 @@ def to_json(result):
         error = 'Error in find while trying to convert the results to ' + \
                 'JSON format.'
         return dumps({'status': -1, 'result': error})
+
+
+def parse_get_json(request):
+    try:
+        request.json = loads(request.args.keys()[0])
+        print "Request json is %r" % request.json
+    except ValueError:
+        raise BadRequest
+
