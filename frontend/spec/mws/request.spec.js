@@ -121,10 +121,10 @@ describe('The request module', function () {
       // TODO: How to catch the exception?
 
       // Failure: Bad status code.
-      body = {status: -1, result: expectedResult};
+      body = {error: 500, reason: 'Internal Server Error', detail: ''};
       mongo.request.dbCollectionFind(cursor, callbackSpy, true);
       req = requests[3];
-      req.respond(200, '', JSON.stringify(body));
+      req.respond(500, '', JSON.stringify(body));
       expect(cursor._storeQueryResult.call.length).toBe(1);
       expect(callbackSpy.calls.length).toBe(1);
       expect(cursor._shell.insertResponseLine.calls.length).toBe(2);

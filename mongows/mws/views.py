@@ -58,6 +58,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         return update_wrapper(wrapped_function, f)
     return decorator
 
+
 def check_session_id(f):
     def wrapped_function(*args, **kwargs):
         session_id = session.get('session_id')
@@ -69,6 +70,7 @@ def check_session_id(f):
             return err(403, error)
         return f(*args, **kwargs)
     return update_wrapper(wrapped_function, f)
+
 
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
@@ -112,6 +114,7 @@ def db_collection_find(res_id, collection_name):
     result = {'result': documents}
     return to_json(result)
 
+
 @mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
@@ -128,6 +131,7 @@ def db_collection_insert(res_id, collection_name):
     result = {'result': objIDs}
     return to_json(result)
 
+
 @mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
@@ -138,11 +142,12 @@ def db_collection_remove(res_id, collection_name):
     internal_collection_name = get_internal_collection_name(res_id, collection_name)
 
     if just_one:
-       db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
+        db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
     else:
-       db.get_db()[internal_collection_name].remove(constraint)
+        db.get_db()[internal_collection_name].remove(constraint)
 
     return to_json({})
+
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
@@ -154,7 +159,7 @@ def db_collection_update(res_id, collection_name):
         update = request.json.get('update')
         upsert = request.json.get('upsert', False)
         multi = request.json.get('multi', False)
-    if query == None or update == None:
+    if query is None or update is None:
         error = 'update requires spec and document arguments'
         return err(400, error)
 
@@ -193,6 +198,7 @@ def parse_get_json(request):
         print "Request json is %r" % request.json
     except ValueError:
         raise BadRequest
+
 
 def err(code, message, detail=''):
     return dumps({'error': code, 'reason': message, 'detail': detail}), code
