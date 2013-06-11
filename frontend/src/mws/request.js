@@ -90,6 +90,19 @@ mongo.request = (function () {
     makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
   }
 
+  /**
+   * Makes a drop request to the mongod instance on the backing server. On
+   * success, the collection is dropped from the database, otherwise a failure
+   * message is printed and an error is thrown.
+   *
+   */
+  function dbCollectionDrop(query) {
+    var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
+                                               query.collection) + 'drop';
+
+    makeRequest(url, null, 'DELETE', 'dbCollectionUpdate', query.shell);
+  }
+
 function makeRequest(url, params, type, name, shell, onSuccess, async) {
   console.debug(name + ' request:', url, params);
   $.ajax({
@@ -130,6 +143,7 @@ function makeRequest(url, params, type, name, shell, onSuccess, async) {
     dbCollectionInsert: dbCollectionInsert,
     dbCollectionRemove: dbCollectionRemove,
     dbCollectionUpdate: dbCollectionUpdate,
+    dbCollectionDrop: dbCollectionDrop,
     keepAlive: keepAlive
   };
 }());
