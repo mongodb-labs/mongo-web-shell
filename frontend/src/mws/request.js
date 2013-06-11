@@ -39,7 +39,8 @@ mongo.request = (function () {
       cursor._storeQueryResult(data.result);
       onSuccess(data);
     };
-    makeRequest(url, params, 'GET', 'dbCollectionFind', cursor._shell, success, async);
+    mongo.request.__makeRequest(url, params, 'GET', 'dbCollectionFind', cursor._shell,
+      success, async);
   }
 
   function dbCollectionInsert(query, document_) {
@@ -47,7 +48,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(resID, query.collection) +
         'insert';
     var params = {document: document_};
-    makeRequest(url, params, 'POST', 'dbCollectionInsert', query.shell);
+    mongo.request.__makeRequest(url, params, 'POST', 'dbCollectionInsert', query.shell);
   }
 
   /**
@@ -59,7 +60,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'remove';
     var params = {constraint: constraint, just_one: justOne};
-    makeRequest(url, params, 'DELETE', 'dbCollectionRemove', query.shell);
+    mongo.request.__makeRequest(url, params, 'DELETE', 'dbCollectionRemove', query.shell);
   }
 
   /**
@@ -76,18 +77,19 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'update';
     // handle options document for 2.2+
-    if (typeof upsert == 'object'){
-      if (multi != undefined){
-        query.shell.insertResponseLine('ERROR: Fourth argument must be empty when specifying upsert and multi with an object');
-        console.error('dbCollectionUpdate fail: Fourth argument must be empty when specifying upsert and multi with an object');
+    if (typeof upsert === 'object'){
+      if (multi !== undefined){
+        var msg = 'Fourth argument must be empty when specifying upsert and multi with an object';
+        query.shell.insertResponseLine('ERROR: ' + msg);
+        console.error('dbCollectionUpdate fail: ' + msg);
         throw {statement: 'dbCollectionUpdate: Syntax error'};
       }
-      multi = upsert['multi'];
-      upsert = upsert['upsert'];
+      multi = upsert.multi;
+      upsert = upsert.upsert;
     }
 
     var params = {query: constraint, update: update, upsert: !!upsert, multi: !!multi};
-    makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
+    mongo.request.__makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
   }
 
   /**
@@ -103,29 +105,38 @@ mongo.request = (function () {
     makeRequest(url, null, 'DELETE', 'dbCollectionUpdate', query.shell);
   }
 
-function makeRequest(url, params, type, name, shell, onSuccess, async) {
-  console.debug(name + ' request:', url, params);
-  $.ajax({
-    async: !!async,
-    type: type,
-    url: url,
-    data: JSON.stringify(params),
-    dataType: 'json',
-    contentType: 'application/json',
-    success: function (data, textStatus, jqXHR) {
-      console.info(name + ' success');
-      if (onSuccess) {
-        onSuccess(data);
-      }
-    },
-    error: function (jqXHR, textStatus, errorThrown) {
-      response = $.parseJSON(jqXHR.responseText);
-      shell.insertResponseLine('ERROR: ' + response.reason + '\n' + response.detail);
-      console.error(name + ' fail:', textStatus, errorThrown);
-      throw {};
+
+  function makeRequest(url, params, type, name, shell, onSuccess, async) {
+    if (async === undefined) {
+      // Default async to true
+      async = true;
     }
-  });
-}
+    console.debug(name + ' request:', url, params);
+    $.ajax({
+      async: !!async,
+      type: type,
+      url: url,
+      data: JSON.stringify(params),
+      dataType: 'json',
+      contentType: 'application/json',
+      success: function (data, textStatus, jqXHR) {
+        console.info(name + ' success');
+        if (onSuccess) {
+          onSuccess(data);
+        }
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        var response = $.parseJSON(jqXHR.responseText);
+        var message = 'ERROR: ' + response.reason;
+        if (response.detail) {
+          message += '\n' + response.detail;
+        }
+        shell.insertResponseLine(message);
+        console.error(name + ' fail:', textStatus, errorThrown);
+        throw {};
+      }
+    });
+  }
 
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
@@ -144,6 +155,7 @@ function makeRequest(url, params, type, name, shell, onSuccess, async) {
     dbCollectionRemove: dbCollectionRemove,
     dbCollectionUpdate: dbCollectionUpdate,
     dbCollectionDrop: dbCollectionDrop,
-    keepAlive: keepAlive
+    keepAlive: keepAlive,
+    __makeRequest: makeRequest
   };
 }());
