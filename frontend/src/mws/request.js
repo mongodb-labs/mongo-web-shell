@@ -100,21 +100,16 @@ function makeRequest(url, params, type, name, shell, onSuccess, async) {
     dataType: 'json',
     contentType: 'application/json',
     success: function (data, textStatus, jqXHR) {
-      // TODO: This status code is undocumented.
-      if (data.status === 0) {
-        console.info(name + ' success');
-        if (onSuccess) {
-          onSuccess(data);
-        }
-      } else {
-        shell.insertResponseLine('ERROR: server error occured');
-        console.debug(name + ' error:', data.result);
+      console.info(name + ' success');
+      if (onSuccess) {
+        onSuccess(data);
       }
     },
     error: function (jqXHR, textStatus, errorThrown) {
-      shell.insertResponseLine('ERROR: server error occured');
+      response = $.parseJSON(jqXHR.responseText);
+      shell.insertResponseLine('ERROR: ' + response.reason + '\n' + response.detail);
       console.error(name + ' fail:', textStatus, errorThrown);
-      throw name + ': Server error';
+      throw {};
     }
   });
 }
