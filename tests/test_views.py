@@ -63,21 +63,32 @@ class DBCollectionTestCase(MongoWSTestCase):
         super(DBCollectionTestCase, self).setUp()
         self.db_collection.drop()
 
-    def _make_request(self, endpoint, data, method, expected_status, require_result=True):
+    def _make_request(self, endpoint, data, method, expected_status):
         if data:
             data = dumps({k: v for k, v in data.iteritems() if v is not None})
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
-        actual_status = result_dict['status']
+        actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" % (expected_status, actual_status))
-        try:
-            return result_dict['result']
-        except KeyError:
-            if not require_result:
-                return None
-            raise
+        return result_dict
+
+    def make_find_request(self, query=None, projection=None, expected_status=200):
+        data = dumps({'query': query, 'projection': projection})
+        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
+
+    def make_insert_request(self, document, expected_status=200):
+        data = {'document': document}
+        return self._make_request('insert', data, self.app.post, expected_status)
+
+    def make_remove_request(self, constraint, just_one=False, expected_status=200):
+        data = {'constraint': constraint, 'just_one': just_one}
+        self._make_request('remove', data, self.app.delete, expected_status)
+
+    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=200):
+        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
+        self._make_request('update', data, self.app.put, expected_status)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
@@ -85,34 +96,23 @@ class DBCollectionTestCase(MongoWSTestCase):
 
 
 class FindUnitTestCase(DBCollectionTestCase):
-    def make_find_request(self, query=None, projection=None, expected_status=0):
-        data = dumps({'query': query, 'projection': projection})
-        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
-
     def test_find(self):
         query = {'name': 'mongo'}
         self.db_collection.insert(query)
 
         result = self.make_find_request(query)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['name'], 'mongo')
+        self.assertEqual(result['result'][0]['name'], 'mongo')
 
     def test_invalid_find_session(self):
         self.set_session_id('invalid_id')
         document = {'name': 'mongo'}
-        result = self.make_find_request(document, expected_status=-1)
-        # Todo: Seems like brittle, declarative testing. Would be great if
-        # we could verify the type of error without testing against the error
-        # string itself, maybe by using a different status.
-        error = 'Session error. User does not have access to res_id'
+        result = self.make_find_request(document, expected_status=403)
+        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
         self.assertEqual(result, error)
 
 
 class InsertUnitTestCase(DBCollectionTestCase):
-    def make_insert_request(self, document, expected_status=0):
-        data = {'document': document}
-        return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
-
     def test_simple_insert(self):
         document = {'name': 'Mongo'}
         self.make_insert_request(document)
@@ -133,17 +133,13 @@ class InsertUnitTestCase(DBCollectionTestCase):
     def test_invalid_insert_session(self):
         self.set_session_id('invalid_session')
         document = {'name': 'mongo'}
-        result = self.make_insert_request(document, expected_status=-1)
+        result = self.make_insert_request(document, expected_status=403)
         # See note above about brittle testing
-        error = 'Session error. User does not have access to res_id'
+        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
         self.assertEqual(result, error)
 
 
 class RemoveUnitTestCase(DBCollectionTestCase):
-    def make_remove_request(self, constraint, just_one=False, expected_status=0):
-        data = {'constraint': constraint, 'just_one': just_one}
-        self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
-
     def test_remove(self):
         self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
 
@@ -166,14 +162,10 @@ class RemoveUnitTestCase(DBCollectionTestCase):
 
     def test_remove_requires_valid_res_id(self):
         self.set_session_id('invalid_session')
-        self.make_remove_request({}, expected_status=-1)
+        self.make_remove_request({}, expected_status=403)
 
 
 class UpdateUnitTestCase(DBCollectionTestCase):
-    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=0):
-        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
-        self._make_request('update', data, self.app.put, expected_status, require_result=False)
-
     def test_upsert(self):
         result = self.db_collection.find({'name': 'Mongo'})
         self.assertEqual(result.count(), 0)
@@ -223,4 +215,4 @@ class IntegrationTestCase(DBCollectionTestCase):
         self.make_insert_request(document)
 
         result = self.make_find_request(document)
-        self.assertDictContainsSubset(document, result[0])
+        self.assertDictContainsSubset(document, result['result'][0])
