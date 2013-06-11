@@ -69,29 +69,29 @@ class DBCollectionTestCase(MongoWSTestCase):
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
-        actual_status = result_dict['status']
+        actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" % (expected_status, actual_status))
         try:
-            return result_dict['result']
+            return result_dict
         except KeyError:
             if not require_result:
                 return None
             raise
 
-    def make_find_request(self, query=None, projection=None, expected_status=0):
-        data = {'query': query, 'projection': projection}
-        return self._make_request('find', data, self.app.get, expected_status)
+    def make_find_request(self, query=None, projection=None, expected_status=200):
+        data = dumps({'query': query, 'projection': projection})
+        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
 
-    def make_insert_request(self, document, expected_status=0):
+    def make_insert_request(self, document, expected_status=200):
         data = {'document': document}
         return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
 
-    def make_remove_request(self, constraint, just_one=False, expected_status=0):
+    def make_remove_request(self, constraint, just_one=False, expected_status=200):
         data = {'constraint': constraint, 'just_one': just_one}
         self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
 
-    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=0):
+    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=200):
         data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
         self._make_request('update', data, self.app.put, expected_status, require_result=False)
 
@@ -107,16 +107,13 @@ class FindUnitTestCase(DBCollectionTestCase):
 
         result = self.make_find_request(query)
         self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]['name'], 'mongo')
+        self.assertEqual(result['result'][0]['name'], 'mongo')
 
     def test_invalid_find_session(self):
         self.set_session_id('invalid_id')
         document = {'name': 'mongo'}
-        result = self.make_find_request(document, expected_status=-1)
-        # Todo: Seems like brittle, declarative testing. Would be great if
-        # we could verify the type of error without testing against the error
-        # string itself, maybe by using a different status.
-        error = 'Session error. User does not have access to res_id'
+        result = self.make_find_request(document, expected_status=403)
+        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
         self.assertEqual(result, error)
 
 
@@ -141,9 +138,9 @@ class InsertUnitTestCase(DBCollectionTestCase):
     def test_invalid_insert_session(self):
         self.set_session_id('invalid_session')
         document = {'name': 'mongo'}
-        result = self.make_insert_request(document, expected_status=-1)
+        result = self.make_insert_request(document, expected_status=403)
         # See note above about brittle testing
-        error = 'Session error. User does not have access to res_id'
+        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
         self.assertEqual(result, error)
 
 
@@ -170,7 +167,7 @@ class RemoveUnitTestCase(DBCollectionTestCase):
 
     def test_remove_requires_valid_res_id(self):
         self.set_session_id('invalid_session')
-        self.make_remove_request({}, expected_status=-1)
+        self.make_remove_request({}, expected_status=403)
 
 
 class UpdateUnitTestCase(DBCollectionTestCase):
@@ -223,4 +220,4 @@ class IntegrationTestCase(DBCollectionTestCase):
         self.make_insert_request(document)
 
         result = self.make_find_request(document)
-        self.assertDictContainsSubset(document, result[0])
+        self.assertDictContainsSubset(document, result['result'][0])
