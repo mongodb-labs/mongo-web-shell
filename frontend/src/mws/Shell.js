@@ -60,7 +60,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
-  this.insertResponseLine("> " + userInput);
+  this.insertResponseLine('> ' + userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
   try {
     mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);

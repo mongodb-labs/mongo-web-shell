@@ -18,7 +18,7 @@
   "strict" : false,
   "trailing" : true,
 
-  "maxlen" : 79,
+  "maxlen" : 100,
 
   "asi" : false,
   "boss" : false,
