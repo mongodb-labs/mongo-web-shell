@@ -91,10 +91,14 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     this.evalStatements(statements);
   } catch (err) {
-    // TODO: Figure out why an error might occur here and handle it.
-    this.insertResponseLine('ERROR: eval error on: ' + err.statement);
-    console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
-        err);
+    if (err instanceof mongo.CollectionNameError){
+      this.insertResponseLine('ERROR: ' + err.message);
+      console.error('mongo.Shell.handleInput(): ' + err.message);
+    } else {
+      // TODO: Figure out why an error might occur here and handle it.
+      this.insertResponseLine('ERROR: eval error on: ' + err.statement);
+      console.error('mongo.Shell.handleInput(): eval error on:', err.statement, err);
+    }
   }
 };
 
