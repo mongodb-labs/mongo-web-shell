@@ -161,7 +161,7 @@ describe('A Shell', function () {
         $input.val(expected);
         instance.handleInput();
         expect($input.val()).toBe('');
-        expect(instance.insertResponseLine).toHaveBeenCalledWith(expected);
+        expect(instance.insertResponseLine).toHaveBeenCalledWith('> ' + expected);
       });
 
       it('mutates and evalutaes the source', function () {

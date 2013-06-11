@@ -7,6 +7,7 @@ from flask import Blueprint, current_app, make_response, request
 from flask import session
 
 from . import db
+from werkzeug.exceptions import BadRequest
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
@@ -62,10 +63,10 @@ def check_session_id(f):
         session_id = session.get('session_id')
         if session_id is None:
             error = 'There is no session_id cookie'
-            return dumps({'status': -1, 'result': error})
+            return err(401, error)
         if not user_has_access(kwargs['res_id'], session_id):
             error = 'Session error. User does not have access to res_id'
-            return dumps({'status': -1, 'result': error})
+            return err(403, error)
         return f(*args, **kwargs)
     return update_wrapper(wrapped_function, f)
 
@@ -90,7 +91,7 @@ def create_mws_resource():
 @crossdomain(origin=REQUEST_ORIGIN)
 def keep_mws_alive(res_id):
     # TODO: Reset timeout period on mws resource with the given id.
-    return '{}'
+    return to_json({})
 
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
@@ -100,20 +101,15 @@ def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    # TODO: Is there an easier way to convert these JSON args? Automatically?
-    try:
-        query = loads(request.args.get('query', '{}')) or None
-        projection = loads(request.args.get('projection', '{}')) or None
-    except ValueError:
-        # TODO: Return proper error to client.
-        error = 'Error parsing JSON parameters.'
-        return dumps({'status': 1, 'result': error})
+    parse_get_json(request)
+    query = request.json.get('query')
+    projection = request.json.get('projection')
 
     internal_collection_name = get_internal_collection_name(res_id,
                                                             collection_name)
     cursor = db.get_db()[internal_collection_name].find(query, projection)
     documents = list(cursor)
-    result = {'status': 0, 'result': documents}
+    result = {'result': documents}
     return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
@@ -125,11 +121,11 @@ def db_collection_insert(res_id, collection_name):
         document = request.json['document']
     else:
         error = '\'document\' argument not found in the insert request.'
-        return dumps({'status': -1, 'result': error})
+        return err(400, error)
 
     internal_collection_name = get_internal_collection_name(res_id, collection_name)
     objIDs = db.get_db()[internal_collection_name].insert(document)
-    result = {'status': 0, 'result': objIDs}
+    result = {'result': objIDs}
     return to_json(result)
 
 @mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
@@ -146,7 +142,7 @@ def db_collection_remove(res_id, collection_name):
     else:
        db.get_db()[internal_collection_name].remove(constraint)
 
-    return to_json({'status': 0})
+    return to_json({})
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
@@ -160,12 +156,12 @@ def db_collection_update(res_id, collection_name):
         multi = request.json.get('multi', False)
     if query == None or update == None:
         error = 'update requires spec and document arguments'
-        return dumps({'status': -1, 'result': error})
+        return err(400, error)
 
     internal_collection_name = get_internal_collection_name(res_id, collection_name)
     db.get_db()[internal_collection_name].update(query, update, upsert, multi=multi)
 
-    return to_json({'status': 0})
+    return to_json({})
 
 
 def get_internal_collection_name(res_id, collection_name):
@@ -181,10 +177,22 @@ def user_has_access(res_id, session_id):
     return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True
 
+
 def to_json(result):
     try:
-        return dumps(result)
+        return dumps(result), 200
     except ValueError:
         error = 'Error in find while trying to convert the results to ' + \
                 'JSON format.'
-        return dumps({'status': -1, 'result': error})
+        return err(500, error)
+
+
+def parse_get_json(request):
+    try:
+        request.json = loads(request.args.keys()[0])
+        print "Request json is %r" % request.json
+    except ValueError:
+        raise BadRequest
+
+def err(code, message, detail=''):
+    return dumps({'error': code, 'reason': message, 'detail': detail}), code
