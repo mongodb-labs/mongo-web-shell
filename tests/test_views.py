@@ -63,7 +63,7 @@ class DBCollectionTestCase(MongoWSTestCase):
         super(DBCollectionTestCase, self).setUp()
         self.db_collection.drop()
 
-    def _make_request(self, endpoint, data, method, expected_status, require_result=True):
+    def _make_request(self, endpoint, data, method, expected_status):
         if data:
             data = dumps({k: v for k, v in data.iteritems() if v is not None})
         url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
@@ -72,12 +72,7 @@ class DBCollectionTestCase(MongoWSTestCase):
         actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" % (expected_status, actual_status))
-        try:
-            return result_dict
-        except KeyError:
-            if not require_result:
-                return None
-            raise
+        return result_dict
 
     def make_find_request(self, query=None, projection=None, expected_status=200):
         data = dumps({'query': query, 'projection': projection})
@@ -85,15 +80,15 @@ class DBCollectionTestCase(MongoWSTestCase):
 
     def make_insert_request(self, document, expected_status=200):
         data = {'document': document}
-        return self._make_request('insert', data, self.app.post, expected_status, require_result=False)
+        return self._make_request('insert', data, self.app.post, expected_status)
 
     def make_remove_request(self, constraint, just_one=False, expected_status=200):
         data = {'constraint': constraint, 'just_one': just_one}
-        self._make_request('remove', data, self.app.delete, expected_status, require_result=False)
+        self._make_request('remove', data, self.app.delete, expected_status)
 
     def make_update_request(self, query, update, upsert=False, multi=False, expected_status=200):
         data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
-        self._make_request('update', data, self.app.put, expected_status, require_result=False)
+        self._make_request('update', data, self.app.put, expected_status)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
