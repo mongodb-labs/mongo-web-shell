@@ -86,10 +86,10 @@ describe('The request module', function () {
       expect(req.method).toBe('GET');
       var actualURL = decodeURIComponent(req.url);
       expect(actualURL).toMatch('^' + RES_URL + 'find?');
-      expect(actualURL).toMatch('find?.*projection\\[_id\\]=' +
-          cursor._query.args.projection._id);
-      expect(actualURL).toMatch('find?.*query\\[iu\\]=' +
-          cursor._query.args.query.iu);
+      var expectedJson = '"projection":' + JSON.stringify({_id: cursor._query.args.projection._id});
+      expect(actualURL).toMatch('find?.*' + expectedJson);
+      expectedJson = '"query":' + JSON.stringify({iu: cursor._query.args.query.iu});
+      expect(actualURL).toMatch('find?.*' + expectedJson);
       expect(req.requestBody).toBe(null);
       expect(req.async).toBe(async);
       expect(req.requestHeaders.Accept).toMatch('application/json');

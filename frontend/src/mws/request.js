@@ -33,74 +33,21 @@ mongo.request = (function () {
 
     var url = mongo.util.getDBCollectionResURL(resID, cursor._collection) +
         'find';
-    var params = {
-      query: args.query,
-      projection: args.projection
-    };
-    mongo.util.pruneKeys(params, ['query', 'projection']);
-    // For a GET request, jQuery divides each key in a JSON object into params
-    // (i.e. var obj = {one: 1, two: 2} => ?obj[one]=1&obj[two]=2 ), which is
-    // harder to reconstruct on the backend than just stringifying the values
-    // individually, which is what we do here.
-    mongo.util.stringifyKeys(params);
+    var params = {query: args.query, projection: args.projection};
 
-    console.debug('find() request:', url, params);
-    $.ajax({
-      async: async,
-      url: url,
-      data: params,
-      dataType: 'json',
-      success: function (data, textStatus, jqXHR) {
-        // TODO: This status code is undocumented.
-        if (data.status === 0) {
-          console.debug('dbCollectionFind success');
-          cursor._storeQueryResult(data.result);
-          onSuccess();
-        } else {
-          cursor._shell.insertResponseLine('ERROR: server error occured');
-          console.debug('dbCollectionFind error:', data.result);
-        }
-      }
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      cursor._shell.insertResponseLine('ERROR: server error occured');
-      console.error('dbCollectionFind fail:', textStatus, errorThrown);
-      // TODO: Make this more robust (currently prints two errors, eval doesn't
-      // say why it failed, etc.).
-      // TODO: Should we throw in insert too?
-      // Throwing here will cause the query eval() to fail if not async, rather
-      // than handling the edge cases in each query method individually.
-      throw 'dbCollectionFind: Server error';
-    });
+    var success = function (data) {
+      cursor._storeQueryResult(data.result);
+      onSuccess(data);
+    };
+    makeRequest(url, params, 'GET', 'dbCollectionFind', cursor._shell, success, async);
   }
 
   function dbCollectionInsert(query, document_) {
     var resID = query.shell.mwsResourceID;
     var url = mongo.util.getDBCollectionResURL(resID, query.collection) +
         'insert';
-    var params = {
-      document: document_
-    };
-
-    console.debug('insert() request:', url, params);
-    $.ajax({
-      type: 'POST',
-      url: url,
-      data: JSON.stringify(params),
-      dataType: 'json',
-      contentType: 'application/json',
-      success: function (data, textStatus, jqXHR) {
-        // TODO: This code is undocumented.
-        if (data.status === 0) {
-          console.info('Insertion successful:', data);
-        } else {
-          // TODO: Alert the user.
-          console.debug('dbCollectionInsert error', data.result);
-        }
-      }
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      query.shell.insertResponseLine('ERROR: server error occured');
-      console.error('dbCollectionInsert fail:', textStatus, errorThrown);
-    });
+    var params = {document: document_};
+    makeRequest(url, params, 'POST', 'dbCollectionInsert', query.shell);
   }
 
   /**
@@ -112,28 +59,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'remove';
     var params = {constraint: constraint, just_one: justOne};
-
-    console.debug('remove() request:', url, constraint, justOne);
-    $.ajax({
-      type: 'DELETE',
-      url: url,
-      data: JSON.stringify(params),
-      dataType: 'json',
-      contentType: 'application/json',
-      success: function (data, textStatus, jqXHR) {
-        // TODO: This status code is undocumented.
-        if (data.status === 0) {
-          console.debug('dbCollectionRemove success');
-        } else {
-          query.shell.insertResponseLine('ERROR: server error occured');
-          console.debug('dbCollectionRemove error:', data.result);
-        }
-      }
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      query.shell.insertResponseLine('ERROR: server error occured');
-      console.error('dbCollectionRemove fail:', textStatus, errorThrown);
-      throw 'dbCollectionRemove: Server error';
-    });
+    makeRequest(url, params, 'DELETE', 'dbCollectionRemove', query.shell);
   }
 
   /**
@@ -161,29 +87,37 @@ mongo.request = (function () {
     }
 
     var params = {query: constraint, update: update, upsert: !!upsert, multi: !!multi};
-
-    console.debug('update() request:', url, params);
-    $.ajax({
-      type: 'PUT',
-      url: url,
-      data: JSON.stringify(params),
-      dataType: 'json',
-      contentType: 'application/json',
-      success: function (data, textStatus, jqXHR) {
-        // TODO: This status code is undocumented.
-        if (data.status === 0) {
-          console.debug('dbCollectionUpdate success');
-        } else {
-          query.shell.insertResponseLine('ERROR: server error occured');
-          console.debug('dbCollectionUpdate error:', data.result);
-        }
-      }
-    }).fail(function (jqXHR, textStatus, errorThrown) {
-      query.shell.insertResponseLine('ERROR: server error occured');
-      console.error('dbCollectionUpdate fail:', textStatus, errorThrown);
-      throw 'dbCollectionUpdate: Server error';
-    });
+    makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
   }
+
+function makeRequest(url, params, type, name, shell, onSuccess, async) {
+  console.debug(name + ' request:', url, params);
+  $.ajax({
+    async: !!async,
+    type: type,
+    url: url,
+    data: JSON.stringify(params),
+    dataType: 'json',
+    contentType: 'application/json',
+    success: function (data, textStatus, jqXHR) {
+      // TODO: This status code is undocumented.
+      if (data.status === 0) {
+        console.info(name + ' success');
+        if (onSuccess) {
+          onSuccess(data);
+        }
+      } else {
+        shell.insertResponseLine('ERROR: server error occured');
+        console.debug(name + ' error:', data.result);
+      }
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      shell.insertResponseLine('ERROR: server error occured');
+      console.error(name + ' fail:', textStatus, errorThrown);
+      throw name + ': Server error';
+    }
+  });
+}
 
   function keepAlive(shell) {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
