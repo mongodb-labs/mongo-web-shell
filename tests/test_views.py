@@ -1,6 +1,6 @@
 from bson.json_util import loads, dumps
 from mongows.mws.db import get_db
-from mongows.mws.views import get_internal_collection_name
+from mongows.mws.views import get_internal_coll_name
 
 from tests import MongoWSTestCase
 
@@ -55,9 +55,10 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.res_id = response_dict['res_id']
         self.assertIsNotNone(self.res_id)
 
-        self.collection_name = 'test_collection'
-        internal_collection_name = get_internal_collection_name(self.res_id, self.collection_name)
-        self.db_collection = get_db()[internal_collection_name]
+        self.coll_name = 'test_collection'
+        internal_coll_name = get_internal_coll_name(self.res_id,
+                                                    self.coll_name)
+        self.db_collection = get_db()[internal_coll_name]
 
     def tearDown(self):
         super(DBCollectionTestCase, self).setUp()
@@ -66,28 +67,39 @@ class DBCollectionTestCase(MongoWSTestCase):
     def _make_request(self, endpoint, data, method, expected_status):
         if data:
             data = dumps({k: v for k, v in data.iteritems() if v is not None})
-        url = '/mws/%s/db/%s/%s' % (self.res_id, self.collection_name, endpoint)
+        url = '/mws/%s/db/%s/%s' % (self.res_id, self.coll_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
         actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
-                         "Expected request status to be %s, got %s instead" % (expected_status, actual_status))
+                         "Expected request status to be %s, got %s instead" %
+                         (expected_status, actual_status))
         return result_dict
 
-    def make_find_request(self, query=None, projection=None, expected_status=200):
+    def make_find_request(self, query=None, projection=None,
+                          expected_status=200):
         data = dumps({'query': query, 'projection': projection})
-        return self._make_request('find?%s' % data, None, self.app.get, expected_status)
+        return self._make_request('find?%s' % data, None, self.app.get,
+                                  expected_status)
 
     def make_insert_request(self, document, expected_status=200):
         data = {'document': document}
-        return self._make_request('insert', data, self.app.post, expected_status)
+        return self._make_request('insert', data, self.app.post,
+                                  expected_status)
 
-    def make_remove_request(self, constraint, just_one=False, expected_status=200):
+    def make_remove_request(self, constraint, just_one=False,
+                            expected_status=200):
         data = {'constraint': constraint, 'just_one': just_one}
         self._make_request('remove', data, self.app.delete, expected_status)
 
-    def make_update_request(self, query, update, upsert=False, multi=False, expected_status=200):
-        data = {'query': query, 'update': update, 'upsert': upsert, 'multi': multi}
+    def make_update_request(self, query, update, upsert=False, multi=False,
+                            expected_status=200):
+        data = {
+            'query': query,
+            'update': update,
+            'upsert': upsert,
+            'multi': multi,
+        }
         self._make_request('update', data, self.app.put, expected_status)
 
     def set_session_id(self, new_id):
@@ -108,7 +120,11 @@ class FindUnitTestCase(DBCollectionTestCase):
         self.set_session_id('invalid_id')
         document = {'name': 'mongo'}
         result = self.make_find_request(document, expected_status=403)
-        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
+        error = {
+            'error': 403,
+            'reason': 'Session error. User does not have access to res_id',
+            'detail': '',
+        }
         self.assertEqual(result, error)
 
 
@@ -135,13 +151,19 @@ class InsertUnitTestCase(DBCollectionTestCase):
         document = {'name': 'mongo'}
         result = self.make_insert_request(document, expected_status=403)
         # See note above about brittle testing
-        error = {'error': 403, 'reason': 'Session error. User does not have access to res_id', 'detail': ''}
+        error = {
+            'error': 403,
+            'reason': 'Session error. User does not have access to res_id',
+            'detail': '',
+        }
         self.assertEqual(result, error)
 
 
 class RemoveUnitTestCase(DBCollectionTestCase):
     def test_remove(self):
-        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
 
         document = {'name': 'Mongo'}
         self.make_remove_request(document)
@@ -151,7 +173,9 @@ class RemoveUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result[0]['name'], 'NotMongo')
 
     def test_remove_one(self):
-        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
 
         document = {'name': 'Mongo'}
         self.make_remove_request(document, just_one=True)
@@ -177,7 +201,9 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result[0]['name'], 'Mongo')
 
     def test_update_one(self):
-        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
         self.make_update_request({'name': 'Mongo'}, {'name': 'Mongo2'}, True)
 
         result = self.db_collection.find()
@@ -185,8 +211,14 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         self.assertItemsEqual(names, ['Mongo', 'Mongo2', 'NotMongo'])
 
     def test_update_multi(self):
-        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
-        self.make_update_request({'name': 'Mongo'}, {'$set': {'name': 'Mongo2'}}, False, True)
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
+        self.make_update_request(
+            {'name': 'Mongo'},
+            {'$set': {'name': 'Mongo2'}},
+            False, True
+        )
 
         result = self.db_collection.find()
         names = [r['name'] for r in result]
@@ -202,7 +234,11 @@ class UpdateUnitTestCase(DBCollectionTestCase):
 
         # Exists - multi-update
         self.db_collection.insert([{'name': 'Mongo'}, {'name': 'NotMongo'}])
-        self.make_update_request({'name': 'Mongo'}, {'$set': {'name': 'Mongo2'}}, True, True)
+        self.make_update_request(
+            {'name': 'Mongo'},
+            {'$set': {'name': 'Mongo2'}},
+            True, True
+        )
 
         result = self.db_collection.find()
         names = [r['name'] for r in result]

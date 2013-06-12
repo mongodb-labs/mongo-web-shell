@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ./venv/bin/activate
+
 rtn=0
 
 echo "Running tests..."
