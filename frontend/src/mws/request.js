@@ -102,7 +102,7 @@ mongo.request = (function () {
     var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
                                                query.collection) + 'drop';
 
-    makeRequest(url, null, 'DELETE', 'dbCollectionUpdate', query.shell);
+    mongo.request.__makeRequest(url, null, 'DELETE', 'dbCollectionDrop', query.shell);
   }
 
 
