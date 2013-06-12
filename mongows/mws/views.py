@@ -168,13 +168,16 @@ def db_collection_update(res_id, collection_name):
 
     return to_json({})
 
-@mws.route('/<res_id>/db/<collection_name>/drop', methods=['DELETE', 'OPTIONS'])
+
+@mws.route('/<res_id>/db/<collection_name>/drop',
+           methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_drop(res_id, collection_name):
     internal_collection_name = get_internal_collection_name(res_id, collection_name)
     db.get_db().drop_collection(internal_collection_name)
     return to_json({})
+
 
 def get_internal_collection_name(res_id, collection_name):
     return res_id + collection_name

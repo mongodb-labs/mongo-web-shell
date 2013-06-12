@@ -215,7 +215,9 @@ class UpdateUnitTestCase(DBCollectionTestCase):
 
 class DropUnitTestCase(DBCollectionTestCase):
     def test_drop(self):
-        self.db_collection.insert([{'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}])
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
 
         result = self.db_collection.find()
         self.assertEqual(result.count(), 3)
@@ -226,6 +228,7 @@ class DropUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result.count(), 0)
 
         self.assertNotIn(self.internal_collection_name, self.db.collection_names())
+
 
 class IntegrationTestCase(DBCollectionTestCase):
     def test_insert_find(self):
