@@ -26,3 +26,7 @@ mongo.Query.prototype.remove = function(constraint, justOne) {
 mongo.Query.prototype.update = function(query, update, upsert, multi) {
 	mongo.request.dbCollectionUpdate(this, query, update, upsert, multi);
 };
+
+mongo.Query.prototype.drop = function() {
+	mongo.request.dbCollectionDrop(this);
+};

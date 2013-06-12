@@ -241,6 +241,48 @@ describe('The request module', function () {
     });
   });
 
+  describe('drop', function () {
+    var makeRequest;
+    var query_;
+    beforeEach(function () {
+      spyOn(mongo.request, '__makeRequest');
+      makeRequest = mongo.request.__makeRequest;
+
+      query_ = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+    });
+
+    it('constructs and uses the collection url', function () {
+      var getUrl = mongo.util.getDBCollectionResURL;
+      getUrl.andReturn('my_test_url/');
+      var query = {
+        shell: {mwsResourceID: 'my_resource'},
+        collection: 'my_collection'
+      };
+
+      mongo.request.dbCollectionDrop(query);
+      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
+      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/drop');
+    });
+
+    it('uses the delete HTTP method', function () {
+      mongo.request.dbCollectionDrop(query_);
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the supplied shell', function () {
+      var shell = {mwsResourceID: 'my_resource'};
+      var query = {
+        shell: shell,
+        collection: 'my_collection'
+      };
+      mongo.request.dbCollectionDrop(query);
+      expect(makeRequest.calls[0].args[4]).toBe(shell);
+    });
+  });
+
   /**
    * Valids the requests themselves, rather than the actions taken upon their
    * failure or success.

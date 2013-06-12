@@ -56,9 +56,10 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.assertIsNotNone(self.res_id)
 
         self.coll_name = 'test_collection'
-        internal_coll_name = get_internal_coll_name(self.res_id,
-                                                    self.coll_name)
-        self.db_collection = get_db()[internal_coll_name]
+        self.internal_coll_name = get_internal_coll_name(self.res_id,
+                                                         self.coll_name)
+        self.db = get_db()
+        self.db_collection = self.db[self.internal_coll_name]
 
     def tearDown(self):
         super(DBCollectionTestCase, self).setUp()
@@ -101,6 +102,9 @@ class DBCollectionTestCase(MongoWSTestCase):
             'multi': multi,
         }
         self._make_request('update', data, self.app.put, expected_status)
+
+    def make_drop_request(self, expected_status=200):
+        self._make_request('drop', None, self.app.delete, expected_status)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
@@ -243,6 +247,23 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         result = self.db_collection.find()
         names = [r['name'] for r in result]
         self.assertItemsEqual(names, ['Mongo2', 'Mongo2', 'NotMongo'])
+
+
+class DropUnitTestCase(DBCollectionTestCase):
+    def test_drop(self):
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
+
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 3)
+
+        self.make_drop_request()
+
+        result = self.db_collection.find()
+        self.assertEqual(result.count(), 0)
+
+        self.assertNotIn(self.internal_coll_name, self.db.collection_names())
 
 
 class IntegrationTestCase(DBCollectionTestCase):
