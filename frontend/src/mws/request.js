@@ -92,6 +92,20 @@ mongo.request = (function () {
     mongo.request.__makeRequest(url, params, 'PUT', 'dbCollectionUpdate', query.shell);
   }
 
+  /**
+   * Makes a drop request to the mongod instance on the backing server. On
+   * success, the collection is dropped from the database, otherwise a failure
+   * message is printed and an error is thrown.
+   *
+   */
+  function dbCollectionDrop(query) {
+    var url = mongo.util.getDBCollectionResURL(query.shell.mwsResourceID,
+                                               query.collection) + 'drop';
+
+    mongo.request.__makeRequest(url, null, 'DELETE', 'dbCollectionDrop', query.shell);
+  }
+
+
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
     if (async === undefined) {
       // Default async to true
@@ -140,6 +154,7 @@ mongo.request = (function () {
     dbCollectionInsert: dbCollectionInsert,
     dbCollectionRemove: dbCollectionRemove,
     dbCollectionUpdate: dbCollectionUpdate,
+    dbCollectionDrop: dbCollectionDrop,
     keepAlive: keepAlive,
     __makeRequest: makeRequest
   };
