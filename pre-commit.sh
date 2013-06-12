@@ -23,4 +23,4 @@ if [ $? != 0 ]; then
     rtn=1
 fi
 
-return $rtn
+exit $rtn
