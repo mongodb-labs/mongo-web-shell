@@ -164,7 +164,10 @@ describe('The request module', function () {
       makeRequest = mongo.request.__makeRequest;
 
       query_ = {
-        shell: {mwsResourceID: 'my_resource'},
+        shell: {
+          mwsResourceID: 'my_resource',
+          insertResponseLine: function () {}
+        },
         collection: 'my_collection'
       };
     });
@@ -183,12 +186,43 @@ describe('The request module', function () {
     });
 
     it('constructs appropriate params', function () {
-      // Todo: Finish this
-//      var constraint = {a: 1, b: {$gt: 2}};
-//      mongo.request.dbCollectionUpdate(query_, constraint, false);
-//      var params = makeRequest.calls[0].args[1];
-//      expect(params.constraint).toEqual(constraint);
-//      expect(params.just_one).toBe(false);
+      var constraint = {a: 1, b: {$gt: 2}};
+      var update = {$set: {c: 2}};
+      mongo.request.dbCollectionUpdate(query_, constraint, update);
+      var params = makeRequest.calls[0].args[1];
+      expect(params.query).toEqual(constraint);
+      expect(params.update).toEqual(update);
+    });
+
+    describe('upsert and multi', function () {
+      var constraint_ = {a: 1};
+      var update_ = {$set: {a: 2}};
+
+      it('defaults to false', function () {
+        mongo.request.dbCollectionUpdate(query_, constraint_, update_);
+        var params = makeRequest.calls[0].args[1];
+        expect(params.upsert).toBe(false);
+        expect(params.multi).toBe(false);
+      });
+
+      it('takes boolean parameters', function () {
+        mongo.request.dbCollectionUpdate(query_, constraint_, update_, true, true);
+        var params = makeRequest.calls[0].args[1];
+        expect(params.upsert).toBe(true);
+        expect(params.multi).toBe(true);
+      });
+
+      it('takes one object parameter', function () {
+        var options = {upsert: false, multi: true};
+        mongo.request.dbCollectionUpdate(query_, constraint_, update_, options);
+        var params = makeRequest.calls[0].args[1];
+        expect(params.upsert).toBe(false);
+        expect(params.multi).toBe(true);
+
+        expect(function () {
+          mongo.request.dbCollectionUpdate(query_, constraint_, update_, options, false);
+        }).toThrow({message: 'dbCollectionUpdate: Syntax error'});
+      });
     });
 
     it('uses the put HTTP method', function () {

@@ -82,7 +82,7 @@ mongo.request = (function () {
         var msg = 'Fourth argument must be empty when specifying upsert and multi with an object';
         query.shell.insertResponseLine('ERROR: ' + msg);
         console.error('dbCollectionUpdate fail: ' + msg);
-        throw {statement: 'dbCollectionUpdate: Syntax error'};
+        throw {message: 'dbCollectionUpdate: Syntax error'};
       }
       multi = upsert.multi;
       upsert = upsert.upsert;
