@@ -5,6 +5,22 @@
  * mongo.Cursor instance which is expected to continue the query lifespan.
  */
 mongo.Query = function (shell, collection) {
+	if (collection.length > 80){
+		throw new mongo.CollectionNameError('Collection name must be 80 characters or less');
+	}
+
+	if (collection.match(/(\$|\0)/)){
+		throw new mongo.CollectionNameError('Collection name may not contain $ or \\0');
+	}
+
+	if (collection.match(/^system\./)){
+		throw new mongo.CollectionNameError('Collection name may not begin with system.*');
+	}
+
+	if (collection === ''){
+		throw new mongo.CollectionNameError('Collection name may not be empty');
+	}
+
   this.shell = shell;
   this.collection = collection;
   console.debug('Create mongo.Query', this);
