@@ -53,7 +53,11 @@ mongo.util = (function () {
   }
 
   function getDBCollectionResURL(resID, collection) {
-    return mongo.config.baseUrl + resID + '/db/' + collection + '/';
+    return getDBResURL(resID) + collection + '/';
+  }
+
+  function getDBResURL(resID) {
+    return mongo.config.baseUrl + resID + '/db/';
   }
 
   /**
@@ -96,6 +100,7 @@ mongo.util = (function () {
     mergeObjects: mergeObjects,
     sourceToStatements: sourceToStatements,
     getDBCollectionResURL: getDBCollectionResURL,
+    getDBResURL: getDBResURL,
     pruneKeys: pruneKeys,
     stringifyKeys: stringifyKeys,
     toString: toString,
