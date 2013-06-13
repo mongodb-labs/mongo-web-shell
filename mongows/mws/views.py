@@ -113,8 +113,11 @@ def create_mws_resource():
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
+@check_session_id
 def keep_mws_alive(res_id):
-    # TODO: Reset timeout period on mws resource with the given id.
+    clients = db.get_db()[CLIENTS_COLLECTION]
+    clients.update({'session_id': session.get('session_id'), 'res_id': res_id},
+                   {'$set': {'timestamp': datetime.now()}})
     return to_json({})
 
 
@@ -234,7 +237,6 @@ def to_json(result):
 def parse_get_json(request):
     try:
         request.json = loads(request.args.keys()[0])
-        print "Request json is %r" % request.json
     except ValueError:
         raise BadRequest
 
