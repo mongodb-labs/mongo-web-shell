@@ -107,8 +107,8 @@ def db_collection_find(res_id, collection_name):
     query = request.json.get('query')
     projection = request.json.get('projection')
 
-    internal_collection_name = get_internal_coll_name(res_id, collection_name)
-    cursor = db.get_db()[internal_collection_name].find(query, projection)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    cursor = db.get_db()[internal_coll_name].find(query, projection)
     documents = list(cursor)
     result = {'result': documents}
     return to_json(result)
@@ -126,8 +126,8 @@ def db_collection_insert(res_id, collection_name):
         error = '\'document\' argument not found in the insert request.'
         return err(400, error)
 
-    internal_collection_name = get_internal_coll_name(res_id, collection_name)
-    objIDs = db.get_db()[internal_collection_name].insert(document)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    objIDs = db.get_db()[internal_coll_name].insert(document)
     result = {'result': objIDs}
     return to_json(result)
 
@@ -176,8 +176,8 @@ def db_collection_update(res_id, collection_name):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_drop(res_id, collection_name):
-    internal_collection_name = get_internal_coll_name(res_id, collection_name)
-    db.get_db().drop_collection(internal_collection_name)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    db.get_db().drop_collection(internal_coll_name)
     return to_json({})
 
 
