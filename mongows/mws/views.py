@@ -107,7 +107,7 @@ def create_mws_resource():
         res_id = cursor[0]['res_id']
     else:
         res_id = generate_res_id()
-        clients.insert({'version': 1, 'res_id': res_id, 'session_id': session_id})
+        clients.insert({'version': 1, 'res_id': res_id, 'session_id': session_id, 'timestamp': datetime.now()})
     return to_json({'res_id': res_id})
 
 

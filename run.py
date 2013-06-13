@@ -1,4 +1,5 @@
 from mongows import create_app
+from mongows.crontab import run_scheduler
 from mongows.mws.db import get_db
 
 
@@ -14,5 +15,8 @@ def ensureIndices(app):
 if __name__ == '__main__':
     app = create_app()
     host, port = app.config['HOST'], app.config['PORT']
+
+    run_scheduler(app)
     ensureIndices(app)
+
     app.run(host=host, port=port)
