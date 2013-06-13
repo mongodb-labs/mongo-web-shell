@@ -53,7 +53,8 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 
         with self.app.session_transaction() as sess:
             session_id = sess['session_id']
-            res = db.clients.find({'res_id': res_id, 'session_id': session_id}, {'timestamp': 1})
+            res = db.clients.find({'res_id': res_id, 'session_id': session_id},
+                                  {'timestamp': 1})
             id = res[0]['_id']
             old_ts = res[0]['timestamp']
 

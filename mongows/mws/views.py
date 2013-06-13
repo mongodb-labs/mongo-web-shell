@@ -250,12 +250,17 @@ def parse_get_json(request):
 
 def insert_client_collection(res_id, coll):
     clients = db.get_db()[CLIENTS_COLLECTION]
-    clients.update({'res_id': res_id}, {'$addToSet': {'collections': coll }}, multi=True)
+    clients.update({'res_id': res_id},
+                   {'$addToSet': {'collections': coll}},
+                   multi=True)
 
 
 def remove_client_collection(res_id, coll):
     clients = db.get_db()[CLIENTS_COLLECTION]
-    clients.update({'res_id': res_id}, {'$pull': {'collections': coll }}, multi=True)
+    clients.update({'res_id': res_id},
+                   {'$pull': {'collections': coll}},
+                   multi=True)
+
 
 def err(code, message, detail=''):
     return dumps({'error': code, 'reason': message, 'detail': detail}), code

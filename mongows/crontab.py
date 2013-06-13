@@ -8,6 +8,7 @@ from mws.util import get_internal_coll_name
 EXPIRE_SESSION_EVERY = 600
 EXPIRE_SESSION_DURATION = 1800
 
+
 def run_scheduler(app):
     scheduler = Scheduler()
 
@@ -15,13 +16,15 @@ def run_scheduler(app):
     def expire_sessions():
         with app.app_context():
             db = get_db()
-            expiration = datetime.now() - timedelta(seconds=EXPIRE_SESSION_DURATION)
-            sessions = db.clients.find({'timestamp': {'$lt': expiration}})
+            delta = timedelta(seconds=EXPIRE_SESSION_DURATION)
+            exp = datetime.now() - delta
+            sessions = db.clients.find({'timestamp': {'$lt': exp}})
             for sess in sessions:
                 db.clients.remove(sess)
                 for c in sess['collections']:
-                    db.drop_collection(get_internal_coll_name(sess['res_id'], c))
-            app.logger.info('Timed out expired sessions dead before ' + str(expiration))
+                    res_id = sess['res_id']
+                    db.drop_collection(get_internal_coll_name(res_id, c))
+            app.logger.info('Timed out expired sessions dead before %s' % exp)
 
     scheduler.start()
     print "APScheduler started successfully"
