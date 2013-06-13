@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. ./venv/bin/activate
+
 rtn=0
 
 echo "Running tests..."
@@ -21,4 +23,4 @@ if [ $? != 0 ]; then
     rtn=1
 fi
 
-return $rtn
+exit $rtn

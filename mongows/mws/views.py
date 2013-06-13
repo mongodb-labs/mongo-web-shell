@@ -107,15 +107,15 @@ def db_collection_find(res_id, collection_name):
     query = request.json.get('query')
     projection = request.json.get('projection')
 
-    internal_collection_name = get_internal_collection_name(res_id,
-                                                            collection_name)
-    cursor = db.get_db()[internal_collection_name].find(query, projection)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    cursor = db.get_db()[internal_coll_name].find(query, projection)
     documents = list(cursor)
     result = {'result': documents}
     return to_json(result)
 
 
-@mws.route('/<res_id>/db/<collection_name>/insert', methods=['POST', 'OPTIONS'])
+@mws.route('/<res_id>/db/<collection_name>/insert',
+           methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_insert(res_id, collection_name):
@@ -126,25 +126,27 @@ def db_collection_insert(res_id, collection_name):
         error = '\'document\' argument not found in the insert request.'
         return err(400, error)
 
-    internal_collection_name = get_internal_collection_name(res_id, collection_name)
-    objIDs = db.get_db()[internal_collection_name].insert(document)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    objIDs = db.get_db()[internal_coll_name].insert(document)
     result = {'result': objIDs}
     return to_json(result)
 
 
-@mws.route('/<res_id>/db/<collection_name>/remove', methods=['DELETE', 'OPTIONS'])
+@mws.route('/<res_id>/db/<collection_name>/remove',
+           methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
-    just_one = request.json and 'just_one' in request.json and request.json['just_one']
+    just_one = request.json and request.json.get('just_one', False)
 
-    internal_collection_name = get_internal_collection_name(res_id, collection_name)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
 
     if just_one:
-        db.get_db()[internal_collection_name].find_and_modify(constraint, remove=True)
+        db.get_db()[internal_coll_name].find_and_modify(constraint,
+                                                        remove=True)
     else:
-        db.get_db()[internal_collection_name].remove(constraint)
+        db.get_db()[internal_coll_name].remove(constraint)
 
     return to_json({})
 
@@ -163,8 +165,8 @@ def db_collection_update(res_id, collection_name):
         error = 'update requires spec and document arguments'
         return err(400, error)
 
-    internal_collection_name = get_internal_collection_name(res_id, collection_name)
-    db.get_db()[internal_collection_name].update(query, update, upsert, multi=multi)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    db.get_db()[internal_coll_name].update(query, update, upsert, multi=multi)
 
     return to_json({})
 
@@ -174,12 +176,12 @@ def db_collection_update(res_id, collection_name):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_collection_drop(res_id, collection_name):
-    internal_collection_name = get_internal_collection_name(res_id, collection_name)
-    db.get_db().drop_collection(internal_collection_name)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    db.get_db().drop_collection(internal_coll_name)
     return to_json({})
 
 
-def get_internal_collection_name(res_id, collection_name):
+def get_internal_coll_name(res_id, collection_name):
     return res_id + collection_name
 
 
