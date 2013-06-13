@@ -63,7 +63,7 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
             datetime_mock.now.return_value = second
             url = '/mws/' + res_id + '/keep-alive'
             rv = self.app.post(url)
-            self.assertIn('{}', rv.data)
+            self.assertEqual(rv.status_code, 204)
             newres = db.clients.find({'_id': _id}, {'timestamp': 1})
             self.assertEqual(newres[0]['timestamp'], second)
 
