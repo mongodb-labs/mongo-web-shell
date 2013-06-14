@@ -139,6 +139,9 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
+      if (out.toString === Object.prototype.toString){
+        out = JSON.stringify(out);
+      }
       this.insertResponseLine(out);
     }
   }, this);
