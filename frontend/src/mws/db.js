@@ -1,4 +1,5 @@
-/* global mongo */
+/* global mongo, console */
+/* jshint unused: false */
 mongo.DB = function (shell, name) {
   this.name = name;
   this.shell = shell;

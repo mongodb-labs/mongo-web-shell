@@ -79,7 +79,7 @@ mongo.mutateSource = (function () {
   }
 
   return {
-    swapMongoCalls: swapMemberAccesses,
+    swapMemberAccesses: swapMemberAccesses,
     swapKeywords: swapKeywords,
 
     _mutateMemberExpression: mutateMemberExpression,

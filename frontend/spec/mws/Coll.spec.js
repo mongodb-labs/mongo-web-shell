@@ -1,4 +1,5 @@
-/* global jasmine */
+/* global describe, it, beforeEach, mongo, spyOn, expect */
+/* jshint camelcase: false */
 describe('The Collection class', function () {
   var name_, db_, coll, makeRequest;
 
@@ -19,7 +20,7 @@ describe('The Collection class', function () {
 
   it('has a nice string representation', function () {
     var db = db_;
-    db.toString = function () {return 'mydb'};
+    db.toString = function () { return 'mydb'; };
     var name = 'mycollection';
     var coll = new mongo.Coll(db, name);
     expect(coll.toString()).toEqual('mydb.mycollection');
@@ -92,7 +93,7 @@ describe('The Collection class', function () {
       });
 
       it('uses the supplied on success function', function () {
-        var onSuccess = function () { return 'test on success function' };
+        var onSuccess = function () { return 'test on success function'; };
         queryFunc(onSuccess, async_);
         expect(makeRequest.calls[0].args[5]).toBe(onSuccess);
       });

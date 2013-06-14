@@ -36,7 +36,7 @@ mongo.request = (function () {
       success: function (data, textStatus, jqXHR) {
         console.info(name + ' success');
         if (onSuccess) {
-          onSuccess(data.result);
+          onSuccess(data);
         }
       },
       error: function (jqXHR, textStatus, errorThrown) {

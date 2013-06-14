@@ -1,5 +1,6 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
+/* jshint evil: true */
 var esprima; // Stubbed later.
 describe('A Shell', function () {
   var shells, instance, $rootElement;
@@ -56,6 +57,14 @@ describe('A Shell', function () {
     beforeEach(function () {
       instance.injectHTML();
       // This is cleaned up in the parent afterEach().
+    });
+
+    it('creates a hidden iframe sandbox', function () {
+      var sandbox = instance.$sandbox;
+      expect(sandbox instanceof HTMLIFrameElement).toBe(true);
+      expect(sandbox.height).toEqual('0');
+      expect(sandbox.width).toEqual('0');
+      expect(sandbox.style.visibility).toEqual('hidden');
     });
 
     it('attaches a click listener', function () {
@@ -134,7 +143,7 @@ describe('A Shell', function () {
         var ms = mongo.mutateSource;
         spyOn(instance, 'insertResponseLine');
         spyOn(ms, 'swapKeywords').andReturn(SWAPPED_KEYWORDS);
-        spyOn(ms, 'swapMongoCalls').andCallFake(function () {
+        spyOn(ms, 'swapMemberAccesses').andCallFake(function () {
           if (swapCallsThrowsError) { throw {}; }
           return SWAPPED_CALLS;
         });
@@ -166,12 +175,11 @@ describe('A Shell', function () {
 
       it('mutates and evalutaes the source', function () {
         var ms = mongo.mutateSource;
-        var id = instance.id;
         var userInput = ';';
         $input.val(userInput);
         instance.handleInput();
-        expect(ms.swapKeywords).toHaveBeenCalledWith(userInput, id);
-        expect(ms.swapMongoCalls).toHaveBeenCalledWith(SWAPPED_KEYWORDS, id);
+        expect(ms.swapKeywords).toHaveBeenCalledWith(userInput);
+        expect(ms.swapMemberAccesses).toHaveBeenCalledWith(SWAPPED_KEYWORDS);
         expect(esprima.parse).toHaveBeenCalledWith(SWAPPED_CALLS,
             {range: true});
         expect(mongo.util.sourceToStatements).toHaveBeenCalledWith(
@@ -204,7 +212,13 @@ describe('A Shell', function () {
   });
 
   describe('evaling JavaScript statements', function () {
+    var evalSpy;
     beforeEach(function () {
+      // Cleaned up in parent afterEach
+      instance.injectHTML();
+      spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
+      evalSpy = instance.$sandbox.contentWindow.eval;
+
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
       spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(function (
@@ -213,6 +227,13 @@ describe('A Shell', function () {
       });
       // TODO: eval() should be spied upon, however, I was unable to determine
       // how to do that without making either jshint or jasmine angry.
+    });
+
+    it('uses the sandbox to evalute the javascript', function () {
+      var statements = ['var i = {};', 'i.a = 2'];
+      instance.evalStatements(statements);
+      expect(evalSpy.calls[0].args).toEqual([statements[0]]);
+      expect(evalSpy.calls[1].args).toEqual([statements[1]]);
     });
 
     it('does not print valid statement output that is undefined', function () {
@@ -230,8 +251,9 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      var statements = ['new mongo.Cursor(new mongo.Query(\'shell\', ' +
-          '\'collectionName\'));'];
+      var shell = shells[0];
+      shell.$sandbox.contentWindow.myCursor = new mongo.Cursor(shell, function () {});
+      var statements = ['myCursor'];
       instance.evalStatements(statements);
       expect(mongo.Cursor.prototype._executeQuery).toHaveBeenCalled();
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();

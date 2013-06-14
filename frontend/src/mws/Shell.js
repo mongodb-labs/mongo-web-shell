@@ -71,7 +71,7 @@ mongo.Shell.prototype.handleInput = function () {
   this.insertResponseLine('> ' + userInput);
   var mutatedSrc = mongo.mutateSource.swapKeywords(userInput);
   try {
-    mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc);
+    mutatedSrc = mongo.mutateSource.swapMemberAccesses(mutatedSrc);
   } catch (err) {
     this.insertResponseLine('ERROR: syntax parsing error');
     console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',

@@ -14,14 +14,6 @@ describe('A Cursor', function () {
       insertResponseLine: insertResponseLineSpy,
       lastUsedCursor: null
     };
-    var mwsQuery = {
-      shell: {
-        getShellBatchSize: getShellBatchSizeSpy,
-        insertResponseLine: insertResponseLineSpy,
-        lastUsedCursor: null
-      },
-      collection: null
-    };
     queryFuncSpy = jasmine.createSpy('queryFuncSpy');
     queryArgs = 'some args';
     instance = new mongo.Cursor(shell, queryFuncSpy);
@@ -35,8 +27,12 @@ describe('A Cursor', function () {
 
   it('stores a query result', function () {
     var str = 'str';
+    instance._query.func = function (success) {
+      // Simulate response from server
+      success({result: [str, 'does', 'not', 'matter']});
+    };
     expect(instance._query.result).toBeNull();
-    instance._storeQueryResult([str, 'does', 'not', 'matter']);
+    instance._executeQuery();
     expect(instance._query.result).toContain(str);
   });
 
@@ -59,6 +55,16 @@ describe('A Cursor', function () {
       // the callback cannot be properly tested here.
       beforeEach(function () {
         instance._query.wasExecuted = false;
+      });
+
+      it('calls the on success callback', function () {
+        queryFuncSpy.andCallFake(function (success) {
+          success({result: []});
+        });
+        instance._executeQuery(callbackSpy);
+        expect(instance._query.wasExecuted).toBe(true);
+        expect(queryFuncSpy).toHaveBeenCalled();
+        expect(callbackSpy).toHaveBeenCalled();
       });
 
       it('executes asynchronous queries', function () {

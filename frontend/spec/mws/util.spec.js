@@ -226,4 +226,42 @@ describe('The util module', function () {
       expect(obj).toEqual(expected[i]);
     });
   });
+
+  describe('member getter', function () {
+    var obj;
+    beforeEach(function () {
+      obj = {
+        foo: 'test',
+        __methodMissing: jasmine.createSpy('method missing')
+      };
+    });
+
+    it('returns existing fields', function () {
+      expect(mongo.util.__get(obj, 'foo')).toEqual('test');
+    });
+
+    it('binds returned functions properly', function () {
+      var obj = {
+        count: 0,
+        incr: function () {
+          this.count++;
+        }
+      };
+      expect(obj.count).toEqual(0);
+      mongo.util.__get(obj, 'incr')();
+      expect(obj.count).toEqual(1);
+    });
+
+    it('returns undefined for non-existent fields if there is no method missing', function () {
+      delete obj.__methodMissing;
+      expect(mongo.util.__get(obj, 'bar')).toBeUndefined();
+    });
+
+    it('calls method missing, if defined, for non-existent fields', function () {
+      mongo.util.__get(obj, 'foo');
+      expect(obj.__methodMissing).not.toHaveBeenCalled();
+      mongo.util.__get(obj, 'bar');
+      expect(obj.__methodMissing).toHaveBeenCalledWith('bar');
+    });
+  });
 });

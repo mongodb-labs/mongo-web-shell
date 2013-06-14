@@ -1,4 +1,4 @@
-/* global jasmin */
+/* global describe, it, beforeEach, mongo, spyOn, expect */
 describe('The DB class', function () {
   var db;
   beforeEach(function () {

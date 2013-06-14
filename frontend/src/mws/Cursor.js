@@ -32,10 +32,13 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
   async = typeof async !== 'undefined' ? async : true;
   if (!this._query.wasExecuted) {
     console.debug('Executing query:', this);
-    this._query.func(function (result) {
-      this._storeQueryResult(result);
+    this._query.func(function (data) {
+      // Data is the json object returned from the server. This top level
+      // object puts the pertinent information in the result field for
+      // successful requests.
+      this._storeQueryResult(data.result);
       if (onSuccess) {
-        onSuccess(result);
+        onSuccess();
       }
     }.bind(this), async);
     this._query.wasExecuted = true;
@@ -98,7 +101,7 @@ mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
 mongo.Cursor.prototype.hasNext = function () {
   var hasNext, cursor = this;
   this._executeQuery(function () {
-    hasNext = cursor._query.result.length === 0 ? false : true;
+    hasNext = cursor._query.result.length !== 0;
   }, false);
   return hasNext;
 };
@@ -108,11 +111,11 @@ mongo.Cursor.prototype.next = function () {
   this._executeQuery(function () {
     nextVal = cursor._query.result.pop();
   }, false);
-  if (nextVal !== undefined) {
-    return nextVal;
+  if (nextVal === undefined) {
+    cursor._shell.insertResponseLine('ERROR: no more results to show');
+    console.warn('Cursor error hasNext: false', this);
   }
-  cursor._shell.insertResponseLine('ERROR: no more results to show');
-  console.warn('Cursor error hasNext: false', this);
+  return nextVal;
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
