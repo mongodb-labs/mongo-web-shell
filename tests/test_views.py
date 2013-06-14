@@ -2,6 +2,8 @@ from bson.json_util import loads, dumps
 from mongows.mws.db import get_db
 from mongows.mws.views import get_internal_coll_name
 
+from mongows.configs.base import RATELIMIT_QUOTA
+
 from tests import MongoWSTestCase
 
 
@@ -42,6 +44,24 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         url = '/mws/res_id/keep-alive'
         rv = self.app.post(url)
         self.assertIn('{}', rv.data)
+
+    def test_ratelimit(self):
+        rv = self.app.post('/mws/')
+        response_dict = loads(rv.data)
+        self.assertIn('res_id', response_dict)
+        self.res_id = response_dict['res_id']
+        self.assertIsNotNone(self.res_id)
+
+        limit = RATELIMIT_QUOTA
+
+        for i in range(limit):
+            url = '/mws/%s/__ratelimit_test' % (self.res_id)
+            result = self.app.get(url, None, content_type='application/json')
+            self.assertEqual(result.status_code, 204)
+
+        url = '/mws/%s/__ratelimit_test' % (self.res_id)
+        result = self.app.get(url, None, content_type='application/json')
+        self.assertEqual(result.status_code, 429)
 
 
 class DBCollectionTestCase(MongoWSTestCase):

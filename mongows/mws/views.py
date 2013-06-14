@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from functools import update_wrapper
 import uuid
 
@@ -72,6 +72,27 @@ def check_session_id(f):
     return update_wrapper(wrapped_function, f)
 
 
+def ratelimit(f):
+    def wrapped_function(*args, **kwargs):
+        session_id = session.get('session_id')
+        if session_id is None:
+            raise 'Cannot rate limit without session_id cookie'
+
+        config = current_app.config
+        coll = db.get_db()[config['RATELIMIT_COLLECTION']]
+        coll.insert({'session_id': session_id, 'timestamp': datetime.now()})
+
+        delta = timedelta(seconds=config['RATELIMIT_EXPIRY'])
+        expiry = datetime.now() - delta
+        accesses = coll.find({'session_id': session_id,
+                              'timestamp': {'$gt': expiry}})
+        if accesses.count() > config['RATELIMIT_QUOTA']:
+            return err(429, 'Rate limit exceeded')
+
+        return f(*args, **kwargs)
+    return update_wrapper(wrapped_function, f)
+
+
 @mws.route('/', methods=['POST'])
 @crossdomain(origin=REQUEST_ORIGIN)
 def create_mws_resource():
@@ -99,6 +120,7 @@ def keep_mws_alive(res_id):
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @crossdomain(origin=REQUEST_ORIGIN)
 @check_session_id
+@ratelimit
 def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
@@ -118,6 +140,7 @@ def db_collection_find(res_id, collection_name):
            methods=['POST', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
+@ratelimit
 def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:
@@ -136,6 +159,7 @@ def db_collection_insert(res_id, collection_name):
            methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
+@ratelimit
 def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
     just_one = request.json and request.json.get('just_one', False)
@@ -154,6 +178,7 @@ def db_collection_remove(res_id, collection_name):
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
+@ratelimit
 def db_collection_update(res_id, collection_name):
     query = update = None
     if request.json:
@@ -175,10 +200,20 @@ def db_collection_update(res_id, collection_name):
            methods=['DELETE', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
+@ratelimit
 def db_collection_drop(res_id, collection_name):
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
     db.get_db().drop_collection(internal_coll_name)
     return to_json({})
+
+
+@mws.route('/<res_id>/__ratelimit_test',
+           methods=['GET', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+@ratelimit
+def __ratelimit_test(res_id):
+    return '', 204
 
 
 def get_internal_coll_name(res_id, collection_name):

@@ -13,3 +13,7 @@ LOGGING_CONF = 'mongows/configs/logging.yaml'
 MONGOHQ_URL = 'http://localhost:27017/mws'
 NO_SAMPLE = False
 PORT = 5000
+
+RATELIMIT_COLLECTION = 'ratelimit'
+RATELIMIT_QUOTA = 500
+RATELIMIT_EXPIRY = 60
