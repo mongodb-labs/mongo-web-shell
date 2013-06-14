@@ -7,7 +7,7 @@ describe('A Shell', function () {
   var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    shells = [];
+    mongo.shells = shells = [];
     rootElements = [];
     for (var i = 0; i < SHELL_COUNT; i++) {
       var div = document.createElement('div');
@@ -50,6 +50,16 @@ describe('A Shell', function () {
     spyOn(mongo.request, 'keepAlive');
     instance.keepAlive();
     expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
+  });
+
+  it('has a print() function', function(){
+    spyOn(instance.vars, 'print');
+    spyOn(instance, 'insertResponseLine');
+    esprima = {parse: function(){}};
+    spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
+    instance.$input = {val: function(){ return 'print("mongo")';} };
+    instance.handleInput();
+    expect(instance.vars.print).toHaveBeenCalledWith('mongo');
   });
 
   describe('that has injected its HTML', function () {
