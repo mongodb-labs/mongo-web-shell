@@ -3,14 +3,19 @@
  * A wrapper over the result set of a query, that users can iterate through to
  * retrieve results. Before the query is executed, users may modify the query
  * result set format through various methods such as sort().
+ *
+ * The cursor calls queryFunction and expects that the onSuccess method it
+ * passes to the query function will be called with the relevant data upon
+ * successful execution of the actual query. It also expects that all actions
+ * performed will honor the async flag, as sometimes (such as when evaluating
+ * a series of statements) we expect results to be returned in a synchronous
+ * order.
  */
-mongo.Cursor = function (mwsQuery, queryFunction, queryArgs) {
-  this._shell = mwsQuery.shell;
-  this._collection = mwsQuery.collection;
+mongo.Cursor = function (shell, queryFunction) {
+  this._shell = shell;
   this._query = {
     wasExecuted: false,
     func: queryFunction,
-    args: queryArgs,
     result: null
   };
   console.debug('Created mongo.Cursor:', this);
@@ -27,7 +32,12 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
   async = typeof async !== 'undefined' ? async : true;
   if (!this._query.wasExecuted) {
     console.debug('Executing query:', this);
-    this._query.func(this, onSuccess, async);
+    this._query.func(function (result) {
+      this._storeQueryResult(result);
+      if (onSuccess) {
+        onSuccess(result);
+      }
+    }.bind(this), async);
     this._query.wasExecuted = true;
   } else {
     onSuccess();

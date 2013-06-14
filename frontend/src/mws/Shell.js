@@ -35,39 +35,14 @@ mongo.Shell.prototype.injectHTML = function () {
   this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.mws-input-li');
   this.$input = this.$inputLI.find('.mws-input');
+
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
-  this.$sandbox = $('<iframe width="0" height="0"/>')
+  this.$sandbox = $('<iframe width="0" height="0"></iframe>')
     .css({visibility : 'hidden'})
     .appendTo('body')[0];
-
-  var getCollection = function (name) {
-    var shell = this;
-    return {
-      find: function (query, projection) {
-        return new mongo.Query(shell, name).find(query, projection);
-      },
-      insert: function (doc) {
-        return new mongo.Query(shell, name).insert(doc);
-      },
-      remove: function (constraint, justOne) {
-        return new mongo.Query(shell, name).remove(constraint, justOne);
-      },
-      update: function (query, update, upsert, multi) {
-        return new mongo.Query(shell, name).update(query, update, upsert, multi);
-      }
-    };
-  }.bind(this);
-
-  var dbObj = {
-    __methodMissing__: function (field) {
-      var newCollection = getCollection(field);
-      this[field] = newCollection;
-      return newCollection;
-    }
-  };
-
-  this.$sandbox.contentWindow.db = dbObj;
+  this.$sandbox.contentWindow.__get = mongo.util.__get;
+  this.$sandbox.contentWindow.db = new mongo.DB(this, 'test');
 };
 
 mongo.Shell.prototype.attachClickListener = function () {

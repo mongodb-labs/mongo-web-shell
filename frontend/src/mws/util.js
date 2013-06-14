@@ -77,6 +77,22 @@ mongo.util = (function () {
     }
   }
 
+  /**
+   * Helper inserted into the sandbox namespace that performs membership reads
+   * to allow for the '__methodMissing' functionality
+   */
+  function objectMemberGetter(obj, field) {
+    if (field in obj || !('__methodMissing' in obj)) {
+      var rtn = obj[field];
+      if (typeof(rtn) === 'function') {
+        rtn = rtn.bind(obj);
+      }
+      return rtn;
+    }
+    return obj.__methodMissing(field);
+  }
+
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
@@ -85,6 +101,7 @@ mongo.util = (function () {
     getDBCollectionResURL: getDBCollectionResURL,
     pruneKeys: pruneKeys,
     stringifyKeys: stringifyKeys,
+    __get: objectMemberGetter,
 
     _addOwnProperties: addOwnProperties
   };

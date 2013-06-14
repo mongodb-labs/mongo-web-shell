@@ -9,6 +9,11 @@ describe('A Cursor', function () {
         function () {
       return batchSize;
     });
+    var shell = {
+      getShellBatchSize: getShellBatchSizeSpy,
+      insertResponseLine: insertResponseLineSpy,
+      lastUsedCursor: null
+    };
     var mwsQuery = {
       shell: {
         getShellBatchSize: getShellBatchSizeSpy,
@@ -19,7 +24,7 @@ describe('A Cursor', function () {
     };
     queryFuncSpy = jasmine.createSpy('queryFuncSpy');
     queryArgs = 'some args';
-    instance = new mongo.Cursor(mwsQuery, queryFuncSpy, queryArgs);
+    instance = new mongo.Cursor(shell, queryFuncSpy);
   });
 
   afterEach(function () {
@@ -60,22 +65,20 @@ describe('A Cursor', function () {
         var async = true;
         instance._executeQuery(callbackSpy, async);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy,
-            async);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
       });
 
       it('executes synchronous queries', function () {
         var async = false;
         instance._executeQuery(callbackSpy, async);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy,
-            async);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
       });
 
       it('executes default asynchronous queries', function () {
         instance._executeQuery(callbackSpy);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy, true);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(true);
       });
 
       it('does not warn the user and returns false', function () {

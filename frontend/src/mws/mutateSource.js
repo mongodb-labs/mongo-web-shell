@@ -1,4 +1,4 @@
-/* global console, falafel, mongo */
+/* global falafel, mongo */
 mongo.mutateSource = (function () {
   // TODO: Handle WithStatement var hiding. :(
   // TODO: Do LabeledStatements (break & continue) interfere with globals?
@@ -7,7 +7,8 @@ mongo.mutateSource = (function () {
    * Mutates the source of the given MemberExpression node backed by the
    * falafel produced AST.
    *
-   * We replace all reads to allow support for __methodMissing__
+   * We replace all reads with a membership accessor to allow support
+   * for __methodMissing
    */
   function mutateMemberExpression(node) {
     // Only convert reads, not writes
@@ -24,23 +25,18 @@ mongo.mutateSource = (function () {
       propSource = '"' + propSource + '"';
     }
 
-    var newSource = '(function (obj, field) {' +
-        'return (field in obj || !("__methodMissing__" in obj) ' +
-          '? obj[field] : obj.__methodMissing__(field) )' +
-      '})(' + objSource + ', ' + propSource + ')';
+    var newSource = '__get(' + objSource + ', ' + propSource + ')';
     node.update(newSource);
 
   }
 
   /**
-   * Replaces mongo shell specific input (such as the `db.` methods) in the
-   * given javascript source with the equivalent mongo web shell calls and
-   * returns this mutated source. This transformation allows the code to be
-   * interpretted as standard javascript in the context of this html document.
-   * Also takes the ID of the shell making the call so the returned code can
-   * reference the shell.
+   * Replaces accesses of members of Javascript objects with a call to the
+   * accessor '__get'. This allows objects to define a '__methodMissing'
+   * function that gets called when trying to access a member that doesn't
+   * exist.
    */
-  function swapMongoCalls(src) {
+  function swapMemberAccesses(src) {
     var output = falafel(src, function (node) {
       if (node.type === 'MemberExpression') {
         mutateMemberExpression(node);
@@ -55,6 +51,8 @@ mongo.mutateSource = (function () {
    * returns this mutated source.
    */
   function swapKeywords(src) {
+    // Todo: To make this more like the shell (and easier) we could not allow
+    // the keyword calls to be mixed in with valid Javascript
     var statements = src.split(/\s*;\s*/);
     statements.forEach(function (statement, index, arr) {
       var tokens = statement.split(/\s+/).filter(function (str) {
@@ -81,7 +79,7 @@ mongo.mutateSource = (function () {
   }
 
   return {
-    swapMongoCalls: swapMongoCalls,
+    swapMongoCalls: swapMemberAccesses,
     swapKeywords: swapKeywords,
 
     _mutateMemberExpression: mutateMemberExpression,
