@@ -148,7 +148,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   this.$inputLI.before(li);
 
   // Reset scroll distance so the <input> is not hidden at the bottom.
-  this.$responseList.scrollTop = this.$responseList.scrollHeight;
+  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
 };
 
 mongo.Shell.prototype.keepAlive = function () {
