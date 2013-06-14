@@ -140,7 +140,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
       if (out.toString === Object.prototype.toString){
-        out = JSON.stringify(out);
+        try { out = JSON.stringify(out); } catch(e){}
       }
       this.insertResponseLine(out);
     }
