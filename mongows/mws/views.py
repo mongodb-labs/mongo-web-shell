@@ -76,7 +76,8 @@ def ratelimit(f):
     def wrapped_function(*args, **kwargs):
         session_id = session.get('session_id')
         if session_id is None:
-            raise 'Cannot rate limit without session_id cookie'
+            error = 'Cannot rate limit without session_id cookie'
+            return err(401, error)
 
         config = current_app.config
         coll = db.get_db()[config['RATELIMIT_COLLECTION']]
