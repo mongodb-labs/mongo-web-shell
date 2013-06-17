@@ -76,7 +76,8 @@ def ratelimit(f):
     def wrapped_function(*args, **kwargs):
         session_id = session.get('session_id')
         if session_id is None:
-            raise 'Cannot rate limit without session_id cookie'
+            error = 'Cannot rate limit without session_id cookie'
+            return err(401, error)
 
         config = current_app.config
         coll = db.get_db()[config['RATELIMIT_COLLECTION']]
@@ -205,15 +206,6 @@ def db_collection_drop(res_id, collection_name):
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
     db.get_db().drop_collection(internal_coll_name)
     return to_json({})
-
-
-@mws.route('/<res_id>/__ratelimit_test',
-           methods=['GET', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
-@check_session_id
-@ratelimit
-def __ratelimit_test(res_id):
-    return '', 204
 
 
 def get_internal_coll_name(res_id, collection_name):
