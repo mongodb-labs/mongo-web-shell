@@ -13,7 +13,19 @@ mongo.Shell = function (rootElement, shellID) {
   this.vars = {
     DBQuery: {
       shellBatchSize: mongo.const.shellBatchSize
-    }
+    },
+    print: $.proxy(function(expr){
+      if (expr.toString === Object.prototype.toString){
+        try {
+          expr = JSON.stringify(expr);
+          this.insertResponseLine(expr);
+        } catch(e){
+          this.insertResponseLine('ERROR: ' + e.message);
+        }
+      } else {
+        this.insertResponseLine(expr.toString());
+      }
+    }, this)
   };
 };
 
