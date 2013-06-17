@@ -16,9 +16,15 @@ mongo.Shell = function (rootElement, shellID) {
     },
     print: $.proxy(function(expr){
       if (expr.toString === Object.prototype.toString){
-        try { expr = JSON.stringify(expr); } catch(e){}
+        try {
+          expr = JSON.stringify(expr);
+          this.insertResponseLine(expr);
+        } catch(e){
+          this.insertResponseLine('ERROR: ' + e.message);
+        }
+      } else {
+        this.insertResponseLine(expr);
       }
-      this.insertResponseLine(expr);
     }, this)
   };
 };
