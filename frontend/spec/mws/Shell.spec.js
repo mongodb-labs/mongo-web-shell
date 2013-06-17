@@ -7,7 +7,7 @@ describe('A Shell', function () {
   var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    shells = [];
+    mongo.shells = shells = [];
     rootElements = [];
     for (var i = 0; i < SHELL_COUNT; i++) {
       var div = document.createElement('div');
@@ -50,6 +50,49 @@ describe('A Shell', function () {
     spyOn(mongo.request, 'keepAlive');
     instance.keepAlive();
     expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
+  });
+
+  describe('has a print() function', function(){
+    beforeEach(function(){
+      spyOn(instance.vars, 'print').andCallThrough();
+      spyOn(instance, 'insertResponseLine');
+      esprima = {parse: function(){}};
+      spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
+    });
+
+    it('that prints nonobjects', function(){
+      instance.$input = {val: function(){ return 'print("mongo")';} };
+      instance.handleInput();
+      expect(instance.vars.print).toHaveBeenCalledWith('mongo');
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
+    });
+
+    it('that prints stringified objects', function(){
+      instance.$input = {val: function(){ return 'print({name: "Mongo"})';} };
+      instance.handleInput();
+      expect(instance.vars.print).toHaveBeenCalledWith({name:'Mongo'});
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
+    });
+
+    it('that it uses the toString for objects for which it is a function', function(){
+      instance.$input = {
+        val: function(){
+          return 'function A(){};' +
+                  'A.prototype.toString = function(){ return "mongo!" };' +
+                  'var a = new A();' +
+                  'print(a);';
+        }
+      };
+      instance.handleInput();
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo!');
+    });
+
+    it('that refuses to print circular structures', function(){
+      instance.$input = {val: function(){ return 'var a = {}; a.a = a; print(a)';} };
+      instance.handleInput();
+      expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
+    });
+
   });
 
   describe('that has injected its HTML', function () {
