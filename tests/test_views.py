@@ -1,6 +1,7 @@
 from bson.json_util import loads, dumps
 from mongows.mws.db import get_db
-from mongows.mws.views import get_internal_coll_name
+from mongows.mws.views import get_internal_coll_name, ratelimit
+from flask import session
 
 from mongows.configs.base import RATELIMIT_QUOTA
 
@@ -47,35 +48,29 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 
     def test_ratelimit(self):
         rv = self.app.post('/mws/')
-        response_dict = loads(rv.data)
-        self.assertIn('res_id', response_dict)
-        self.res_id = response_dict['res_id']
-        self.assertIsNotNone(self.res_id)
+        self.res_id = loads(rv.data)['res_id']
 
-        limit = RATELIMIT_QUOTA
+        limit = self.real_app.config['RATELIMIT_QUOTA'] = 3
 
-        for i in range(limit):
-            url = '/mws/%s/__ratelimit_test' % (self.res_id)
-            result = self.app.get(url, None, content_type='application/json')
-            self.assertEqual(result.status_code, 204)
+        def dummy():
+            return ('', 204)
 
-        url = '/mws/%s/__ratelimit_test' % (self.res_id)
-        result = self.app.get(url, None, content_type='application/json')
-        self.assertEqual(result.status_code, 429)
+        with self.app.session_transaction() as client_sess:
+            session_id = client_sess['session_id']
+
+        with self.real_app.test_request_context():
+            session['session_id'] = session_id
+            for i in range(limit):
+                self.assertEqual(ratelimit(dummy)(), ('', 204))
+
+            self.assertEqual(ratelimit(dummy)()[1], 429)
 
     def test_ratelimit_no_session(self):
-        rv = self.app.post('/mws/')
-        response_dict = loads(rv.data)
-        self.assertIn('res_id', response_dict)
-        self.res_id = response_dict['res_id']
-        self.assertIsNotNone(self.res_id)
+        def dummy():
+            return ('', 204)
 
-        with self.app.session_transaction() as sess:
-            del sess['session_id']
-
-        url = '/mws/%s/__ratelimit_test' % (self.res_id)
-        result = self.app.get(url, None, content_type='application/json')
-        self.assertEqual(result.status_code, 401)
+        with self.real_app.test_request_context():
+            self.assertEqual(ratelimit(dummy)()[1], 401)
 
 
 class DBCollectionTestCase(MongoWSTestCase):

@@ -208,15 +208,6 @@ def db_collection_drop(res_id, collection_name):
     return to_json({})
 
 
-@mws.route('/<res_id>/__ratelimit_test',
-           methods=['GET', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
-@check_session_id
-@ratelimit
-def __ratelimit_test(res_id):
-    return '', 204
-
-
 def get_internal_coll_name(res_id, collection_name):
     return res_id + collection_name
 
