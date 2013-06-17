@@ -23,7 +23,7 @@ mongo.Shell = function (rootElement, shellID) {
           this.insertResponseLine('ERROR: ' + e.message);
         }
       } else {
-        this.insertResponseLine(expr);
+        this.insertResponseLine(expr.toString());
       }
     }, this)
   };

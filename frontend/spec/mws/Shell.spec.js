@@ -74,6 +74,19 @@ describe('A Shell', function () {
       expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
     });
 
+    it('that it uses the toString for objects for which it is a function', function(){
+      instance.$input = {
+        val: function(){
+          return 'function A(){};' +
+                  'A.prototype.toString = function(){ return "mongo!" };' +
+                  'var a = new A();' +
+                  'print(a);';
+        }
+      };
+      instance.handleInput();
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo!');
+    });
+
     it('that refuses to print circular structures', function(){
       instance.$input = {val: function(){ return 'var a = {}; a.a = a; print(a)';} };
       instance.handleInput();
