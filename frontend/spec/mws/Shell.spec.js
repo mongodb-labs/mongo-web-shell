@@ -52,14 +52,34 @@ describe('A Shell', function () {
     expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
   });
 
-  it('has a print() function', function(){
-    spyOn(instance.vars, 'print');
-    spyOn(instance, 'insertResponseLine');
-    esprima = {parse: function(){}};
-    spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
-    instance.$input = {val: function(){ return 'print("mongo")';} };
-    instance.handleInput();
-    expect(instance.vars.print).toHaveBeenCalledWith('mongo');
+  describe('has a print() function', function(){
+    beforeEach(function(){
+      spyOn(instance.vars, 'print').andCallThrough();
+      spyOn(instance, 'insertResponseLine');
+      esprima = {parse: function(){}};
+      spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
+    });
+
+    it('that prints nonobjects', function(){
+      instance.$input = {val: function(){ return 'print("mongo")';} };
+      instance.handleInput();
+      expect(instance.vars.print).toHaveBeenCalledWith('mongo');
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
+    });
+
+    it('that prints stringified objects', function(){
+      instance.$input = {val: function(){ return 'print({name: "Mongo"})';} };
+      instance.handleInput();
+      expect(instance.vars.print).toHaveBeenCalledWith({name:'Mongo'});
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
+    });
+
+    it('that refuses to print circular structures', function(){
+      instance.$input = {val: function(){ return 'var a = {}; a.a = a; print(a)';} };
+      instance.handleInput();
+      expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
+    });
+
   });
 
   describe('that has injected its HTML', function () {
