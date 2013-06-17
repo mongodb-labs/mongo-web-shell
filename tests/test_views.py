@@ -63,6 +63,20 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         result = self.app.get(url, None, content_type='application/json')
         self.assertEqual(result.status_code, 429)
 
+    def test_ratelimit_no_session(self):
+        rv = self.app.post('/mws/')
+        response_dict = loads(rv.data)
+        self.assertIn('res_id', response_dict)
+        self.res_id = response_dict['res_id']
+        self.assertIsNotNone(self.res_id)
+
+        with self.app.session_transaction() as sess:
+            del sess['session_id']
+
+        url = '/mws/%s/__ratelimit_test' % (self.res_id)
+        result = self.app.get(url, None, content_type='application/json')
+        self.assertEqual(result.status_code, 401)
+
 
 class DBCollectionTestCase(MongoWSTestCase):
     def setUp(self):
