@@ -40,7 +40,9 @@ mongo.Shell.prototype.injectHTML = function () {
   // e.g. get rid of parent
   this.$sandbox = $('<iframe width="0" height="0"></iframe>')
     .css({visibility : 'hidden'})
-    .appendTo('body')[0];
+    .appendTo('body');
+  this.$sandbox = this.$sandbox.get(0);
+
   this.$sandbox.contentWindow.__get = mongo.util.__get;
   this.$sandbox.contentWindow.db = new mongo.DB(this, 'test');
 };
