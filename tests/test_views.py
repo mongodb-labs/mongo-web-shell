@@ -1,10 +1,9 @@
 from bson.json_util import loads, dumps
+import datetime
+import mock
 from mongows.mws.db import get_db
 from mongows.mws.views import get_internal_coll_name, ratelimit
-from time import sleep
 from flask import session
-
-from mongows.configs.base import RATELIMIT_QUOTA
 
 from tests import MongoWSTestCase
 
@@ -41,25 +40,31 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         self.assertIsNotNone(new_res_id)
         self.assertNotEqual(res_id, new_res_id)
 
-    def test_keep_mws_alive(self):
-        # get a session to keep alive
-        res_id = loads(self.app.post('/mws/').data)['res_id']
-
+    @mock.patch('mongows.mws.views.datetime')
+    def test_keep_mws_alive(self, datetime_mock):
+        first = datetime.datetime(2012, 7, 4)
+        second = first + datetime.timedelta(days=1)
+        datetime_mock.now.return_value = first
         db = get_db()
+
+        # get a session to keep alive
+        rv = self.app.post('/mws/')
+        res_id = loads(rv.data)['res_id']
 
         with self.app.session_transaction() as sess:
             session_id = sess['session_id']
             res = db.clients.find({'res_id': res_id, 'session_id': session_id},
                                   {'timestamp': 1})
-            id = res[0]['_id']
+            _id = res[0]['_id']
             old_ts = res[0]['timestamp']
+            self.assertEqual(old_ts, first)
 
-            sleep(.1)
+            datetime_mock.now.return_value = second
             url = '/mws/' + res_id + '/keep-alive'
             rv = self.app.post(url)
             self.assertIn('{}', rv.data)
-            newres = db.clients.find({'_id': id}, {'timestamp': 1})
-            self.assertGreater(newres[0]['timestamp'], old_ts)
+            newres = db.clients.find({'_id': _id}, {'timestamp': 1})
+            self.assertEqual(newres[0]['timestamp'], second)
 
     def test_ratelimit(self):
         rv = self.app.post('/mws/')
