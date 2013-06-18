@@ -130,10 +130,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
-      if (out.toString === Object.prototype.toString){
-        try { out = JSON.stringify(out); } catch(e){}
-      }
-      this.insertResponseLine(out);
+      this.insertResponseLine(mongo.util.toString(out));
     }
   }, this);
 };
