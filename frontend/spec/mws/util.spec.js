@@ -226,4 +226,40 @@ describe('The util module', function () {
       expect(obj).toEqual(expected[i]);
     });
   });
+
+  describe('provides an interface for stringifying objects', function(){
+    it('that prints nonobjects', function(){
+      [
+        ['mongo', 'mongo'],
+        [123, '123'],
+        [false, 'false'],
+        [true, 'true']
+      ].forEach(function(e){
+        expect(mongo.util.toString(e[0])).toEqual(e[1]);
+      });
+    });
+
+    it('that prints stringified objects', function(){
+      [
+        [{}, '{}'],
+        [{name: 'mongo'}, '{"name":"mongo"}'],
+        [{parent: {nested: {key: 'val'}}}, '{"parent":{"nested":{"key":"val"}}}']
+      ].forEach(function(e){
+        expect(mongo.util.toString(e[0])).toEqual(e[1]);
+      });
+    });
+
+    it('that it uses the toString for objects for which it is a function', function(){
+      function A(){}
+      A.prototype.toString = function(){ return 'hello!'; };
+      var a = new A();
+      expect(mongo.util.toString(a)).toEqual('hello!');
+    });
+
+    it('that refuses to print circular structures', function(){
+      var a = {};
+      a.a = a;
+      expect(mongo.util.toString(a)).toMatch(/^ERROR: /);
+    });
+  });
 });
