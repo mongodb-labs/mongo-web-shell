@@ -43,11 +43,7 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 
     def test_keep_mws_alive(self):
         # get a session to keep alive
-        rv = self.app.post('/mws/')
-        response_dict = loads(rv.data)
-        self.assertIn('res_id', response_dict)
-        res_id = response_dict['res_id']
-        self.assertIsNotNone(res_id)
+        res_id = loads(self.app.post('/mws/').data)['res_id']
 
         db = get_db()
 
