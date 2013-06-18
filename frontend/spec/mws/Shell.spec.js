@@ -268,7 +268,7 @@ describe('A Shell', function () {
       var statements = ['0', 'i = 1;', '(function () { return 2; }());'];
       instance.evalStatements(statements);
       for (var i = 0; i < statements.length; i++) {
-        expect(instance.insertResponseLine).toHaveBeenCalledWith(i);
+        expect(instance.insertResponseLine).toHaveBeenCalledWith(i.toString());
       }
     });
 

@@ -15,16 +15,7 @@ mongo.Shell = function (rootElement, shellID) {
       shellBatchSize: mongo.const.shellBatchSize
     },
     print: $.proxy(function(expr){
-      if (expr.toString === Object.prototype.toString){
-        try {
-          expr = JSON.stringify(expr);
-          this.insertResponseLine(expr);
-        } catch(e){
-          this.insertResponseLine('ERROR: ' + e.message);
-        }
-      } else {
-        this.insertResponseLine(expr.toString());
-      }
+      this.insertResponseLine(mongo.util.toString(expr));
     }, this)
   };
 };
@@ -139,7 +130,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
-      this.insertResponseLine(out);
+      this.insertResponseLine(mongo.util.toString(out));
     }
   }, this);
 };

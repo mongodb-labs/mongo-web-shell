@@ -77,6 +77,19 @@ mongo.util = (function () {
     }
   }
 
+  function toString(expr){
+    if (expr.toString === Object.prototype.toString){
+      try {
+        expr = JSON.stringify(expr);
+        return expr;
+      } catch(e) {
+        return 'ERROR: ' + e.message;
+      }
+    } else {
+      return expr.toString();
+    }
+  }
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
@@ -85,6 +98,7 @@ mongo.util = (function () {
     getDBCollectionResURL: getDBCollectionResURL,
     pruneKeys: pruneKeys,
     stringifyKeys: stringifyKeys,
+    toString: toString,
 
     _addOwnProperties: addOwnProperties
   };
