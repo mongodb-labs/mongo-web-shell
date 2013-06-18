@@ -342,6 +342,17 @@ class GetCollectionNamesUnitTestCase(DBTestCase):
         result = self.make_get_collection_names_request()['result']
         self.assertEqual(result, ['test'])
 
+    def test_invalid_session(self):
+        with self.app.session_transaction() as sess:
+            sess['session_id'] = 'invalid session'
+        result = self.make_get_collection_names_request(expected_status=403)
+        error = {
+            'error': 403,
+            'reason': 'Session error. User does not have access to res_id',
+            'detail': '',
+        }
+        self.assertEqual(result, error)
+
 
 class IntegrationTestCase(DBCollectionTestCase):
     def test_insert_find(self):
