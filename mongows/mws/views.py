@@ -222,6 +222,16 @@ def db_collection_drop(res_id, collection_name):
     return to_json({})
 
 
+@mws.route('/<res_id>/db/getCollectionNames',
+           methods=['GET', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+def db_get_collection_names(res_id):
+    names = db.get_db()[CLIENTS_COLLECTION].find({'res_id': res_id},
+                                                 {'collections': 1, '_id': 0})
+    return to_json({'result': names[0]['collections']})
+
+
 def generate_res_id():
     return str(uuid.uuid4())
 

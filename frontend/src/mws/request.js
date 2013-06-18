@@ -105,6 +105,11 @@ mongo.request = (function () {
     mongo.request.__makeRequest(url, null, 'DELETE', 'dbCollectionDrop', query.shell);
   }
 
+  function dbGetCollectionNames(shell, callback){
+    var url = mongo.util.getDBResURL(shell.mwsResourceID) + 'getCollectionNames';
+
+    mongo.request.__makeRequest(url, undefined, 'GET', 'getCollectionNames', shell, callback);
+  }
 
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
     if (async === undefined) {
@@ -155,6 +160,7 @@ mongo.request = (function () {
     dbCollectionRemove: dbCollectionRemove,
     dbCollectionUpdate: dbCollectionUpdate,
     dbCollectionDrop: dbCollectionDrop,
+    dbGetCollectionNames: dbGetCollectionNames,
     keepAlive: keepAlive,
     __makeRequest: makeRequest
   };

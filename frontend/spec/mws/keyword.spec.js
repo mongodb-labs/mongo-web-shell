@@ -85,8 +85,16 @@ describe('The keyword module', function () {
     expect(cursorSpy._printBatch).toHaveBeenCalled();
   });
 
-  xit('mongo.keyword.show', function () {
-    // TODO: Implement this when the function is implemented.
+  it('mongo.keyword.show', function () {
+    spyOn(mongo.request, 'dbGetCollectionNames');
+
+    mongo.config = {baseURL: 'test_url'};
+
+    mongo.keyword.show(shellSpy, 'doesNotExist');
+    expect(shellSpy.insertResponseLine).toHaveBeenCalledWith('ERROR: Not yet implemented');
+
+    mongo.keyword.show(shellSpy, 'collections');
+    expect(mongo.request.dbGetCollectionNames).toHaveBeenCalled();
   });
 
   it('warns the user that the "use" keyword is disabled', function () {

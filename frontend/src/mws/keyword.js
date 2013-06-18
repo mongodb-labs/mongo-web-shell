@@ -41,9 +41,18 @@ mongo.keyword = (function () {
     console.warn('no cursor');
   }
 
-  function show(shell, arg) {
-    // TODO: Implement.
-    console.debug('keyword.show called.');
+  function show(shell, subject) {
+    switch (subject){
+    case 'collections':
+      mongo.request.dbGetCollectionNames(shell, function(r){
+        $(r.result).each(function(i, e){
+          shell.insertResponseLine(e);
+        });
+      });
+      break;
+    default:
+      shell.insertResponseLine('ERROR: Not yet implemented');
+    }
   }
 
   function use(shell) {

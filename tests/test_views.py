@@ -6,6 +6,7 @@ from mongows.mws.views import get_internal_coll_name, ratelimit
 from flask import session
 
 from tests import MongoWSTestCase
+from mongows.mws.views import CLIENTS_COLLECTION
 
 
 class ViewsSetUpUnitTestCase(MongoWSTestCase):
@@ -93,9 +94,9 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
             self.assertEqual(ratelimit(dummy)()[1], 401)
 
 
-class DBCollectionTestCase(MongoWSTestCase):
+class DBTestCase(MongoWSTestCase):
     def setUp(self):
-        super(DBCollectionTestCase, self).setUp()
+        super(DBTestCase, self).setUp()
         # Todo: For stuff that isn't checking authentication,
         # we probably don't want to rely on/use the authentication code
         rv = self.app.post('/mws/')
@@ -104,20 +105,14 @@ class DBCollectionTestCase(MongoWSTestCase):
         self.res_id = response_dict['res_id']
         self.assertIsNotNone(self.res_id)
 
-        self.coll_name = 'test_collection'
-        self.internal_coll_name = get_internal_coll_name(self.res_id,
-                                                         self.coll_name)
         self.db = get_db()
-        self.db_collection = self.db[self.internal_coll_name]
 
-    def tearDown(self):
-        super(DBCollectionTestCase, self).setUp()
-        self.db_collection.drop()
+        self.make_request_url = '/mws/%s/db/%%s' % (self.res_id)
 
     def _make_request(self, endpoint, data, method, expected_status):
+        url = self.make_request_url % (endpoint)
         if data:
             data = dumps({k: v for k, v in data.iteritems() if v is not None})
-        url = '/mws/%s/db/%s/%s' % (self.res_id, self.coll_name, endpoint)
         result = method(url, data=data, content_type='application/json')
         result_dict = loads(result.data)
         actual_status = result.status_code
@@ -125,6 +120,28 @@ class DBCollectionTestCase(MongoWSTestCase):
                          "Expected request status to be %s, got %s instead" %
                          (expected_status, actual_status))
         return result_dict
+
+    def make_get_collection_names_request(self, expected_status=200):
+        return self._make_request('getCollectionNames', None, self.app.get,
+                                  expected_status)
+
+
+class DBCollectionTestCase(DBTestCase):
+    def setUp(self):
+        super(DBCollectionTestCase, self).setUp()
+
+        self.coll_name = 'test_collection'
+        self.internal_coll_name = get_internal_coll_name(self.res_id,
+                                                         self.coll_name)
+        self.db = get_db()
+        self.db_collection = self.db[self.internal_coll_name]
+
+        self.make_request_url = '/mws/%s/db/%s/%%s' % \
+                                (self.res_id, self.coll_name)
+
+    def tearDown(self):
+        super(DBCollectionTestCase, self).setUp()
+        self.db_collection.drop()
 
     def make_find_request(self, query=None, projection=None,
                           expected_status=200):
@@ -313,6 +330,46 @@ class DropUnitTestCase(DBCollectionTestCase):
         self.assertEqual(result.count(), 0)
 
         self.assertNotIn(self.internal_coll_name, self.db.collection_names())
+
+
+class GetCollectionNamesUnitTestCase(DBTestCase):
+    def test_get_collection_names(self):
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, [])
+
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
+                                           {'$push': {'collections': 'test'}})
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, ['test'])
+
+    def test_invalid_session(self):
+        with self.app.session_transaction() as sess:
+            sess['session_id'] = 'invalid session'
+        result = self.make_get_collection_names_request(expected_status=403)
+        error = {
+            'error': 403,
+            'reason': 'Session error. User does not have access to res_id',
+            'detail': '',
+        }
+        self.assertEqual(result, error)
+
+    def test_resid_isolation(self):
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
+                                           {'$push': {'collections': 'test'}})
+
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, ['test'])
+
+        with self.app.session_transaction() as sess:
+            del sess['session_id']
+        new_resid = loads(self.app.post('/mws/').data)['res_id']
+        self.assertNotEqual(self.res_id, new_resid)
+        self.db[CLIENTS_COLLECTION].update({'res_id': new_resid},
+                                           {'$push': {'collections': 'test2'}})
+
+        self.make_request_url = '/mws/%s/db/%%s' % (new_resid)
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, ['test2'])
 
 
 class IntegrationTestCase(DBCollectionTestCase):
