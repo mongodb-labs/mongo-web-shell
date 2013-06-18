@@ -353,6 +353,24 @@ class GetCollectionNamesUnitTestCase(DBTestCase):
         }
         self.assertEqual(result, error)
 
+    def test_resid_isolation(self):
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
+                                           {'$push': {'collections': 'test'}})
+
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, ['test'])
+
+        with self.app.session_transaction() as sess:
+            del sess['session_id']
+        new_resid = loads(self.app.post('/mws/').data)['res_id']
+        self.assertNotEqual(self.res_id, new_resid)
+        self.db[CLIENTS_COLLECTION].update({'res_id': new_resid},
+                                           {'$push': {'collections': 'test2'}})
+
+        self.make_request_url = '/mws/%s/db/%%s' % (new_resid)
+        result = self.make_get_collection_names_request()['result']
+        self.assertEqual(result, ['test2'])
+
 
 class IntegrationTestCase(DBCollectionTestCase):
     def test_insert_find(self):
