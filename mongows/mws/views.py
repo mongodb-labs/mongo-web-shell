@@ -126,7 +126,7 @@ def keep_mws_alive(res_id):
     clients = db.get_db()[CLIENTS_COLLECTION]
     clients.update({'session_id': session.get('session_id'), 'res_id': res_id},
                    {'$set': {'timestamp': datetime.now()}})
-    return to_json({})
+    return '', 204
 
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
