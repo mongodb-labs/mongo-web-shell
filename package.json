@@ -11,6 +11,7 @@
     "grunt-contrib-watch": "~0.4.3",
     "grunt-contrib-jshint": "~0.5.2",
     "grunt-contrib-clean": "~0.4.1",
-    "grunt-contrib-jasmine": "~0.4.2"
+    "grunt-contrib-jasmine": "~0.4.2",
+    "grunt-shell": "~0.2.2"
   }
 }
