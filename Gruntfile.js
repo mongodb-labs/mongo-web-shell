@@ -17,6 +17,12 @@ module.exports = function (grunt) {
     concat: {
       dist: {
         src: [
+          LIB_DIR + 'esprima/esprima.js',
+          LIB_DIR + 'falafel/falafel.browser.js',
+          LIB_DIR + 'noty/js/noty/jquery.noty.js',
+          LIB_DIR + 'noty/js/noty/layouts/top.js',
+          LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
+          LIB_DIR + 'noty/js/noty/themes/default.js',
           SRC_DIR + 'head.js',
           SRC_DIR + 'mws/**/*.js',
           SRC_DIR + 'tail.js'
