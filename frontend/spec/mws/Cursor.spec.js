@@ -154,9 +154,10 @@ describe('A Cursor', function () {
         });
 
         it('stringifies the query results', function () {
-          spyOn(mongo.util, 'stringifyQueryResult');
+          var value = 'StringifiedQueryResults';
+          spyOn(mongo.util, 'stringifyQueryResult').andReturn(value);
           instance._printBatch();
-          expect(mongo.util.stringifyQueryResult).toHaveBeenCalled();
+          expect(insertResponseLineSpy).toHaveBeenCalledWith(value);
         });
 
         it('prints the next batch of results', function () {
