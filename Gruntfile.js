@@ -17,6 +17,12 @@ module.exports = function (grunt) {
     concat: {
       dist: {
         src: [
+          LIB_DIR + 'esprima/esprima.js',
+          LIB_DIR + 'falafel/falafel.browser.js',
+          LIB_DIR + 'noty/js/noty/jquery.noty.js',
+          LIB_DIR + 'noty/js/noty/layouts/top.js',
+          LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
+          LIB_DIR + 'noty/js/noty/themes/default.js',
           SRC_DIR + 'head.js',
           SRC_DIR + 'mws/**/*.js',
           SRC_DIR + 'tail.js'
@@ -58,6 +64,23 @@ module.exports = function (grunt) {
         files: [SRC_DIR + '**/*'],
         tasks: ['default']
       }
+    },
+
+    shell: {
+      pep8: {
+        command: 'pep8 mongows tests run*.py',
+        options: {
+          stdout: true,
+          stderr: true,
+          failOnError: true
+        }
+      },
+      unittest: {
+        command: 'python run_tests.py',
+        options: {
+          failOnError: true
+        }
+      }
     }
   });
 
@@ -66,7 +89,13 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jasmine');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-shell');
 
   grunt.registerTask('default', ['concat']);
-  grunt.registerTask('test', ['jshint', 'concat', 'jasmine']);
+  grunt.registerTask('pep8', ['shell:pep8']);
+  grunt.registerTask('unittest', ['shell:unittest']);
+  grunt.registerTask(
+    'test',
+    ['jshint', 'concat', 'jasmine', 'pep8', 'unittest']
+  );
 };

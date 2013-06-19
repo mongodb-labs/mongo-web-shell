@@ -1,6 +1,22 @@
 /* jshint camelcase: false */
 /* global mongo, console */
 mongo.Coll = function (db, name) {
+  if (name.length > 80){
+		throw new mongo.CollectionNameError('Collection name must be 80 characters or less');
+	}
+
+	if (name.match(/(\$|\0)/)){
+		throw new mongo.CollectionNameError('Collection name may not contain $ or \\0');
+	}
+
+	if (name.match(/^system\./)){
+		throw new mongo.CollectionNameError('Collection name may not begin with system.*');
+	}
+
+	if (name === ''){
+		throw new mongo.CollectionNameError('Collection name may not be empty');
+	}
+
   this.name = name;
   this.db = db;
   this.shell = db.shell;

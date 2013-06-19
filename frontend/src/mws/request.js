@@ -1,5 +1,5 @@
 /* jshint camelcase: false, unused: false */
-/* global console, mongo */
+/* global console, mongo, noty */
 mongo.request = (function () {
   /*
    * Creates an MWS resource on the remote server. Calls onSuccess if the data
@@ -20,6 +20,12 @@ mongo.request = (function () {
     });
   }
 
+  function dbGetCollectionNames(shell, callback){
+    var url = mongo.util.getDBResURL(shell.mwsResourceID) + 'getCollectionNames';
+
+    mongo.request.makeRequest(url, undefined, 'GET', 'getCollectionNames', shell, callback);
+  }
+  
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
     if (async === undefined) {
       // Default async to true
@@ -56,14 +62,31 @@ mongo.request = (function () {
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
     $.post(url, null, function (data, textStatus, jqXHR) {
         console.info('Keep-alive succesful');
+        if (mongo.keepaliveNotification){
+          mongo.keepaliveNotification.setText('and we\'re back!');
+          setTimeout(function(){mongo.keepaliveNotification.close();}, 1500);
+        }
       }).fail(function (jqXHR, textStatus, errorThrown) {
-        console.err('ERROR: keep alive failed: ' + errorThrown +
-            ' STATUS: ' + textStatus);
+        console.error('ERROR: keep alive failed: ' + errorThrown +
+                    ' STATUS: ' + textStatus);
+        if (!mongo.keepaliveNotification){
+          mongo.keepaliveNotification = noty({
+            layout: 'topCenter',
+            type: 'warning',
+            text: 'Lost connection with server\nreconnecting...',
+            callback: {
+              afterClose: function(){
+                delete mongo.keepaliveNotification;
+              }
+            }
+          });
+        }
       });
   }
 
   return {
     createMWSResource: createMWSResource,
+    dbGetCollectionNames: dbGetCollectionNames,
     keepAlive: keepAlive,
     makeRequest: makeRequest
   };

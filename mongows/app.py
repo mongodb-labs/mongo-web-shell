@@ -7,7 +7,7 @@ from flask import Flask
 import yaml
 
 from .mws import mws
-from .sample import sample
+from .demo import demo
 
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
@@ -15,7 +15,7 @@ _ENVVAR = [
     'HOST',
     'LOGGING_CONF',
     'MONGOHQ_URL',
-    'NO_SAMPLE',
+    'NO_FRONTEND',
     'PORT'
 ]
 
@@ -36,7 +36,7 @@ def override_config_from_envvar(app):
 
     # Correct data types.
     app.config['DEBUG'] = True if app.config['DEBUG'] else False
-    app.config['NO_SAMPLE'] = True if app.config['NO_SAMPLE'] else False
+    app.config['NO_FRONTEND'] = True if app.config['NO_FRONTEND'] else False
     app.config['PORT'] = int(app.config['PORT'])
 
 
@@ -72,5 +72,5 @@ def configure_logging(app):
 
 def register_blueprints(app):
     app.register_blueprint(mws)
-    if not app.config['NO_SAMPLE']:
-        app.register_blueprint(sample)
+    if not app.config['NO_FRONTEND']:
+        app.register_blueprint(demo)

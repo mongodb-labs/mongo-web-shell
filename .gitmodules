@@ -7,3 +7,6 @@
 [submodule "frontend/lib/jasmine"]
 	path = frontend/lib/jasmine
 	url = https://github.com/pivotal/jasmine
+[submodule "frontend/lib/noty"]
+	path = frontend/lib/noty
+	url = git://github.com/needim/noty.git

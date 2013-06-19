@@ -227,6 +227,110 @@ describe('The util module', function () {
     });
   });
 
+  describe('provides an interface for stringifying objects', function(){
+    it('that prints nonobjects', function(){
+      [
+        ['mongo', 'mongo'],
+        [123, '123'],
+        [false, 'false'],
+        [true, 'true']
+      ].forEach(function(e){
+        expect(mongo.util.toString(e[0])).toEqual(e[1]);
+      });
+    });
+
+    it('that prints stringified objects', function(){
+      [
+        [{}, '{}'],
+        [{name: 'mongo'}, '{"name":"mongo"}'],
+        [{parent: {nested: {key: 'val'}}}, '{"parent":{"nested":{"key":"val"}}}']
+      ].forEach(function(e){
+        expect(mongo.util.toString(e[0])).toEqual(e[1]);
+      });
+    });
+
+    it('that it uses the toString for objects for which it is a function', function(){
+      function A(){}
+      A.prototype.toString = function(){ return 'hello!'; };
+      var a = new A();
+      expect(mongo.util.toString(a)).toEqual('hello!');
+    });
+
+    it('that refuses to print circular structures', function(){
+      var a = {};
+      a.a = a;
+      expect(mongo.util.toString(a)).toMatch(/^ERROR: /);
+    });
+  });
+
+  it('can tell whether or not arrays are equal', function () {
+    var a = [1, 2, 3];
+    var b = [1, 2, 3];
+    var c = [1, 3, 2];
+    var d = [1, [2, 3]];
+    var e = [1, [2, 3]];
+    var f = [1, [3, 2]];
+    var g = [[1, 2], 3];
+
+    expect(mongo.util.arrayEqual(null, null)).toBe(true);
+    expect(mongo.util.arrayEqual(undefined, undefined)).toBe(true);
+    expect(mongo.util.arrayEqual(a, a)).toBe(true);
+
+    expect(mongo.util.arrayEqual(a, null)).toBe(false);
+    expect(mongo.util.arrayEqual(null, a)).toBe(false);
+
+    expect(mongo.util.arrayEqual(a, b)).toBe(true);
+    expect(mongo.util.arrayEqual(b, a)).toBe(true);
+
+    expect(mongo.util.arrayEqual(a, c)).toBe(false);
+    expect(mongo.util.arrayEqual(c, a)).toBe(false);
+
+    expect(mongo.util.arrayEqual(a, d)).toBe(false);
+    expect(mongo.util.arrayEqual(d, a)).toBe(false);
+
+    // Performing shallow comparison, d and e should be different
+    expect(mongo.util.arrayEqual(d, e)).toBe(false);
+    expect(mongo.util.arrayEqual(e, d)).toBe(false);
+
+    expect(mongo.util.arrayEqual(d, f)).toBe(false);
+    expect(mongo.util.arrayEqual(f, d)).toBe(false);
+
+    expect(mongo.util.arrayEqual(d, g)).toBe(false);
+    expect(mongo.util.arrayEqual(g, d)).toBe(false);
+  });
+
+  describe('formatting query results', function () {
+    it('stringifies normal objects', function () {
+      var str = mongo.util.stringifyQueryResult({a: 1, foo: {bar: 'baz'}});
+      var exp = '{"a": 1, "foo": {"bar": "baz"}}';
+      expect(str).toEqual(exp);
+    });
+
+    it('puts the _id field first', function () {
+      var str = mongo.util.stringifyQueryResult({a: 1, _id: 'foo'});
+      var exp = '{"_id": "foo", "a": 1}';
+      expect(str).toEqual(exp);
+    });
+
+    it('prints object ids properly', function () {
+      var str = mongo.util.stringifyQueryResult({
+        _id: {$oid: 'abcdef010123456789abcdef'},
+        a: {b: {$oid: '0123456789abcdef01234567'}},
+        b: {$oid: '0123456789abcdef0123456'}, // Too short
+        c: {$oid: 12345678901234567890123}, // Not a string
+        d: {$oid: 'abcdef010123456789abcdef', foo: 'bar'} // Extra keys
+      });
+      var exp = '{' +
+        '"_id": ObjectId("abcdef010123456789abcdef"), ' +
+        '"a": {"b": ObjectId("0123456789abcdef01234567")}, ' +
+        '"b": {"$oid": "0123456789abcdef0123456"}, ' +
+        '"c": {"$oid": 1.2345678901234568e+22}, ' +
+        '"d": {"$oid": "abcdef010123456789abcdef", "foo": "bar"}' +
+      '}';
+      expect(str).toEqual(exp);
+    });
+  });
+
   describe('member getter', function () {
     var obj;
     beforeEach(function () {

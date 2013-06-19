@@ -13,7 +13,10 @@ mongo.Shell = function (rootElement, shellID) {
   this.vars = {
     DBQuery: {
       shellBatchSize: mongo.const.shellBatchSize
-    }
+    },
+    print: $.proxy(function(expr){
+      this.insertResponseLine(mongo.util.toString(expr));
+    }, this)
   };
 };
 
@@ -101,10 +104,14 @@ mongo.Shell.prototype.handleInput = function () {
   try {
     this.evalStatements(statements);
   } catch (err) {
-    // TODO: Figure out why an error might occur here and handle it.
-    this.insertResponseLine('ERROR: eval error on: ' + err.statement);
-    console.error('mongo.Shell.handleInput(): eval error on:', err.statement,
-        err);
+    if (err instanceof mongo.CollectionNameError){
+      this.insertResponseLine('ERROR: ' + err.message);
+      console.error('mongo.Shell.handleInput(): ' + err.message);
+    } else {
+      // TODO: Figure out why an error might occur here and handle it.
+      this.insertResponseLine('ERROR: eval error on: ' + err.statement);
+      console.error('mongo.Shell.handleInput(): eval error on:', err.statement, err);
+    }
   }
 };
 
@@ -133,7 +140,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
       // as sort()) can be called before the query's execution.
       out._executeQuery(function() { out._printBatch(); });
     } else if (out !== undefined) {
-      this.insertResponseLine(out);
+      this.insertResponseLine(mongo.util.toString(out));
     }
   }, this);
 };
@@ -154,7 +161,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
   this.$inputLI.before(li);
 
   // Reset scroll distance so the <input> is not hidden at the bottom.
-  this.$responseList.scrollTop = this.$responseList.scrollHeight;
+  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
 };
 
 mongo.Shell.prototype.keepAlive = function () {

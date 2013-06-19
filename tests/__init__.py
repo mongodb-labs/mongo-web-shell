@@ -10,6 +10,7 @@ class MongoWSTestCase(TestCase):
     """A generic test case for the mongows package."""
 
     def setUp(self):
+        self.real_app = app
         self.app = app.test_client()
 
     def tearDown(self):
