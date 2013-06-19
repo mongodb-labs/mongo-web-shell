@@ -78,8 +78,6 @@ module.exports = function (grunt) {
       unittest: {
         command: 'python run_tests.py',
         options: {
-//          stdout: true,
-//          stderr: true,
           failOnError: true
         }
       }
