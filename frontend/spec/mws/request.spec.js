@@ -1,6 +1,5 @@
 /* jshint camelcase: false */
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon */
-/* global spyOn */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, sinon, spyOn, noty:true */
 describe('The request module', function () {
   var RES_URL = 'resURL/';
   var configStore;
@@ -322,6 +321,75 @@ describe('The request module', function () {
     });
   });
 
+  describe('keeps the session alive and', function(){
+    var requests, xhr, requestSuccess = function(success){
+      var shell = {mwsResourceID: 'my_resource'};
+      mongo.request.keepAlive(shell);
+      requests[0].respond(success ? 204 : 500, {}, null);
+    };
+
+    beforeEach(function(){
+      requests = [];
+      xhr = sinon.useFakeXMLHttpRequest();
+      xhr.onCreate = function (xhr) { requests.push(xhr); };
+      requests = [];
+      noty = jasmine.createSpy();
+    });
+
+    afterEach(function(){
+      requests = null;
+      xhr.restore();
+    });
+
+    it('makes a keepalive request', function () {
+      mongo.config.baseUrl = 'base';
+      var shell = {mwsResourceID: 'iu'};
+      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
+          '/keep-alive';
+      mongo.request.keepAlive(shell);
+      expect(requests.length).toBe(1);
+      var req = requests[0];
+      expect(req.method).toBe('POST');
+      expect(req.url).toBe(expectedURL);
+      expect(req.requestBody).toBe(null);
+      // There is nothing to test for if the request succeeds or not.
+    });
+
+    it('notifies the user on disconnection', function(){
+      requestSuccess(false);
+      expect(noty).toHaveBeenCalled();
+    });
+
+    it('does not create notification on success', function(){
+      requestSuccess(true);
+      expect(noty).not.toHaveBeenCalled();
+    });
+
+    it('closes notification once on success', function(){
+      spyOn(window, 'setTimeout').andCallThrough();
+      jasmine.Clock.useMock();
+      mongo.keepaliveNotification = jasmine.createSpyObj('keepaliveNotification',
+                                                        ['close', 'setText']);
+      mongo.keepaliveNotification.close.andCallFake(function(){
+        delete mongo.keepaliveNotification;
+      });
+
+      requestSuccess(true);
+      expect(mongo.keepaliveNotification.setText).toHaveBeenCalledWith('and we\'re back!');
+      expect(window.setTimeout).toHaveBeenCalled();
+
+      expect(mongo.keepaliveNotification.close).not.toHaveBeenCalled();
+      jasmine.Clock.tick(1501);
+      expect(mongo.keepaliveNotification).toBe(undefined);
+
+      window.setTimeout.reset();
+
+      requestSuccess(true);
+      expect(window.setTimeout).not.toHaveBeenCalled();
+      expect(mongo.keepaliveNotification).toBe(undefined);
+    });
+  });
+
   /**
    * Valids the requests themselves, rather than the actions taken upon their
    * failure or success.
@@ -457,20 +525,6 @@ describe('The request module', function () {
       req = requests[1];
       req.respond(404, '', '{}');
       expect(query.shell.insertResponseLine).toHaveBeenCalled();
-    });
-
-    it('keeps the shell mws resource alive', function () {
-      mongo.config.baseUrl = 'base';
-      var shell = {mwsResourceID: 'iu'};
-      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
-          '/keep-alive';
-      mongo.request.keepAlive(shell);
-      expect(requests.length).toBe(1);
-      var req = requests[0];
-      expect(req.method).toBe('POST');
-      expect(req.url).toBe(expectedURL);
-      expect(req.requestBody).toBe(null);
-      // There is nothing to test for if the request succeeds or not.
     });
   });
 });
