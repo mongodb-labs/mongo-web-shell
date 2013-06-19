@@ -53,7 +53,7 @@ mongo.Cursor.prototype._printBatch = function () {
     if (batch.length !== 0) {
       // TODO: Use insertResponseArray instead, stringify in insertResponseLine
       for (i = 0; i < batch.length; i++) {
-        cursor._shell.insertResponseLine(JSON.stringify(batch[i]));
+        cursor._shell.insertResponseLine(mongo.util.stringifyQueryResult(batch[i]));
       }
       console.debug('_printBatch() results:', batch);
     }
