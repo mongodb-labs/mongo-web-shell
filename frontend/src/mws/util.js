@@ -94,6 +94,62 @@ mongo.util = (function () {
     }
   }
 
+  function arrayEqual(a, b) {
+    // Note that this performs a shallow comparison and does not work on nested
+    // arrays or arrays with objects that are logically the same but different
+    // in memory
+    if (a === b) {
+      return true;
+    } else if (!a || !b) {
+      return false;
+    } else if (a.length !== b.length) {
+      return false;
+    }
+
+    for (var i = 0; i < a.length; ++i) {
+      if (a[i] !== b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function stringifyQueryResult(obj) {
+    var elements = [];
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        var val = obj[key];
+        var keyString = JSON.stringify(key);
+        var valString;
+
+        // Rewrite ObjectId's in a pretty format
+        var isObjectId = typeof(val) === 'object' &&
+            arrayEqual(Object.keys(val), ['$oid']) &&
+            typeof(val.$oid) === 'string' &&
+            /^[0-9a-f]{24}$/.test(val.$oid);
+
+        // Convert the value to string accordingly
+        if (isObjectId) {
+          valString = 'ObjectId("' + val.$oid + '")';
+        } else if (typeof(val) === 'object') {
+          // Recursively find all other ObjectID's
+          valString = stringifyQueryResult(val);
+        } else {
+          valString = JSON.stringify(val);
+        }
+
+        // Make sure _id comes first
+        var kvPair = keyString + ': ' + valString;
+        if (key === '_id') {
+          elements.unshift(kvPair);
+        } else {
+          elements.push(kvPair);
+        }
+      }
+    }
+    return '{' + elements.join(', ') + '}';
+  }
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
@@ -104,6 +160,8 @@ mongo.util = (function () {
     pruneKeys: pruneKeys,
     stringifyKeys: stringifyKeys,
     toString: toString,
+    arrayEqual: arrayEqual,
+    stringifyQueryResult: stringifyQueryResult,
 
     _addOwnProperties: addOwnProperties
   };

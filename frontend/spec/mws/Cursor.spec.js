@@ -153,6 +153,12 @@ describe('A Cursor', function () {
           shellBatchSizeStore = null;
         });
 
+        it('stringifies the query results', function () {
+          spyOn(mongo.util, 'stringifyQueryResult');
+          instance._printBatch();
+          expect(mongo.util.stringifyQueryResult).toHaveBeenCalled();
+        });
+
         it('prints the next batch of results', function () {
           // TODO: Check insertResponseArray when added?
           instance._shell.lastUsedCursor = null;
