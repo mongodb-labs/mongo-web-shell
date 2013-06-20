@@ -92,14 +92,14 @@ mongo.util = (function () {
   }
 
   function toString(expr){
-    if (typeof(expr) === 'object' && !hasDefinedProperty(expr, 'toString')) {
+    if (expr !== null && typeof(expr) === 'object' && !hasDefinedProperty(expr, 'toString')) {
       try {
         return JSON.stringify(expr);
       } catch (e) {
         return 'ERROR: ' + e.message;
       }
     } else {
-      return expr.toString();
+      return String(expr);
     }
   }
 

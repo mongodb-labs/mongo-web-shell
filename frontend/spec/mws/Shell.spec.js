@@ -33,7 +33,7 @@ describe('A Shell', function () {
   });
 
   it('creates a database object', function () {
-    expect(instance.db instanceof mongo.DB);
+    expect(instance.db instanceof mongo.DB).toBe(true);
     expect(instance.db.shell).toBe(instance);
     expect(instance.db.name).toBe('test');
   });
@@ -73,18 +73,18 @@ describe('A Shell', function () {
     });
 
     it('that prints nonobjects', function () {
-      instance.$input = {val: function () {
-        return 'print("mongo")';
-      } };
+      instance.$input = {
+        val: function () {return 'print("mongo")';}
+      };
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith('mongo');
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
     });
 
     it('that prints stringified objects', function () {
-      instance.$input = {val: function () {
-        return 'print({name: "Mongo"})';
-      } };
+      instance.$input = {
+        val: function () {return 'print({name: "Mongo"})';}
+      };
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith({name: 'Mongo'});
       expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
@@ -104,9 +104,9 @@ describe('A Shell', function () {
     });
 
     it('that refuses to print circular structures', function () {
-      instance.$input = {val: function () {
-        return 'var a = {}; a.a = a; print(a)';
-      } };
+      instance.$input = {
+        val: function () {return 'var a = {}; a.a = a; print(a)';}
+      };
       instance.handleInput();
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });

@@ -50,57 +50,50 @@ describe('The keyword module', function () {
   });
 
   describe('the show keyword', function () {
-    var shell;
     beforeEach(function () {
-      shell = {
-        db: {getCollectionNames: jasmine.createSpy('getCollectionNames')},
-        insertResponseLine: jasmine.createSpy('insertResponseLine')
-      };
+      shellSpy.db = {getCollectionNames: jasmine.createSpy('getCollectionNames')};
     });
 
     it('handles unimplemented arguments', function () {
-      mongo.keyword.show(shell, ['doesNotExist']);
-      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: Not yet implemented');
+      mongo.keyword.show(shellSpy, ['doesNotExist']);
+      expect(shellSpy.insertResponseLine).toHaveBeenCalledWith('ERROR: Not yet implemented');
     });
 
     it('can list collections', function () {
-      mongo.keyword.show(shell, ['collections']);
-      expect(shell.db.getCollectionNames.calls.length).toEqual(1);
-      var callback = shell.db.getCollectionNames.calls[0].args[0];
+      mongo.keyword.show(shellSpy, ['collections']);
+      expect(shellSpy.db.getCollectionNames.calls.length).toEqual(1);
+      var callback = shellSpy.db.getCollectionNames.calls[0].args[0];
       var r = {result: ['a', 'b', 'c']};
       callback(r);
-      expect(shell.insertResponseLine.calls.length).toEqual(3);
-      expect(shell.insertResponseLine.calls[0].args).toEqual(['a']);
-      expect(shell.insertResponseLine.calls[1].args).toEqual(['b']);
-      expect(shell.insertResponseLine.calls[2].args).toEqual(['c']);
+      expect(shellSpy.insertResponseLine.calls.length).toEqual(3);
+      expect(shellSpy.insertResponseLine.calls[0].args).toEqual(['a']);
+      expect(shellSpy.insertResponseLine.calls[1].args).toEqual(['b']);
+      expect(shellSpy.insertResponseLine.calls[2].args).toEqual(['c']);
     });
 
     it('can list tables', function () {
-      mongo.keyword.show(shell, ['tables']);
-      expect(shell.db.getCollectionNames.calls.length).toEqual(1);
-      var callback = shell.db.getCollectionNames.calls[0].args[0];
+      mongo.keyword.show(shellSpy, ['tables']);
+      expect(shellSpy.db.getCollectionNames.calls.length).toEqual(1);
+      var callback = shellSpy.db.getCollectionNames.calls[0].args[0];
       var r = {result: ['a', 'b', 'c']};
       callback(r);
-      expect(shell.insertResponseLine.calls.length).toEqual(3);
-      expect(shell.insertResponseLine.calls[0].args).toEqual(['a']);
-      expect(shell.insertResponseLine.calls[1].args).toEqual(['b']);
-      expect(shell.insertResponseLine.calls[2].args).toEqual(['c']);
+      expect(shellSpy.insertResponseLine.calls.length).toEqual(3);
+      expect(shellSpy.insertResponseLine.calls[0].args).toEqual(['a']);
+      expect(shellSpy.insertResponseLine.calls[1].args).toEqual(['b']);
+      expect(shellSpy.insertResponseLine.calls[2].args).toEqual(['c']);
     });
 
     it('requires at least one argument', function () {
       var message = 'ERROR: show requires at least one argument';
-      mongo.keyword.show(shell, []);
-      expect(shell.insertResponseLine.calls.length).toBe(1);
-      expect(shell.insertResponseLine).toHaveBeenCalledWith(message);
+      mongo.keyword.show(shellSpy, []);
+      expect(shellSpy.insertResponseLine.calls.length).toBe(1);
+      expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
     });
   });
 
   it('warns the user that the "use" keyword is disabled', function () {
-    var args = [];
-    for (var i = 0; i < 3; i++) {
-      mk.use(shellSpy, [args[0], args[1]]);
-      expect(shellSpy.insertResponseLine.calls.length).toBe(i + 1);
-      args.push(i);
-    }
+    var message = 'Cannot change db: functionality disabled.';
+    mk.use(shellSpy);
+    expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
   });
 });

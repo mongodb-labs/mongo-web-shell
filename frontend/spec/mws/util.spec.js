@@ -261,6 +261,11 @@ describe('The util module', function () {
       a.a = a;
       expect(mongo.util.toString(a)).toMatch(/^ERROR: /);
     });
+
+    it('that works on null and undefined values', function () {
+      expect(mongo.util.toString(null)).toEqual('null');
+      expect(mongo.util.toString(undefined)).toEqual('undefined');
+    });
   });
 
   it('can tell whether or not arrays are equal', function () {
