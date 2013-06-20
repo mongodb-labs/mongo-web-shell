@@ -261,6 +261,11 @@ describe('The util module', function () {
       a.a = a;
       expect(mongo.util.toString(a)).toMatch(/^ERROR: /);
     });
+
+    it('that works on null and undefined values', function () {
+      expect(mongo.util.toString(null)).toEqual('null');
+      expect(mongo.util.toString(undefined)).toEqual('undefined');
+    });
   });
 
   it('can tell whether or not arrays are equal', function () {
@@ -328,6 +333,44 @@ describe('The util module', function () {
         '"d": {"$oid": "abcdef010123456789abcdef", "foo": "bar"}' +
       '}';
       expect(str).toEqual(exp);
+    });
+  });
+
+  describe('member getter', function () {
+    var obj;
+    beforeEach(function () {
+      obj = {
+        foo: 'test',
+        __methodMissing: jasmine.createSpy('method missing')
+      };
+    });
+
+    it('returns existing fields', function () {
+      expect(mongo.util.__get(obj, 'foo')).toEqual('test');
+    });
+
+    it('binds returned functions properly', function () {
+      var obj = {
+        count: 0,
+        incr: function () {
+          this.count++;
+        }
+      };
+      expect(obj.count).toEqual(0);
+      mongo.util.__get(obj, 'incr')();
+      expect(obj.count).toEqual(1);
+    });
+
+    it('returns undefined for non-existent fields if there is no method missing', function () {
+      delete obj.__methodMissing;
+      expect(mongo.util.__get(obj, 'bar')).toBeUndefined();
+    });
+
+    it('calls method missing, if defined, for non-existent fields', function () {
+      mongo.util.__get(obj, 'foo');
+      expect(obj.__methodMissing).not.toHaveBeenCalled();
+      mongo.util.__get(obj, 'bar');
+      expect(obj.__methodMissing).toHaveBeenCalledWith('bar');
     });
   });
 });

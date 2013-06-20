@@ -81,16 +81,25 @@ mongo.util = (function () {
     }
   }
 
+  function hasDefinedProperty(obj, prop) {
+    if (Object.getPrototypeOf(obj) === null) {
+      return false;
+    } else if (obj.hasOwnProperty(prop)) {
+      return true;
+    } else {
+      return hasDefinedProperty(Object.getPrototypeOf(obj), prop);
+    }
+  }
+
   function toString(expr){
-    if (expr.toString === Object.prototype.toString){
+    if (expr !== null && typeof(expr) === 'object' && !hasDefinedProperty(expr, 'toString')) {
       try {
-        expr = JSON.stringify(expr);
-        return expr;
-      } catch(e) {
+        return JSON.stringify(expr);
+      } catch (e) {
         return 'ERROR: ' + e.message;
       }
     } else {
-      return expr.toString();
+      return String(expr);
     }
   }
 
@@ -150,6 +159,22 @@ mongo.util = (function () {
     return '{' + elements.join(', ') + '}';
   }
 
+  /**
+   * Helper inserted into the sandbox namespace that performs membership reads
+   * to allow for the '__methodMissing' functionality
+   */
+  function objectMemberGetter(obj, field) {
+    if (field in obj || !('__methodMissing' in obj)) {
+      var rtn = obj[field];
+      if (typeof(rtn) === 'function') {
+        rtn = rtn.bind(obj);
+      }
+      return rtn;
+    }
+    return obj.__methodMissing(field);
+  }
+
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
@@ -162,6 +187,7 @@ mongo.util = (function () {
     toString: toString,
     arrayEqual: arrayEqual,
     stringifyQueryResult: stringifyQueryResult,
+    __get: objectMemberGetter,
 
     _addOwnProperties: addOwnProperties
   };

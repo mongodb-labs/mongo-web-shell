@@ -9,17 +9,14 @@ describe('A Cursor', function () {
         function () {
       return batchSize;
     });
-    var mwsQuery = {
-      shell: {
-        getShellBatchSize: getShellBatchSizeSpy,
-        insertResponseLine: insertResponseLineSpy,
-        lastUsedCursor: null
-      },
-      collection: null
+    var shell = {
+      getShellBatchSize: getShellBatchSizeSpy,
+      insertResponseLine: insertResponseLineSpy,
+      lastUsedCursor: null
     };
     queryFuncSpy = jasmine.createSpy('queryFuncSpy');
     queryArgs = 'some args';
-    instance = new mongo.Cursor(mwsQuery, queryFuncSpy, queryArgs);
+    instance = new mongo.Cursor(shell, queryFuncSpy);
   });
 
   afterEach(function () {
@@ -30,8 +27,12 @@ describe('A Cursor', function () {
 
   it('stores a query result', function () {
     var str = 'str';
+    instance._query.func = function (success) {
+      // Simulate response from server
+      success({result: [str, 'does', 'not', 'matter']});
+    };
     expect(instance._query.result).toBeNull();
-    instance._storeQueryResult([str, 'does', 'not', 'matter']);
+    instance._executeQuery();
     expect(instance._query.result).toContain(str);
   });
 
@@ -56,26 +57,34 @@ describe('A Cursor', function () {
         instance._query.wasExecuted = false;
       });
 
+      it('calls the on success callback', function () {
+        queryFuncSpy.andCallFake(function (success) {
+          success({result: []});
+        });
+        instance._executeQuery(callbackSpy);
+        expect(instance._query.wasExecuted).toBe(true);
+        expect(queryFuncSpy).toHaveBeenCalled();
+        expect(callbackSpy).toHaveBeenCalled();
+      });
+
       it('executes asynchronous queries', function () {
         var async = true;
         instance._executeQuery(callbackSpy, async);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy,
-            async);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
       });
 
       it('executes synchronous queries', function () {
         var async = false;
         instance._executeQuery(callbackSpy, async);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy,
-            async);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
       });
 
       it('executes default asynchronous queries', function () {
         instance._executeQuery(callbackSpy);
         expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalledWith(instance, callbackSpy, true);
+        expect(queryFuncSpy.calls[0].args[1]).toEqual(true);
       });
 
       it('does not warn the user and returns false', function () {

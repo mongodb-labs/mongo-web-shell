@@ -1,5 +1,4 @@
 /* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
-/* global xit */
 describe('The keyword module', function () {
   var mk = mongo.keyword;
   var shellSpy;
@@ -12,58 +11,23 @@ describe('The keyword module', function () {
     shellSpy = null;
   });
 
-  it('switches over which keyword function to call', function () {
-    var shellID = 0;
-    mongo.shells[shellID] = shellSpy;
-    var old;
-    var keywords = ['help', 'it', 'show', 'use'];
-    keywords.forEach(function (keyword) {
-      spyOn(mk, keyword);
-      var args = [];
-      for (var i = 0; i < 3; i++) {
-        mk.evaluate(shellID, keyword, args[0], args[1]);
-        expect(mk[keyword]).toHaveBeenCalledWith(shellSpy, args[0], args[1]);
-        expect(mk[keyword].calls.length).toBe(i + 1);
-        args.push(0);
-      }
+  describe('when parsing source', function () {
+    var shell = {};
 
-      // unusedArg.
-      switch (keyword) {
-      case 'help':
-      case 'show':
-        old = {
-          insert: shellSpy.insertResponseLine.calls.length,
-          keyword: mk[keyword].calls.length
-        };
-        mk.evaluate(shellID, keyword, args[0], args[1], args[2]);
-        expect(shellSpy.insertResponseLine.calls.length).toBe(old.insert + 1);
-        expect(mk[keyword].calls.length).toBe(old.keyword);
-        break;
+    it('returns whether or not the source is a keyword expression', function () {
+      var wasKeyword = mongo.keyword.handleKeywords(shell, 'this.is = not.a.keyword');
+      expect(wasKeyword).toBe(false);
 
-      case 'it':
-      case 'use':
-        old = mk[keyword].calls.length;
-        mk.evaluate(shellID, keyword, args[0], args[1], args[2]);
-        expect(mk[keyword].calls.length).toBe(old + 1);
-        break;
-      }
+      spyOn(mongo.keyword, 'it');
+      wasKeyword = mongo.keyword.handleKeywords(shell, 'it is a keyword');
+      expect(wasKeyword).toBe(true);
     });
 
-    // Bad keyword.
-    old = {};
-    keywords.forEach(function (keyword) {
-      old[keyword] = mk[keyword].calls.length;
+    it('calls the appropriate keyword function', function () {
+      mongo.keyword.myAwesomeKeyword = jasmine.createSpy('my keyword');
+      mongo.keyword.handleKeywords(shell, 'myAwesomeKeyword foo bar');
+      expect(mongo.keyword.myAwesomeKeyword).toHaveBeenCalledWith(shell, ['foo', 'bar']);
     });
-    old._insert = shellSpy.insertResponseLine.calls.length;
-    mk.evaluate(shellID, 'bad_keyword');
-    expect(shellSpy.insertResponseLine.calls.length).toBe(old._insert + 1);
-    keywords.forEach(function (keyword) {
-      expect(mk[keyword].calls.length).toBe(old[keyword]);
-    });
-  });
-
-  xit('mongo.keyword.help', function () {
-    // TODO: Implement this when the function is implemented.
   });
 
   it('prints a batch from the last used cursor', function () {
@@ -85,24 +49,51 @@ describe('The keyword module', function () {
     expect(cursorSpy._printBatch).toHaveBeenCalled();
   });
 
-  it('mongo.keyword.show', function () {
-    spyOn(mongo.request, 'dbGetCollectionNames');
+  describe('the show keyword', function () {
+    beforeEach(function () {
+      shellSpy.db = {getCollectionNames: jasmine.createSpy('getCollectionNames')};
+    });
 
-    mongo.config = {baseURL: 'test_url'};
+    it('handles unimplemented arguments', function () {
+      mongo.keyword.show(shellSpy, ['doesNotExist']);
+      expect(shellSpy.insertResponseLine).toHaveBeenCalledWith('ERROR: Not yet implemented');
+    });
 
-    mongo.keyword.show(shellSpy, 'doesNotExist');
-    expect(shellSpy.insertResponseLine).toHaveBeenCalledWith('ERROR: Not yet implemented');
+    it('can list collections', function () {
+      mongo.keyword.show(shellSpy, ['collections']);
+      expect(shellSpy.db.getCollectionNames.calls.length).toEqual(1);
+      var callback = shellSpy.db.getCollectionNames.calls[0].args[0];
+      var r = {result: ['a', 'b', 'c']};
+      callback(r);
+      expect(shellSpy.insertResponseLine.calls.length).toEqual(3);
+      expect(shellSpy.insertResponseLine.calls[0].args).toEqual(['a']);
+      expect(shellSpy.insertResponseLine.calls[1].args).toEqual(['b']);
+      expect(shellSpy.insertResponseLine.calls[2].args).toEqual(['c']);
+    });
 
-    mongo.keyword.show(shellSpy, 'collections');
-    expect(mongo.request.dbGetCollectionNames).toHaveBeenCalled();
+    it('can list tables', function () {
+      mongo.keyword.show(shellSpy, ['tables']);
+      expect(shellSpy.db.getCollectionNames.calls.length).toEqual(1);
+      var callback = shellSpy.db.getCollectionNames.calls[0].args[0];
+      var r = {result: ['a', 'b', 'c']};
+      callback(r);
+      expect(shellSpy.insertResponseLine.calls.length).toEqual(3);
+      expect(shellSpy.insertResponseLine.calls[0].args).toEqual(['a']);
+      expect(shellSpy.insertResponseLine.calls[1].args).toEqual(['b']);
+      expect(shellSpy.insertResponseLine.calls[2].args).toEqual(['c']);
+    });
+
+    it('requires at least one argument', function () {
+      var message = 'ERROR: show requires at least one argument';
+      mongo.keyword.show(shellSpy, []);
+      expect(shellSpy.insertResponseLine.calls.length).toBe(1);
+      expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
+    });
   });
 
   it('warns the user that the "use" keyword is disabled', function () {
-    var args = [];
-    for (var i = 0; i < 3; i++) {
-      mk.use(shellSpy, args[0], args[1]);
-      expect(shellSpy.insertResponseLine.calls.length).toBe(i + 1);
-      args.push(i);
-    }
+    var message = 'Cannot change db: functionality disabled.';
+    mk.use(shellSpy);
+    expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
   });
 });

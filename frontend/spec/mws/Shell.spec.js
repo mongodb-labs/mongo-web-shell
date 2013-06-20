@@ -1,5 +1,6 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
+/* jshint evil: true */
 var esprima; // Stubbed later.
 describe('A Shell', function () {
   var shells, instance, $rootElement;
@@ -31,6 +32,12 @@ describe('A Shell', function () {
     rootElements = null;
   });
 
+  it('creates a database object', function () {
+    expect(instance.db instanceof mongo.DB).toBe(true);
+    expect(instance.db.shell).toBe(instance);
+    expect(instance.db.name).toBe('test');
+  });
+
   it('injects its HTML into the DOM', function () {
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
@@ -52,43 +59,54 @@ describe('A Shell', function () {
     expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
   });
 
-  describe('has a print() function', function(){
-    beforeEach(function(){
-      spyOn(instance.vars, 'print').andCallThrough();
+  describe('has a print() function', function () {
+    var printFunc;
+
+    beforeEach(function () {
+      instance.injectHTML();
+      printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
-      esprima = {parse: function(){}};
-      spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
+      esprima = {parse: function () {}};
+      spyOn(mongo.util, 'sourceToStatements').andCallFake(function (src) {
+        return [src];
+      });
     });
 
-    it('that prints nonobjects', function(){
-      instance.$input = {val: function(){ return 'print("mongo")';} };
+    it('that prints nonobjects', function () {
+      instance.$input = {
+        val: function () {return 'print("mongo")';}
+      };
       instance.handleInput();
-      expect(instance.vars.print).toHaveBeenCalledWith('mongo');
+      expect(printFunc).toHaveBeenCalledWith('mongo');
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
     });
 
-    it('that prints stringified objects', function(){
-      instance.$input = {val: function(){ return 'print({name: "Mongo"})';} };
+    it('that prints stringified objects', function () {
+      instance.$input = {
+        val: function () {return 'print({name: "Mongo"})';}
+      };
       instance.handleInput();
-      expect(instance.vars.print).toHaveBeenCalledWith({name:'Mongo'});
+      expect(printFunc).toHaveBeenCalledWith({name: 'Mongo'});
       expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
     });
 
-    it('that it uses the toString for objects for which it is a function', function(){
+    it('that it uses the toString for objects for which it is a function', function () {
       instance.$input = {
-        val: function(){
+        val: function () {
           return 'function A(){};' +
-                  'A.prototype.toString = function(){ return "mongo!" };' +
-                  'var a = new A();' +
-                  'print(a);';
+            'A.prototype.toString = function(){ return "mongo!" };' +
+            'var a = new A();' +
+            'print(a);';
         }
       };
       instance.handleInput();
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo!');
     });
 
-    it('that refuses to print circular structures', function(){
-      instance.$input = {val: function(){ return 'var a = {}; a.a = a; print(a)';} };
+    it('that refuses to print circular structures', function () {
+      instance.$input = {
+        val: function () {return 'var a = {}; a.a = a; print(a)';}
+      };
       instance.handleInput();
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });
@@ -99,6 +117,20 @@ describe('A Shell', function () {
     beforeEach(function () {
       instance.injectHTML();
       // This is cleaned up in the parent afterEach().
+    });
+
+    it('creates a hidden iframe sandbox', function () {
+      var sandbox = instance.$sandbox;
+      expect(sandbox instanceof HTMLIFrameElement).toBe(true);
+      expect(sandbox.height).toEqual('0');
+      expect(sandbox.width).toEqual('0');
+      expect(sandbox.style.visibility).toEqual('hidden');
+    });
+
+    it('initializes the sanbox\'s environment', function () {
+      var win = instance.$sandbox.contentWindow;
+      expect(win.__get).toBe(mongo.util.__get);
+      expect(win.db).toBe(instance.db);
     });
 
     it('attaches a click listener', function () {
@@ -169,15 +201,15 @@ describe('A Shell', function () {
     }
 
     describe('while handling user input', function () {
-      var SWAPPED_CALLS = 'calls', SWAPPED_KEYWORDS = 'keywords', AST = 'ast',
-          STATEMENTS = ['1', '2'];
+      var SWAPPED_CALLS = 'calls', AST = 'ast',
+        STATEMENTS = ['1', '2'];
       var $input, swapCallsThrowsError, parseThrowsError, evalThrowsError;
 
       beforeEach(function () {
         var ms = mongo.mutateSource;
         spyOn(instance, 'insertResponseLine');
-        spyOn(ms, 'swapKeywords').andReturn(SWAPPED_KEYWORDS);
-        spyOn(ms, 'swapMongoCalls').andCallFake(function () {
+        spyOn(mongo.keyword, 'handleKeywords').andReturn(false);
+        spyOn(ms, 'swapMemberAccesses').andCallFake(function () {
           if (swapCallsThrowsError) { throw {}; }
           return SWAPPED_CALLS;
         });
@@ -207,14 +239,36 @@ describe('A Shell', function () {
         expect(instance.insertResponseLine).toHaveBeenCalledWith('> ' + expected);
       });
 
+      it('checks for keywords first', function () {
+        var handleKeywords = mongo.keyword.handleKeywords;
+        var swapMemberAccess = mongo.mutateSource.swapMemberAccesses;
+
+        var keywordInput = 'use a keyword';
+        handleKeywords.andReturn(true);
+        $input.val(keywordInput);
+        instance.handleInput();
+        expect(handleKeywords).toHaveBeenCalledWith(instance, keywordInput);
+        expect(swapMemberAccess).not.toHaveBeenCalled();
+
+        handleKeywords.reset();
+        swapMemberAccess.reset();
+        var jsInput = 'not.a = keyword;';
+        handleKeywords.andReturn(false);
+        $input.val(jsInput);
+        instance.handleInput();
+        expect(handleKeywords).toHaveBeenCalledWith(instance, jsInput);
+        expect(swapMemberAccess).toHaveBeenCalledWith(jsInput);
+
+      });
+
       it('mutates and evalutaes the source', function () {
         var ms = mongo.mutateSource;
-        var id = instance.id;
+        var kw = mongo.keyword;
         var userInput = ';';
         $input.val(userInput);
         instance.handleInput();
-        expect(ms.swapKeywords).toHaveBeenCalledWith(userInput, id);
-        expect(ms.swapMongoCalls).toHaveBeenCalledWith(SWAPPED_KEYWORDS, id);
+        expect(kw.handleKeywords).toHaveBeenCalledWith(instance, userInput);
+        expect(ms.swapMemberAccesses).toHaveBeenCalledWith(userInput);
         expect(esprima.parse).toHaveBeenCalledWith(SWAPPED_CALLS,
             {range: true});
         expect(mongo.util.sourceToStatements).toHaveBeenCalledWith(
@@ -247,7 +301,13 @@ describe('A Shell', function () {
   });
 
   describe('evaling JavaScript statements', function () {
+    var evalSpy;
     beforeEach(function () {
+      // Cleaned up in parent afterEach
+      instance.injectHTML();
+      spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
+      evalSpy = instance.$sandbox.contentWindow.eval;
+
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
       spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(function (
@@ -256,6 +316,13 @@ describe('A Shell', function () {
       });
       // TODO: eval() should be spied upon, however, I was unable to determine
       // how to do that without making either jshint or jasmine angry.
+    });
+
+    it('uses the sandbox to evalute the javascript', function () {
+      var statements = ['var i = {};', 'i.a = 2'];
+      instance.evalStatements(statements);
+      expect(evalSpy.calls[0].args).toEqual([statements[0]]);
+      expect(evalSpy.calls[1].args).toEqual([statements[1]]);
     });
 
     it('does not print valid statement output that is undefined', function () {
@@ -273,8 +340,9 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      var statements = ['new mongo.Cursor(new mongo.Query(\'shell\', ' +
-          '\'collectionName\'));'];
+      var shell = shells[0];
+      shell.$sandbox.contentWindow.myCursor = new mongo.Cursor(shell, function () {});
+      var statements = ['myCursor'];
       instance.evalStatements(statements);
       expect(mongo.Cursor.prototype._executeQuery).toHaveBeenCalled();
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
