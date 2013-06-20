@@ -45,8 +45,10 @@ mongo.Shell.prototype.injectHTML = function () {
     .appendTo('body');
   this.$sandbox = this.$sandbox.get(0);
 
-  this.$sandbox.contentWindow.print = function(expr){
-    this.insertResponseLine(mongo.util.toString(expr));
+  this.$sandbox.contentWindow.print = function(){
+    this.insertResponseLine($.makeArray(arguments).map(function(e){
+      return mongo.util.toString(e);
+    }).join(' '));
   }.bind(this);
   this.$sandbox.contentWindow.__get = mongo.util.__get;
   this.$sandbox.contentWindow.db = this.db;
