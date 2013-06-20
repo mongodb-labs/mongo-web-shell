@@ -1,4 +1,4 @@
-/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn */
+/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine */
 describe('A Readline instance', function () {
   var $input, instance;
 
@@ -51,9 +51,11 @@ describe('A Readline instance', function () {
       });
 
       it('clears the input when returning a string', function () {
+        var moveCursorToEnd = spyOn(instance, 'moveCursorToEnd');
         spyOn(instance, 'getNewerHistoryEntry').andReturn(AFTER);
         instance.keydown(EVENT);
         expect($input.val()).toBe(AFTER);
+        expect(moveCursorToEnd).toHaveBeenCalled();
       });
 
       it('does not clear the input when returning undefined', function () {
@@ -77,9 +79,11 @@ describe('A Readline instance', function () {
       });
 
       it('clears the input when returning a string', function () {
+        var moveCursorToEnd = spyOn(instance, 'moveCursorToEnd');
         spyOn(instance, 'getOlderHistoryEntry').andReturn(AFTER);
         instance.keydown(EVENT);
         expect($input.val()).toBe(AFTER);
+        expect(moveCursorToEnd).toHaveBeenCalled();
       });
 
       it('does not clear the input when returning undefined', function () {
@@ -180,5 +184,51 @@ describe('A Readline instance', function () {
       expect(instance.history).toContain(line);
       expect(instance.historyIndex).toBe(i);
     }
+  });
+
+  it('waits to move the cursor to the end', function () {
+    var setTimeoutMock = spyOn(window, 'setTimeout');
+    instance.moveCursorToEnd();
+    expect(setTimeoutMock).toHaveBeenCalled();
+    var args = setTimeoutMock.calls[0].args;
+    expect(typeof(args[0])).toEqual('function');
+    expect(args[1]).toEqual(0);
+  });
+
+  describe('moving the cursor to the end of the line', function () {
+    var callDeferredFunc = function () {
+      var setTimeoutMock = spyOn(window, 'setTimeout');
+      instance.moveCursorToEnd();
+      setTimeoutMock.calls[0].args[0]();
+    };
+
+    it('uses the setSelectionRange method when available', function () {
+      var input = {
+        setSelectionRange: jasmine.createSpy()
+      };
+      instance.$input = {
+        val: jasmine.createSpy().andReturn('123'),
+        get: jasmine.createSpy().andReturn(input)
+      };
+      callDeferredFunc();
+
+      expect(input.setSelectionRange.calls.length).toEqual(1);
+      expect(input.setSelectionRange).toHaveBeenCalledWith(6, 6);
+
+      expect(instance.$input.val.calls.length).toEqual(1);
+      expect(instance.$input.val).toHaveBeenCalledWith();
+    });
+
+    it('uses a fallback when setSelectionRange is not available', function () {
+      instance.$input = {
+        val: jasmine.createSpy().andReturn('123'),
+        get: jasmine.createSpy().andReturn({})
+      };
+      callDeferredFunc();
+
+      expect(instance.$input.val.calls.length).toEqual(2);
+      expect(instance.$input.val.calls[0].args).toEqual([]);
+      expect(instance.$input.val.calls[1].args).toEqual(['123']);
+    });
   });
 });

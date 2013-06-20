@@ -27,6 +27,7 @@ mongo.Readline.prototype.keydown = function (event) {
 
   if (line !== undefined && line !== null) {
     this.$input.val(line);
+    this.moveCursorToEnd();
   }
 };
 
@@ -72,4 +73,27 @@ mongo.Readline.prototype.submit = function (line) {
   // TODO: Remove old entries if we've hit the limit.
   this.history.push(line);
   this.historyIndex = this.history.length;
+};
+
+mongo.Readline.prototype.moveCursorToEnd = function() {
+  var $inp = this.$input;
+  var inp = $inp.get(0);
+
+  // This needs to happen after the key event finishes dispatching
+  setTimeout(function () {
+    // Taken from: http://stackoverflow.com/a/1675345
+    if (inp.setSelectionRange) {
+      // Use function if it exists.
+      // (Doesn't work in IE)
+
+      // Double the length because Opera is inconsistent about whether a
+      // carriage return is one character or two.
+      var len = $inp.val().length * 2;
+      inp.setSelectionRange(len, len);
+    } else {
+      // Otherwise use workaround.
+      // (Doesn't work in Google Chrome)
+      $inp.val($inp.val());
+    }
+  }, 0);
 };
