@@ -32,6 +32,12 @@ describe('A Shell', function () {
     rootElements = null;
   });
 
+  it('creates a database object', function () {
+    expect(instance.db instanceof mongo.DB);
+    expect(instance.db.shell).toBe(instance);
+    expect(instance.db.name).toBe('test');
+  });
+
   it('injects its HTML into the DOM', function () {
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
@@ -53,43 +59,54 @@ describe('A Shell', function () {
     expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
   });
 
-  describe('has a print() function', function(){
-    beforeEach(function(){
-      spyOn(instance.vars, 'print').andCallThrough();
+  describe('has a print() function', function () {
+    var printFunc;
+
+    beforeEach(function () {
+      instance.injectHTML();
+      printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
-      esprima = {parse: function(){}};
-      spyOn(mongo.util, 'sourceToStatements').andCallFake(function(src){return [src];});
+      esprima = {parse: function () {}};
+      spyOn(mongo.util, 'sourceToStatements').andCallFake(function (src) {
+        return [src];
+      });
     });
 
-    it('that prints nonobjects', function(){
-      instance.$input = {val: function(){ return 'print("mongo")';} };
+    it('that prints nonobjects', function () {
+      instance.$input = {val: function () {
+        return 'print("mongo")';
+      } };
       instance.handleInput();
-      expect(instance.vars.print).toHaveBeenCalledWith('mongo');
+      expect(printFunc).toHaveBeenCalledWith('mongo');
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
     });
 
-    it('that prints stringified objects', function(){
-      instance.$input = {val: function(){ return 'print({name: "Mongo"})';} };
+    it('that prints stringified objects', function () {
+      instance.$input = {val: function () {
+        return 'print({name: "Mongo"})';
+      } };
       instance.handleInput();
-      expect(instance.vars.print).toHaveBeenCalledWith({name:'Mongo'});
+      expect(printFunc).toHaveBeenCalledWith({name: 'Mongo'});
       expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
     });
 
-    it('that it uses the toString for objects for which it is a function', function(){
+    it('that it uses the toString for objects for which it is a function', function () {
       instance.$input = {
-        val: function(){
+        val: function () {
           return 'function A(){};' +
-                  'A.prototype.toString = function(){ return "mongo!" };' +
-                  'var a = new A();' +
-                  'print(a);';
+            'A.prototype.toString = function(){ return "mongo!" };' +
+            'var a = new A();' +
+            'print(a);';
         }
       };
       instance.handleInput();
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo!');
     });
 
-    it('that refuses to print circular structures', function(){
-      instance.$input = {val: function(){ return 'var a = {}; a.a = a; print(a)';} };
+    it('that refuses to print circular structures', function () {
+      instance.$input = {val: function () {
+        return 'var a = {}; a.a = a; print(a)';
+      } };
       instance.handleInput();
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });
@@ -108,6 +125,12 @@ describe('A Shell', function () {
       expect(sandbox.height).toEqual('0');
       expect(sandbox.width).toEqual('0');
       expect(sandbox.style.visibility).toEqual('hidden');
+    });
+
+    it('initializes the sanbox\'s environment', function () {
+      var win = instance.$sandbox.contentWindow;
+      expect(win.__get).toBe(mongo.util.__get);
+      expect(win.db).toBe(instance.db);
     });
 
     it('attaches a click listener', function () {
@@ -178,14 +201,14 @@ describe('A Shell', function () {
     }
 
     describe('while handling user input', function () {
-      var SWAPPED_CALLS = 'calls', SWAPPED_KEYWORDS = 'keywords', AST = 'ast',
-          STATEMENTS = ['1', '2'];
+      var SWAPPED_CALLS = 'calls', AST = 'ast',
+        STATEMENTS = ['1', '2'];
       var $input, swapCallsThrowsError, parseThrowsError, evalThrowsError;
 
       beforeEach(function () {
         var ms = mongo.mutateSource;
         spyOn(instance, 'insertResponseLine');
-        spyOn(ms, 'swapKeywords').andReturn(SWAPPED_KEYWORDS);
+        spyOn(mongo.keyword, 'handleKeywords').andReturn(false);
         spyOn(ms, 'swapMemberAccesses').andCallFake(function () {
           if (swapCallsThrowsError) { throw {}; }
           return SWAPPED_CALLS;
@@ -216,13 +239,36 @@ describe('A Shell', function () {
         expect(instance.insertResponseLine).toHaveBeenCalledWith('> ' + expected);
       });
 
+      it('checks for keywords first', function () {
+        var handleKeywords = mongo.keyword.handleKeywords;
+        var swapMemberAccess = mongo.mutateSource.swapMemberAccesses;
+
+        var keywordInput = 'use a keyword';
+        handleKeywords.andReturn(true);
+        $input.val(keywordInput);
+        instance.handleInput();
+        expect(handleKeywords).toHaveBeenCalledWith(instance, keywordInput);
+        expect(swapMemberAccess).not.toHaveBeenCalled();
+
+        handleKeywords.reset();
+        swapMemberAccess.reset();
+        var jsInput = 'not.a = keyword;';
+        handleKeywords.andReturn(false);
+        $input.val(jsInput);
+        instance.handleInput();
+        expect(handleKeywords).toHaveBeenCalledWith(instance, jsInput);
+        expect(swapMemberAccess).toHaveBeenCalledWith(jsInput);
+
+      });
+
       it('mutates and evalutaes the source', function () {
         var ms = mongo.mutateSource;
+        var kw = mongo.keyword;
         var userInput = ';';
         $input.val(userInput);
         instance.handleInput();
-        expect(ms.swapKeywords).toHaveBeenCalledWith(userInput);
-        expect(ms.swapMemberAccesses).toHaveBeenCalledWith(SWAPPED_KEYWORDS);
+        expect(kw.handleKeywords).toHaveBeenCalledWith(instance, userInput);
+        expect(ms.swapMemberAccesses).toHaveBeenCalledWith(userInput);
         expect(esprima.parse).toHaveBeenCalledWith(SWAPPED_CALLS,
             {range: true});
         expect(mongo.util.sourceToStatements).toHaveBeenCalledWith(

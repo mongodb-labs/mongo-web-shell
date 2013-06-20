@@ -10,14 +10,13 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
+  // Todo: Should we put this somewhere else?
   this.vars = {
     DBQuery: {
       shellBatchSize: mongo.const.shellBatchSize
-    },
-    print: $.proxy(function(expr){
-      this.insertResponseLine(mongo.util.toString(expr));
-    }, this)
+    }
   };
+  this.db = new mongo.DB(this, 'test');
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -46,8 +45,11 @@ mongo.Shell.prototype.injectHTML = function () {
     .appendTo('body');
   this.$sandbox = this.$sandbox.get(0);
 
+  this.$sandbox.contentWindow.print = function(expr){
+    this.insertResponseLine(mongo.util.toString(expr));
+  }.bind(this);
   this.$sandbox.contentWindow.__get = mongo.util.__get;
-  this.$sandbox.contentWindow.db = new mongo.DB(this, 'test');
+  this.$sandbox.contentWindow.db = this.db;
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
@@ -74,9 +76,14 @@ mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
   this.insertResponseLine('> ' + userInput);
-  var mutatedSrc = mongo.mutateSource.swapKeywords(userInput);
+
+  if (mongo.keyword.handleKeywords(this, userInput)) {
+    return;
+  }
+
+  var mutatedSrc;
   try {
-    mutatedSrc = mongo.mutateSource.swapMemberAccesses(mutatedSrc);
+    mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
   } catch (err) {
     this.insertResponseLine('ERROR: syntax parsing error');
     console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',

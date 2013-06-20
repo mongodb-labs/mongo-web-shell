@@ -20,12 +20,6 @@ mongo.request = (function () {
     });
   }
 
-  function dbGetCollectionNames(shell, callback){
-    var url = mongo.util.getDBResURL(shell.mwsResourceID) + 'getCollectionNames';
-
-    mongo.request.makeRequest(url, undefined, 'GET', 'getCollectionNames', shell, callback);
-  }
-  
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
     if (async === undefined) {
       // Default async to true
@@ -86,7 +80,6 @@ mongo.request = (function () {
 
   return {
     createMWSResource: createMWSResource,
-    dbGetCollectionNames: dbGetCollectionNames,
     keepAlive: keepAlive,
     makeRequest: makeRequest
   };

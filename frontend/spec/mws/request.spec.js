@@ -104,44 +104,6 @@ describe('The request module', function () {
     });
   });
 
-  describe('show collection', function () {
-    var makeRequest;
-    var shell_;
-    beforeEach(function () {
-      spyOn(mongo.request, 'makeRequest');
-      makeRequest = mongo.request.makeRequest;
-
-      shell_ = {mwsResourceID: 'my_resource'};
-    });
-
-    it('constructs and uses the collection url', function () {
-      var getUrl = mongo.util.getDBResURL;
-      getUrl.andReturn('my_test_url/');
-
-      mongo.request.dbGetCollectionNames(shell_);
-      expect(getUrl).toHaveBeenCalledWith('my_resource');
-      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/getCollectionNames');
-    });
-
-    it('uses the GET HTTP method', function () {
-      mongo.request.dbGetCollectionNames(shell_);
-      expect(makeRequest.calls[0].args[2]).toEqual('GET');
-    });
-
-    it('uses the supplied shell', function () {
-      var shell = {mwsResourceID: 'my_resource'};
-      mongo.request.dbGetCollectionNames(shell);
-      expect(makeRequest.calls[0].args[4]).toBe(shell);
-    });
-
-    it('passes in the callback to make_request', function() {
-      var shell = {mwsResourceID: 'my_resource'};
-      var f = function(){};
-      mongo.request.dbGetCollectionNames(shell, f);
-      expect(makeRequest.calls[0].args[5]).toBe(f);
-    });
-  });
-
   describe('keeps the session alive and', function(){
     var requests, xhr, requestSuccess = function(success){
       var shell = {mwsResourceID: 'my_resource'};

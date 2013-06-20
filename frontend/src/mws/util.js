@@ -81,12 +81,21 @@ mongo.util = (function () {
     }
   }
 
+  function hasDefinedProperty(obj, prop) {
+    if (Object.getPrototypeOf(obj) === null) {
+      return false;
+    } else if (obj.hasOwnProperty(prop)) {
+      return true;
+    } else {
+      return hasDefinedProperty(Object.getPrototypeOf(obj), prop);
+    }
+  }
+
   function toString(expr){
-    if (expr.toString === Object.prototype.toString){
+    if (typeof(expr) === 'object' && !hasDefinedProperty(expr, 'toString')) {
       try {
-        expr = JSON.stringify(expr);
-        return expr;
-      } catch(e) {
+        return JSON.stringify(expr);
+      } catch (e) {
         return 'ERROR: ' + e.message;
       }
     } else {
