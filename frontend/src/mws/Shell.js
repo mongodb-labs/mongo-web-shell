@@ -10,14 +10,13 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
+  // Todo: Should we put this somewhere else?
   this.vars = {
     DBQuery: {
       shellBatchSize: mongo.const.shellBatchSize
-    },
-    print: $.proxy(function(expr){
-      this.insertResponseLine(mongo.util.toString(expr));
-    }, this)
+    }
   };
+  this.db = new mongo.DB(this, 'test');
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -38,6 +37,19 @@ mongo.Shell.prototype.injectHTML = function () {
   this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.mws-input-li');
   this.$input = this.$inputLI.find('.mws-input');
+
+  // Todo: We should whitelist what is available in this namespace
+  // e.g. get rid of parent
+  this.$sandbox = $('<iframe width="0" height="0"></iframe>')
+    .css({visibility : 'hidden'})
+    .appendTo('body');
+  this.$sandbox = this.$sandbox.get(0);
+
+  this.$sandbox.contentWindow.print = function(expr){
+    this.insertResponseLine(mongo.util.toString(expr));
+  }.bind(this);
+  this.$sandbox.contentWindow.__get = mongo.util.__get;
+  this.$sandbox.contentWindow.db = this.db;
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
@@ -64,9 +76,14 @@ mongo.Shell.prototype.handleInput = function () {
   var userInput = this.$input.val();
   this.$input.val('');
   this.insertResponseLine('> ' + userInput);
-  var mutatedSrc = mongo.mutateSource.swapKeywords(userInput, this.id);
+
+  if (mongo.keyword.handleKeywords(this, userInput)) {
+    return;
+  }
+
+  var mutatedSrc;
   try {
-    mutatedSrc = mongo.mutateSource.swapMongoCalls(mutatedSrc, this.id);
+    mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
   } catch (err) {
     this.insertResponseLine('ERROR: syntax parsing error');
     console.error('mongo.Shell.handleInput(): falafel/esprima parse error:',
@@ -115,7 +132,7 @@ mongo.Shell.prototype.evalStatements = function (statements) {
     console.debug('mongo.Shell.handleInput(): Evaling', index, statement);
     var out;
     try {
-      out = eval(statement);
+      out = this.$sandbox.contentWindow.eval(statement);
     } catch (err) {
       // eval does not mention which statement it failed on so we append that
       // information ourselves and rethrow.

@@ -7,8 +7,6 @@ describe('The request module', function () {
   beforeEach(function () {
     spyOn(mongo.util, 'getDBCollectionResURL').andReturn(RES_URL);
     spyOn(mongo.util, 'getDBResURL').andReturn(RES_URL);
-    spyOn(mongo.util, 'pruneKeys');
-    spyOn(mongo.util, 'stringifyKeys');
     configStore = mongo.config;
     mongo.config = {};
   });
@@ -42,7 +40,7 @@ describe('The request module', function () {
     it('uses the given url and HTTP method', function () {
       var url = 'http://test.com/';
       var method = 'POST';
-      mongo.request.__makeRequest(url, data_, method, name_);
+      mongo.request.makeRequest(url, data_, method, name_);
 
       expect(requests[0].url).toEqual(url);
       expect(requests[0].method).toEqual(method);
@@ -50,7 +48,7 @@ describe('The request module', function () {
 
     it('stringifies JSON', function () {
       var data = {foo: 'mydata'};
-      mongo.request.__makeRequest(url_, data, method_, name_);
+      mongo.request.makeRequest(url_, data, method_, name_);
 
       var stringifiedData = JSON.stringify(data);
       expect(requests[0].requestBody).toEqual(stringifiedData);
@@ -61,11 +59,11 @@ describe('The request module', function () {
     it('calls onSuccess appropriately', function () {
       var onSuccess = jasmine.createSpy();
 
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, onSuccess);
       requests[0].respond(500, '', 'INTERNAL SERVER ERROR');
       expect(onSuccess).not.toHaveBeenCalled();
 
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, onSuccess);
       expect(onSuccess).not.toHaveBeenCalled();
       var originalData = {msg: 'Success'};
       var responseBody = JSON.stringify(originalData);
@@ -75,18 +73,18 @@ describe('The request module', function () {
 
     it('writes failure reasons to the shell', function () {
       var shell = {insertResponseLine: jasmine.createSpy()};
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
       requests[0].respond(200, '', JSON.stringify({foo: 'bar'}));
       expect(shell.insertResponseLine).not.toHaveBeenCalled();
 
       // Error, no details
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
       var errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: ''});
       requests[1].respond(400, '', errResponse);
       expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason');
 
       // Error with details
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
       errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: 'Some details'});
       requests[2].respond(400, '', errResponse);
       expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason\nSome details');
@@ -95,229 +93,14 @@ describe('The request module', function () {
     });
 
     it('is asynchronous by default', function () {
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null);
       expect(requests[0].async).toBe(true);
 
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null, true);
       expect(requests[1].async).toBe(true);
 
-      mongo.request.__makeRequest(url_, data_, method_, name_, shell_, null, false);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null, false);
       expect(requests[2].async).toBe(false);
-    });
-  });
-
-  describe('remove', function () {
-    var makeRequest;
-    var query_;
-    beforeEach(function () {
-      spyOn(mongo.request, '__makeRequest');
-      makeRequest = mongo.request.__makeRequest;
-
-      query_ = {
-        shell: {mwsResourceID: 'my_resource'},
-        collection: 'my_collection'
-      };
-    });
-
-    it('constructs and uses the collection url', function () {
-      var getUrl = mongo.util.getDBCollectionResURL;
-      getUrl.andReturn('my_test_url/');
-      var query = {
-        shell: {mwsResourceID: 'my_resource'},
-        collection: 'my_collection'
-      };
-
-      mongo.request.dbCollectionRemove(query, {}, true);
-      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
-      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/remove');
-    });
-
-    it('constructs appropriate params', function () {
-      var constraint = {a: 1, b: {$gt: 2}};
-      mongo.request.dbCollectionRemove(query_, constraint, false);
-      var params = makeRequest.calls[0].args[1];
-      expect(params.constraint).toEqual(constraint);
-      expect(params.just_one).toBe(false);
-    });
-
-    it('uses the delete HTTP method', function () {
-      mongo.request.dbCollectionRemove(query_, {}, true);
-      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
-    });
-
-    it('uses the supplied shell', function () {
-      var shell = {mwsResourceID: 'my_resource'};
-      var query = {
-        shell: shell,
-        collection: 'my_collection'
-      };
-      mongo.request.dbCollectionRemove(query, {}, true);
-      expect(makeRequest.calls[0].args[4]).toBe(shell);
-    });
-  });
-
-  describe('update', function () {
-    var makeRequest;
-    var query_;
-    beforeEach(function () {
-      spyOn(mongo.request, '__makeRequest');
-      makeRequest = mongo.request.__makeRequest;
-
-      query_ = {
-        shell: {
-          mwsResourceID: 'my_resource',
-          insertResponseLine: function () {}
-        },
-        collection: 'my_collection'
-      };
-    });
-
-    it('constructs and uses the collection url', function () {
-      var getUrl = mongo.util.getDBCollectionResURL;
-      getUrl.andReturn('my_test_url/');
-      var query = {
-        shell: {mwsResourceID: 'my_resource'},
-        collection: 'my_collection'
-      };
-
-      mongo.request.dbCollectionUpdate(query, {}, true);
-      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
-      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/update');
-    });
-
-    it('constructs appropriate params', function () {
-      var constraint = {a: 1, b: {$gt: 2}};
-      var update = {$set: {c: 2}};
-      mongo.request.dbCollectionUpdate(query_, constraint, update);
-      var params = makeRequest.calls[0].args[1];
-      expect(params.query).toEqual(constraint);
-      expect(params.update).toEqual(update);
-    });
-
-    describe('upsert and multi', function () {
-      var constraint_ = {a: 1};
-      var update_ = {$set: {a: 2}};
-
-      it('defaults to false', function () {
-        mongo.request.dbCollectionUpdate(query_, constraint_, update_);
-        var params = makeRequest.calls[0].args[1];
-        expect(params.upsert).toBe(false);
-        expect(params.multi).toBe(false);
-      });
-
-      it('takes boolean parameters', function () {
-        mongo.request.dbCollectionUpdate(query_, constraint_, update_, true, true);
-        var params = makeRequest.calls[0].args[1];
-        expect(params.upsert).toBe(true);
-        expect(params.multi).toBe(true);
-      });
-
-      it('takes one object parameter', function () {
-        var options = {upsert: false, multi: true};
-        mongo.request.dbCollectionUpdate(query_, constraint_, update_, options);
-        var params = makeRequest.calls[0].args[1];
-        expect(params.upsert).toBe(false);
-        expect(params.multi).toBe(true);
-
-        expect(function () {
-          mongo.request.dbCollectionUpdate(query_, constraint_, update_, options, false);
-        }).toThrow({message: 'dbCollectionUpdate: Syntax error'});
-      });
-    });
-
-    it('uses the put HTTP method', function () {
-      mongo.request.dbCollectionUpdate(query_, {}, true);
-      expect(makeRequest.calls[0].args[2]).toEqual('PUT');
-    });
-
-    it('uses the supplied shell', function () {
-      var shell = {mwsResourceID: 'my_resource'};
-      var query = {
-        shell: shell,
-        collection: 'my_collection'
-      };
-      mongo.request.dbCollectionUpdate(query, {}, true);
-      expect(makeRequest.calls[0].args[4]).toBe(shell);
-    });
-  });
-
-  describe('drop', function () {
-    var makeRequest;
-    var query_;
-    beforeEach(function () {
-      spyOn(mongo.request, '__makeRequest');
-      makeRequest = mongo.request.__makeRequest;
-
-      query_ = {
-        shell: {mwsResourceID: 'my_resource'},
-        collection: 'my_collection'
-      };
-    });
-
-    it('constructs and uses the collection url', function () {
-      var getUrl = mongo.util.getDBCollectionResURL;
-      getUrl.andReturn('my_test_url/');
-      var query = {
-        shell: {mwsResourceID: 'my_resource'},
-        collection: 'my_collection'
-      };
-
-      mongo.request.dbCollectionDrop(query);
-      expect(getUrl).toHaveBeenCalledWith('my_resource', 'my_collection');
-      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/drop');
-    });
-
-    it('uses the delete HTTP method', function () {
-      mongo.request.dbCollectionDrop(query_);
-      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
-    });
-
-    it('uses the supplied shell', function () {
-      var shell = {mwsResourceID: 'my_resource'};
-      var query = {
-        shell: shell,
-        collection: 'my_collection'
-      };
-      mongo.request.dbCollectionDrop(query);
-      expect(makeRequest.calls[0].args[4]).toBe(shell);
-    });
-  });
-
-  describe('show collection', function () {
-    var makeRequest;
-    var shell_;
-    beforeEach(function () {
-      spyOn(mongo.request, '__makeRequest');
-      makeRequest = mongo.request.__makeRequest;
-
-      shell_ = {mwsResourceID: 'my_resource'};
-    });
-
-    it('constructs and uses the collection url', function () {
-      var getUrl = mongo.util.getDBResURL;
-      getUrl.andReturn('my_test_url/');
-
-      mongo.request.dbGetCollectionNames(shell_);
-      expect(getUrl).toHaveBeenCalledWith('my_resource');
-      expect(makeRequest.calls[0].args[0]).toEqual('my_test_url/getCollectionNames');
-    });
-
-    it('uses the GET HTTP method', function () {
-      mongo.request.dbGetCollectionNames(shell_);
-      expect(makeRequest.calls[0].args[2]).toEqual('GET');
-    });
-
-    it('uses the supplied shell', function () {
-      var shell = {mwsResourceID: 'my_resource'};
-      mongo.request.dbGetCollectionNames(shell);
-      expect(makeRequest.calls[0].args[4]).toBe(shell);
-    });
-
-    it('passes in the callback to make_request', function() {
-      var shell = {mwsResourceID: 'my_resource'};
-      var f = function(){};
-      mongo.request.dbGetCollectionNames(shell, f);
-      expect(makeRequest.calls[0].args[5]).toBe(f);
     });
   });
 
@@ -389,7 +172,7 @@ describe('The request module', function () {
       expect(mongo.keepaliveNotification).toBe(undefined);
     });
   });
-
+  
   /**
    * Valids the requests themselves, rather than the actions taken upon their
    * failure or success.
@@ -443,88 +226,18 @@ describe('The request module', function () {
       expect(callbackSpy.calls.length).toBe(1);
     });
 
-    it('calls db.collection.find() on the database', function () {
-      var cursor = {
-        _query: {args: {projection: {_id: 0}, query: {iu: 'jjang'}}},
-        _shell: jasmine.createSpyObj('Shell', ['insertResponseLine']),
-        _storeQueryResult: jasmine.createSpy('storeQueryResult')
-      };
-      var callbackSpy = jasmine.createSpy('callback');
-      var async = true;
-
-      mongo.request.dbCollectionFind(cursor, callbackSpy, async);
-      expect(requests.length).toBe(1);
-      var req = requests[0];
-      expect(req.method).toBe('GET');
-      var actualURL = decodeURIComponent(req.url);
-      expect(actualURL).toMatch('^' + RES_URL + 'find?');
-      var expectedJson = '"projection":' + JSON.stringify({_id: cursor._query.args.projection._id});
-      expect(actualURL).toMatch('find?.*' + expectedJson);
-      expectedJson = '"query":' + JSON.stringify({iu: cursor._query.args.query.iu});
-      expect(actualURL).toMatch('find?.*' + expectedJson);
-      expect(req.requestBody).toBe(null);
-      expect(req.async).toBe(async);
-      expect(req.requestHeaders.Accept).toMatch('application/json');
-      expect(callbackSpy).not.toHaveBeenCalled();
-
-      async = false;
-      mongo.request.dbCollectionFind(cursor, callbackSpy, async);
-      req = requests[1];
-      expect(req.async).toBe(async);
-      expect(callbackSpy).not.toHaveBeenCalled();
-
-      req = requests[0];
-      var expectedResult = [{iu: 'jjang'}, {exo: 'k'}];
-      // TODO: This status code is undocumented.
-      var body = {status: 0, result: expectedResult};
-      req.respond(200, '', JSON.stringify(body));
-      expect(cursor._storeQueryResult).toHaveBeenCalledWith(expectedResult);
-      expect(callbackSpy).toHaveBeenCalled();
-      expect(cursor._shell.insertResponseLine).not.toHaveBeenCalled();
-
-      // Failure: HTTP Error.
-      // XXX: req.respond only seems to work if async === true.
-      mongo.request.dbCollectionFind(cursor, callbackSpy, true);
-      req = requests[2];
-      req.respond(404, '', JSON.stringify(body));
-      expect(cursor._storeQueryResult.call.length).toBe(1);
-      expect(callbackSpy.calls.length).toBe(1);
-      expect(cursor._shell.insertResponseLine).toHaveBeenCalled();
-      // TODO: How to catch the exception?
-
-      // Failure: Bad status code.
-      body = {error: 500, reason: 'Internal Server Error', detail: ''};
-      mongo.request.dbCollectionFind(cursor, callbackSpy, true);
-      req = requests[3];
-      req.respond(500, '', JSON.stringify(body));
-      expect(cursor._storeQueryResult.call.length).toBe(1);
-      expect(callbackSpy.calls.length).toBe(1);
-      expect(cursor._shell.insertResponseLine.calls.length).toBe(2);
-    });
-
-    it('calls db.collection.insert() on the database', function () {
-      var query = {
-        shell: jasmine.createSpyObj('Shell', ['insertResponseLine'])
-      };
-      var document_ = 'doc';
-      mongo.request.dbCollectionInsert(query, document_);
+    it('keeps the shell mws resource alive', function () {
+      mongo.config.baseUrl = 'base';
+      var shell = {mwsResourceID: 'iu'};
+      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
+          '/keep-alive';
+      mongo.request.keepAlive(shell);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('POST');
-      expect(req.url).toBe(RES_URL + 'insert');
-      var expectedParams = JSON.stringify({document: document_});
-      expect(req.requestBody).toMatch(expectedParams);
-      expect(req.requestHeaders.Accept).toMatch('application/json');
-      expect(req.requestHeaders['Content-Type']).toMatch('application/json');
-
-      req.respond(200, '', '{}');
-      expect(query.shell.insertResponseLine).not.toHaveBeenCalled();
-
-      // Failure: HTTP error.
-      mongo.request.dbCollectionInsert(query, document_);
-      req = requests[1];
-      req.respond(404, '', '{}');
-      expect(query.shell.insertResponseLine).toHaveBeenCalled();
+      expect(req.url).toBe(expectedURL);
+      expect(req.requestBody).toBe(null);
+      // There is nothing to test for if the request succeeds or not.
     });
   });
 });

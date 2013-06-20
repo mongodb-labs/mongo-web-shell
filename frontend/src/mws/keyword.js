@@ -1,34 +1,16 @@
-// TODO: Remove unused once help and show are implemented.
-/* jshint unused: false */
 /* global console, mongo */
 mongo.keyword = (function () {
-  function evaluate(shellID, keyword, arg, arg2, unusedArg) {
-    var shell = mongo.shells[shellID];
-    switch (keyword) {
-    case 'help':
-    case 'show':
-      if (unusedArg !== undefined) {
-        shell.insertResponseLine('Too many parameters to ' + keyword + '.');
-        console.debug('Too many parameters to', keyword + '.');
-        return;
-      }
-      break;
-
-    case 'it': // 'it' ignores other arguments.
-    case 'use': // 'use' is disabled so the arguments don't matter.
-      break;
-
-    default:
-      shell.insertResponseLine('Unknown keyword: ' + keyword + '.');
-      console.debug('Unknown keyword', keyword);
-      return;
+  function handleKeywords(shell, src) {
+    var tokens = src.split(/\s+/).filter(function (str) {
+      return str.length !== 0;
+    });
+    var func = tokens[0];
+    var args = tokens.slice(1);
+    if (mongo.keyword[func]) {
+      mongo.keyword[func](shell, args);
+      return true;
     }
-    mongo.keyword[keyword](shell, arg, arg2);
-  }
-
-  function help(shell, arg, arg2) {
-    // TODO: Implement.
-    console.debug('keyword.help called.');
+    return false;
   }
 
   function it(shell) {
@@ -41,11 +23,18 @@ mongo.keyword = (function () {
     console.warn('no cursor');
   }
 
-  function show(shell, subject) {
-    switch (subject){
+  function show(shell, args) {
+    if (args.length === 0) {
+      shell.insertResponseLine('ERROR: show requires at least one argument');
+      return;
+    }
+    var subject = args[0];
+    switch (subject) {
+    case 'tables':
+      /* falls through */
     case 'collections':
-      mongo.request.dbGetCollectionNames(shell, function(r){
-        $(r.result).each(function(i, e){
+      shell.db.getCollectionNames(function (r) {
+        $(r.result).each(function (i, e) {
           shell.insertResponseLine(e);
         });
       });
@@ -61,8 +50,7 @@ mongo.keyword = (function () {
   }
 
   return {
-    evaluate: evaluate,
-    help: help,
+    handleKeywords: handleKeywords,
     it: it,
     show: show,
     use: use
