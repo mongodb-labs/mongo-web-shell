@@ -126,10 +126,9 @@ describe('The request module', function () {
 
     it('makes a keepalive request', function () {
       mongo.config.baseUrl = 'base';
-      var shell = {mwsResourceID: 'iu'};
-      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
-          '/keep-alive';
-      mongo.request.keepAlive(shell);
+      var resourceID = 'iu';
+      var expectedURL = mongo.config.baseUrl + resourceID + '/keep-alive';
+      mongo.request.keepAlive(resourceID);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('POST');
@@ -195,9 +194,9 @@ describe('The request module', function () {
       var baseUrl = '/mws/';
       mongo.config.baseUrl = baseUrl;
       var callbackSpy = jasmine.createSpy('callback');
-      var shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
+      var shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine', 'insertError']);
 
-      mongo.request.createMWSResource(shellSpy, callbackSpy);
+      mongo.request.createMWSResource([shellSpy], callbackSpy);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('POST');
@@ -212,26 +211,26 @@ describe('The request module', function () {
       expect(shellSpy.insertResponseLine).not.toHaveBeenCalled();
 
       // Failure: invalid data.
-      mongo.request.createMWSResource(shellSpy, callbackSpy);
+      mongo.request.createMWSResource([shellSpy], callbackSpy);
       req = requests[1];
       req.respond(200, '', JSON.stringify({daebak: 'iu'}));
-      expect(shellSpy.insertResponseLine).toHaveBeenCalled();
+      expect(shellSpy.insertError).toHaveBeenCalled();
 
       // Failure: HTTP error.
-      mongo.request.createMWSResource(shellSpy, callbackSpy);
+      mongo.request.createMWSResource([shellSpy], callbackSpy);
       req = requests[2];
       req.respond(404, '', '');
-      expect(shellSpy.insertResponseLine.calls.length).toBe(2);
+      expect(shellSpy.insertResponseLine).toHaveBeenCalled();
 
       expect(callbackSpy.calls.length).toBe(1);
     });
 
     it('keeps the shell mws resource alive', function () {
       mongo.config.baseUrl = 'base';
-      var shell = {mwsResourceID: 'iu'};
-      var expectedURL = mongo.config.baseUrl + shell.mwsResourceID +
+      var resourceID = 'iu';
+      var expectedURL = mongo.config.baseUrl + resourceID +
           '/keep-alive';
-      mongo.request.keepAlive(shell);
+      mongo.request.keepAlive(resourceID);
       expect(requests.length).toBe(1);
       var req = requests[0];
       expect(req.method).toBe('POST');

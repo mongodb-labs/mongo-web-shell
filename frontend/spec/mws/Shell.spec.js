@@ -1,34 +1,20 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
-/* jshint evil: true */
+/* jshint evil: true, nonew: false */
 describe('A Shell', function () {
-  var shells, instance, $rootElement;
-  var rootElements;
+  var instance, $rootElement;
   var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    mongo.shells = shells = [];
-    rootElements = [];
-    for (var i = 0; i < SHELL_COUNT; i++) {
-      var div = document.createElement('div');
-      div.className = CONST.css.classes.root;
-      document.body.appendChild(div);
-      shells.push(new mongo.Shell(div, i));
-      rootElements.push(div);
-    }
-    instance = shells[0];
-    $rootElement = $(rootElements[0]);
+    $rootElement = $('<div class=' + CONST.css.classes.root + '/>');
+    $('body').append($rootElement);
+    instance = new mongo.Shell($rootElement.get(0), 0);
+    mongo.shells = [instance];
   });
 
   afterEach(function () {
-    instance = null;
-    $rootElement = null;
-    while (rootElements.length > 0) {
-      var element = rootElements.pop();
-      element.parentNode.removeChild(element);
-    }
-    shells = null;
-    rootElements = null;
+    $('.' + CONST.css.classes.root).remove();
+    $('iframe').remove();
   });
 
   it('creates a database object', function () {
@@ -45,24 +31,29 @@ describe('A Shell', function () {
       });
     }
 
+    // Remove all existing shells from the page
+    $('.' + CONST.css.classes.root).remove();
     expectInternalLength(0);
-    shells.forEach(function (shell, i) {
-      shell.injectHTML();
+    for (var i = 0; i < SHELL_COUNT; i++) {
+      var $div = $('<div class=' + CONST.css.classes.root + '/>');
+      $('body').append($div);
+      new mongo.Shell($div, i);
       expectInternalLength(i + 1);
-    });
+    }
   });
 
-  it('submits a keep alive request', function () {
-    spyOn(mongo.request, 'keepAlive');
-    instance.keepAlive();
-    expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
+  it('attaches the click listener', function () {
+    var attachClickListener = spyOn(mongo.Shell.prototype, 'attachClickListener');
+    $rootElement.empty();
+
+    new mongo.Shell($rootElement.get(0), 0);
+    expect(attachClickListener).toHaveBeenCalled();
   });
 
   describe('has a print() function', function () {
     var printFunc;
 
     beforeEach(function () {
-      instance.injectHTML();
       printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
     });
@@ -117,11 +108,6 @@ describe('A Shell', function () {
   });
 
   describe('that has injected its HTML', function () {
-    beforeEach(function () {
-      instance.injectHTML();
-      // This is cleaned up in the parent afterEach().
-    });
-
     it('creates a hidden iframe sandbox', function () {
       var sandbox = instance.$sandbox;
       expect(sandbox instanceof HTMLIFrameElement).toBe(true);
@@ -149,10 +135,12 @@ describe('A Shell', function () {
 
     it('attaches an input event listener', function () {
       spyOn(instance, 'handleInput');
+      spyOn(instance, 'enableInput');
       spyOn(mongo, 'Readline').andCallThrough();
       var resID = 'iu';
       instance.attachInputHandler(resID);
       expect(instance.mwsResourceID).toBe(resID);
+      expect(instance.enableInput).toHaveBeenCalledWith(true);
       $rootElement.find('form').submit();
       expect(instance.handleInput).toHaveBeenCalled();
       expect(mongo.Readline).toHaveBeenCalledWith(instance.$input);
@@ -291,19 +279,13 @@ describe('A Shell', function () {
   describe('evaling JavaScript statements', function () {
     var evalSpy;
     beforeEach(function () {
-      // Cleaned up in parent afterEach
-      instance.injectHTML();
-      spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
-      evalSpy = instance.$sandbox.contentWindow.eval;
+      evalSpy = spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
 
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
-      spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(function (
-          onSuccess) {
-        onSuccess();
-      });
-      // TODO: eval() should be spied upon, however, I was unable to determine
-      // how to do that without making either jshint or jasmine angry.
+      spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(
+        function (onSuccess) { onSuccess(); }
+      );
     });
 
     it('uses the sandbox to evalute the javascript', function () {
@@ -329,8 +311,7 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      var shell = shells[0];
-      shell.$sandbox.contentWindow.myCursor = new mongo.Cursor(shell, function () {});
+      instance.$sandbox.contentWindow.myCursor = new mongo.Cursor(instance, function () {});
       var statements = 'myCursor';
       instance.eval(statements);
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
@@ -342,18 +323,17 @@ describe('A Shell', function () {
   });
 
   it('gets the shellBatchSize', function () {
-    var shell = shells[0];
     var expected = [0, 20, 40];
     expected.forEach(function (val) {
-      shell.vars.DBQuery.shellBatchSize = val;
-      expect(shell.getShellBatchSize()).toBe(val);
+      instance.vars.DBQuery.shellBatchSize = val;
+      expect(instance.getShellBatchSize()).toBe(val);
     });
 
     expected = [null, undefined, NaN, '', [], {}, 'iu'];
     expected.forEach(function (val) {
       // TODO: Check insertResponseLine.
-      shell.vars.DBQuery.shellBatchSize = val;
-      var willThrow = function () { shell.getShellBatchSize(); };
+      instance.vars.DBQuery.shellBatchSize = val;
+      var willThrow = function () { instance.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });
   });
