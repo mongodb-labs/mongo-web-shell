@@ -1,7 +1,6 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
 /* jshint evil: true */
-var esprima; // Stubbed later.
 describe('A Shell', function () {
   var shells, instance, $rootElement;
   var rootElements;
@@ -66,10 +65,6 @@ describe('A Shell', function () {
       instance.injectHTML();
       printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
-      esprima = {parse: function () {}};
-      spyOn(mongo.util, 'sourceToStatements').andCallFake(function (src) {
-        return [src];
-      });
     });
 
     it('that prints nonobjects', function () {
@@ -201,9 +196,8 @@ describe('A Shell', function () {
     }
 
     describe('while handling user input', function () {
-      var SWAPPED_CALLS = 'calls', AST = 'ast',
-        STATEMENTS = ['1', '2'];
-      var $input, swapCallsThrowsError, parseThrowsError, evalThrowsError;
+      var SWAPPED_CALLS = 'calls';
+      var $input, swapCallsThrowsError, evalThrowsError;
 
       beforeEach(function () {
         var ms = mongo.mutateSource;
@@ -213,21 +207,14 @@ describe('A Shell', function () {
           if (swapCallsThrowsError) { throw {}; }
           return SWAPPED_CALLS;
         });
-        esprima = jasmine.createSpyObj('esprima', ['parse']);
-        esprima.parse.andCallFake(function () {
-          if (parseThrowsError) { throw {}; }
-          return AST;
-        });
-        spyOn(mongo.util, 'sourceToStatements').andReturn(STATEMENTS);
-        spyOn(instance, 'evalStatements').andCallFake(function () {
+        spyOn(instance, 'eval').andCallFake(function () {
           if (evalThrowsError) { throw {}; }
         });
         $input = $rootElement.find('input');
-        swapCallsThrowsError = parseThrowsError = evalThrowsError = false;
+        swapCallsThrowsError = evalThrowsError = false;
       });
 
       afterEach(function () {
-        esprima = null;
         $input = null;
       });
 
@@ -269,11 +256,7 @@ describe('A Shell', function () {
         instance.handleInput();
         expect(kw.handleKeywords).toHaveBeenCalledWith(instance, userInput);
         expect(ms.swapMemberAccesses).toHaveBeenCalledWith(userInput);
-        expect(esprima.parse).toHaveBeenCalledWith(SWAPPED_CALLS,
-            {range: true});
-        expect(mongo.util.sourceToStatements).toHaveBeenCalledWith(
-            SWAPPED_CALLS, AST);
-        expect(instance.evalStatements).toHaveBeenCalledWith(STATEMENTS);
+        expect(instance.eval).toHaveBeenCalledWith(SWAPPED_CALLS);
       });
 
       it('prints errors to the terminal on invalid output', function () {
@@ -283,18 +266,15 @@ describe('A Shell', function () {
         var oldCount = calls.length;
         swapCallsThrowsError = true;
         instance.handleInput();
+        expect(mongo.mutateSource.swapMemberAccesses).toHaveBeenCalled();
+        expect(instance.eval).not.toHaveBeenCalled();
         expect(calls.length).toBe(oldCount + expectedIncrement);
 
         oldCount = calls.length;
         swapCallsThrowsError = false;
-        parseThrowsError = true;
-        instance.handleInput();
-        expect(calls.length).toBe(oldCount + expectedIncrement);
-
-        oldCount = calls.length;
-        parseThrowsError = false;
         evalThrowsError = true;
         instance.handleInput();
+        expect(instance.eval).toHaveBeenCalled();
         expect(calls.length).toBe(oldCount + expectedIncrement);
       });
     });
@@ -319,37 +299,37 @@ describe('A Shell', function () {
     });
 
     it('uses the sandbox to evalute the javascript', function () {
-      var statements = ['var i = {};', 'i.a = 2'];
-      instance.evalStatements(statements);
-      expect(evalSpy.calls[0].args).toEqual([statements[0]]);
-      expect(evalSpy.calls[1].args).toEqual([statements[1]]);
+      var statements = 'var i = {}; i.a = 2';
+      instance.eval(statements);
+      expect(evalSpy).toHaveBeenCalledWith(statements);
     });
 
     it('does not print valid statement output that is undefined', function () {
       var statements = ['var i = 4;', 'function i() { };'];
-      instance.evalStatements(statements);
-      expect(instance.insertResponseLine).not.toHaveBeenCalled();
+      for (var i = 0; i < statements.length; i++) {
+        instance.eval(statements[i]);
+        expect(instance.insertResponseLine).not.toHaveBeenCalled();
+      }
     });
 
     it('prints valid statement output that is not undefined', function () {
       var statements = ['0', 'i = 1;', '(function () { return 2; }());'];
-      instance.evalStatements(statements);
       for (var i = 0; i < statements.length; i++) {
-        expect(instance.insertResponseLine).toHaveBeenCalledWith(i.toString());
+        instance.eval(statements[i]);
+        expect(instance.insertResponseLine).toHaveBeenCalledWith(i);
       }
     });
 
     it('executes an output Cursor query and prints a batch', function () {
       var shell = shells[0];
       shell.$sandbox.contentWindow.myCursor = new mongo.Cursor(shell, function () {});
-      var statements = ['myCursor'];
-      instance.evalStatements(statements);
-      expect(mongo.Cursor.prototype._executeQuery).toHaveBeenCalled();
+      var statements = 'myCursor';
+      instance.eval(statements);
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
     });
 
-    it('throws an error if the statement invalid', function () {
-      expect(function () { instance.evalStatements(['invalid']); }).toThrow();
+    it('throws an error if the statement is invalid', function () {
+      expect(function () { instance.eval('invalid'); }).toThrow();
     });
   });
 
@@ -368,5 +348,39 @@ describe('A Shell', function () {
       var willThrow = function () { shell.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });
+  });
+
+  it('converts inserted lines to a string', function () {
+    var expected = 'myString';
+    var toString = spyOn(mongo.util, 'toString').andReturn(expected);
+    instance.$inputLI = {
+      before: jasmine.createSpy('$inputLI')
+    };
+    instance.$responseList = {
+      0: {scrollHeight: 0},
+      scrollTop: function () {}
+    };
+
+    instance.insertResponseLine(123);
+    expect(toString).toHaveBeenCalledWith(123);
+    expect(instance.$inputLI.before).toHaveBeenCalled();
+    var li = instance.$inputLI.before.calls[0].args[0];
+    expect(li.innerHTML).toEqual(expected);
+  });
+
+  it('extracts messages from errors', function () {
+    instance.$sandbox = {
+      contentWindow: {Error: function () {}}
+    };
+    var irl = spyOn(instance, 'insertResponseLine');
+
+    instance.insertError(new ReferenceError('My Message'));
+    expect(irl).toHaveBeenCalledWith('ReferenceError: My Message');
+
+    instance.insertError({message: 'Second Message'});
+    expect(irl).toHaveBeenCalledWith('ERROR: Second Message');
+
+    instance.insertError('Third Message');
+    expect(irl).toHaveBeenCalledWith('ERROR: Third Message');
   });
 });
