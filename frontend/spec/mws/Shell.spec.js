@@ -2,33 +2,19 @@
 /* global spyOn, xit */
 /* jshint evil: true, nonew: false */
 describe('A Shell', function () {
-  var shells, instance, $rootElement;
-  var rootElements;
+  var instance, $rootElement;
   var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    mongo.shells = shells = [];
-    rootElements = [];
-    for (var i = 0; i < SHELL_COUNT; i++) {
-      var div = document.createElement('div');
-      div.className = CONST.css.classes.root;
-      document.body.appendChild(div);
-      shells.push(new mongo.Shell(div, i));
-      rootElements.push(div);
-    }
-    instance = shells[0];
-    $rootElement = $(rootElements[0]);
+    $rootElement = $('<div class=' + CONST.css.classes.root + '/>');
+    $('body').append($rootElement);
+    instance = new mongo.Shell($rootElement.get(0), 0);
+    mongo.shells = [instance];
   });
 
   afterEach(function () {
-    instance = null;
-    $rootElement = null;
-    while (rootElements.length > 0) {
-      var element = rootElements.pop();
-      element.parentNode.removeChild(element);
-    }
-    shells = null;
-    rootElements = null;
+    $('.' + CONST.css.classes.root).remove();
+    $('iframe').remove();
   });
 
   it('creates a database object', function () {
@@ -38,10 +24,6 @@ describe('A Shell', function () {
   });
 
   it('injects its HTML into the DOM', function () {
-    // Remove all existing shells from the page
-    $(rootElements).remove();
-    var $body = $('body');
-
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
         var $element = $('.' + cssClass);
@@ -49,16 +31,16 @@ describe('A Shell', function () {
       });
     }
 
+    // Remove all existing shells from the page
+    $('.' + CONST.css.classes.root).remove();
+    // We already had one on the page
     expectInternalLength(0);
     for (var i = 0; i < SHELL_COUNT; i++) {
       var $div = $('<div class=' + CONST.css.classes.root + '/>');
-      $body.append($div);
+      $('body').append($div);
       new mongo.Shell($div, i);
       expectInternalLength(i + 1);
     }
-
-    // Add back in so afterEach doesn't fail. This is really ugly
-    $body.append(rootElements);
   });
 
   it('attaches the click listener', function () {
@@ -322,8 +304,7 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      var shell = shells[0];
-      shell.$sandbox.contentWindow.myCursor = new mongo.Cursor(shell, function () {});
+      instance.$sandbox.contentWindow.myCursor = new mongo.Cursor(instance, function () {});
       var statements = 'myCursor';
       instance.eval(statements);
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
@@ -335,18 +316,17 @@ describe('A Shell', function () {
   });
 
   it('gets the shellBatchSize', function () {
-    var shell = shells[0];
     var expected = [0, 20, 40];
     expected.forEach(function (val) {
-      shell.vars.DBQuery.shellBatchSize = val;
-      expect(shell.getShellBatchSize()).toBe(val);
+      instance.vars.DBQuery.shellBatchSize = val;
+      expect(instance.getShellBatchSize()).toBe(val);
     });
 
     expected = [null, undefined, NaN, '', [], {}, 'iu'];
     expected.forEach(function (val) {
       // TODO: Check insertResponseLine.
-      shell.vars.DBQuery.shellBatchSize = val;
-      var willThrow = function () { shell.getShellBatchSize(); };
+      instance.vars.DBQuery.shellBatchSize = val;
+      var willThrow = function () { instance.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });
   });
