@@ -1,6 +1,6 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
-/* jshint evil: true */
+/* jshint evil: true, nonew: false */
 describe('A Shell', function () {
   var shells, instance, $rootElement;
   var rootElements;
@@ -38,6 +38,10 @@ describe('A Shell', function () {
   });
 
   it('injects its HTML into the DOM', function () {
+    // Remove all existing shells from the page
+    $(rootElements).remove();
+    var $body = $('body');
+
     function expectInternalLength(len) {
       CONST.css.classes.internal.forEach(function (cssClass) {
         var $element = $('.' + cssClass);
@@ -46,23 +50,29 @@ describe('A Shell', function () {
     }
 
     expectInternalLength(0);
-    shells.forEach(function (shell, i) {
-      shell.injectHTML();
+    for (var i = 0; i < SHELL_COUNT; i++) {
+      var $div = $('<div class=' + CONST.css.classes.root + '/>');
+      $body.append($div);
+      new mongo.Shell($div, i);
       expectInternalLength(i + 1);
-    });
+    }
+
+    // Add back in so afterEach doesn't fail. This is really ugly
+    $body.append(rootElements);
   });
 
-  it('submits a keep alive request', function () {
-    spyOn(mongo.request, 'keepAlive');
-    instance.keepAlive();
-    expect(mongo.request.keepAlive).toHaveBeenCalledWith(instance);
+  it('attaches the click listener', function () {
+    var attachClickListener = spyOn(mongo.Shell.prototype, 'attachClickListener');
+    $rootElement.empty();
+
+    new mongo.Shell($rootElement.get(0), 0);
+    expect(attachClickListener).toHaveBeenCalled();
   });
 
   describe('has a print() function', function () {
     var printFunc;
 
     beforeEach(function () {
-      instance.injectHTML();
       printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
     });
@@ -109,11 +119,6 @@ describe('A Shell', function () {
   });
 
   describe('that has injected its HTML', function () {
-    beforeEach(function () {
-      instance.injectHTML();
-      // This is cleaned up in the parent afterEach().
-    });
-
     it('creates a hidden iframe sandbox', function () {
       var sandbox = instance.$sandbox;
       expect(sandbox instanceof HTMLIFrameElement).toBe(true);
@@ -141,10 +146,12 @@ describe('A Shell', function () {
 
     it('attaches an input event listener', function () {
       spyOn(instance, 'handleInput');
+      spyOn(instance, 'enableInput');
       spyOn(mongo, 'Readline').andCallThrough();
       var resID = 'iu';
       instance.attachInputHandler(resID);
       expect(instance.mwsResourceID).toBe(resID);
+      expect(instance.enableInput).toHaveBeenCalledWith(true);
       $rootElement.find('form').submit();
       expect(instance.handleInput).toHaveBeenCalled();
       expect(mongo.Readline).toHaveBeenCalledWith(instance.$input);
@@ -283,19 +290,13 @@ describe('A Shell', function () {
   describe('evaling JavaScript statements', function () {
     var evalSpy;
     beforeEach(function () {
-      // Cleaned up in parent afterEach
-      instance.injectHTML();
-      spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
-      evalSpy = instance.$sandbox.contentWindow.eval;
+      evalSpy = spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
 
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
-      spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(function (
-          onSuccess) {
-        onSuccess();
-      });
-      // TODO: eval() should be spied upon, however, I was unable to determine
-      // how to do that without making either jshint or jasmine angry.
+      spyOn(mongo.Cursor.prototype, '_executeQuery').andCallFake(
+        function (onSuccess) { onSuccess(); }
+      );
     });
 
     it('uses the sandbox to evalute the javascript', function () {

@@ -50,9 +50,10 @@ describe('The init function', function () {
 
   describe('for each web shell div in the DOM', function () {
     var SHELL_COUNT = 3;
-    var shellSpy, shellElements;
+    var shellElements;
 
     beforeEach(function () {
+      $('.' + CONST.css.classes.root).remove();
       shellElements = [];
       for (var i = 0; i < SHELL_COUNT; i++) {
         var element = document.createElement('div');
@@ -60,14 +61,6 @@ describe('The init function', function () {
         document.body.appendChild(element);
         shellElements[i] = element;
       }
-      shellSpy = jasmine.createSpyObj('Shell', [
-        'attachClickListener',
-        'attachInputHandler',
-        'enableInput',
-        'injectHTML',
-        'keepAlive'
-      ]);
-      spyOn(mongo, 'Shell').andReturn(shellSpy);
     });
 
     afterEach(function () {
@@ -78,35 +71,33 @@ describe('The init function', function () {
     });
 
     it('constructs a new shell', function () {
+      spyOn(mongo, 'Shell');
+
       mongo.init();
       expect(mongo.Shell.calls.length).toBe(SHELL_COUNT);
       shellElements.forEach(function (element, i) {
         expect(mongo.Shell).toHaveBeenCalledWith(element, i);
-        expect(mongo.shells[i]).toBeDefined();
       });
-      expect(shellSpy.injectHTML.calls.length).toBe(SHELL_COUNT);
-      expect(shellSpy.attachClickListener.calls.length).toBe(SHELL_COUNT);
     });
 
-    it('attaches and enables input handlers on mws resource creation',
-        function () {
+    it('attaches and enables input handlers on mws resource creation', function () {
+      var attachInputHandler = spyOn(mongo.Shell.prototype, 'attachInputHandler');
+      var keepAlive = spyOn(mongo.request, 'keepAlive');
+
       // Unsuccessful creation.
       mongo.init();
-      expect(shellSpy.attachInputHandler).not.toHaveBeenCalled();
-      expect(shellSpy.enableInput).not.toHaveBeenCalled();
+      expect(attachInputHandler).not.toHaveBeenCalled();
       jasmine.Clock.tick(mongo.const.keepAliveTime);
-      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
+      expect(keepAlive).not.toHaveBeenCalled();
 
       creationSuccess = true;
       mongo.init();
-      expect(shellSpy.attachInputHandler.calls.length).toBe(SHELL_COUNT);
-      expect(shellSpy.attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
-      expect(shellSpy.enableInput.calls.length).toBe(SHELL_COUNT);
-      expect(shellSpy.enableInput).toHaveBeenCalledWith(true);
+      expect(attachInputHandler.calls.length).toBe(SHELL_COUNT);
+      expect(attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
       jasmine.Clock.tick(mongo.const.keepAliveTime - 1);
-      expect(shellSpy.keepAlive).not.toHaveBeenCalled();
+      expect(keepAlive).not.toHaveBeenCalled();
       jasmine.Clock.tick(1);
-      expect(shellSpy.keepAlive).toHaveBeenCalled();
+      expect(keepAlive).toHaveBeenCalled();
     });
   });
 });

@@ -17,6 +17,9 @@ mongo.Shell = function (rootElement, shellID) {
     }
   };
   this.db = new mongo.DB(this, 'test');
+
+  this.injectHTML();
+  this.attachClickListener();
 };
 
 mongo.Shell.prototype.injectHTML = function () {
@@ -66,6 +69,7 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
     shell.handleInput();
   });
   this.readline = new mongo.Readline(this.$input);
+  this.enableInput(true);
 };
 
 /**
@@ -133,10 +137,6 @@ mongo.Shell.prototype.insertError = function (err) {
     err = 'ERROR: ' + err;
   }
   this.insertResponseLine(err);
-};
-
-mongo.Shell.prototype.keepAlive = function () {
-  mongo.request.keepAlive(this);
 };
 
 /**
