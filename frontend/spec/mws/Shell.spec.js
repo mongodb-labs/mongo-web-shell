@@ -33,7 +33,6 @@ describe('A Shell', function () {
 
     // Remove all existing shells from the page
     $('.' + CONST.css.classes.root).remove();
-    // We already had one on the page
     expectInternalLength(0);
     for (var i = 0; i < SHELL_COUNT; i++) {
       var $div = $('<div class=' + CONST.css.classes.root + '/>');

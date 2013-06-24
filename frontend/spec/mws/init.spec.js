@@ -53,21 +53,16 @@ describe('The init function', function () {
     var shellElements;
 
     beforeEach(function () {
-      $('.' + CONST.css.classes.root).remove();
       shellElements = [];
       for (var i = 0; i < SHELL_COUNT; i++) {
-        var element = document.createElement('div');
-        element.className = CONST.css.classes.root;
-        document.body.appendChild(element);
-        shellElements[i] = element;
+        var element = $('<div class=' + CONST.css.classes.root + '/>');
+        $('body').append(element);
+        shellElements.push(element.get(0));
       }
     });
 
     afterEach(function () {
-      shellElements.forEach(function (element) {
-        element.parentNode.removeChild(element);
-      });
-      shellElements = null;
+      $('.' + CONST.css.classes.root).remove();
     });
 
     it('constructs a new shell', function () {
