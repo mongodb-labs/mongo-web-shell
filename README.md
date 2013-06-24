@@ -12,7 +12,7 @@ __Requirements__:
 
 * [mongoDB][mongoDB install]
 * [node.js][]
-* Python 2.7
+* [Python 2.7]
 * [virtualenv][]
 
 After the above requirements are installed, clone the repo:
@@ -121,3 +121,4 @@ See the project [wiki][].
 [pep8]: https://github.com/jcrocholl/pep8
 [virtualenv]: http://www.virtualenv.org/en/latest/
 [wiki]: https://github.com/10gen-labs/mongo-web-shell/wiki
+[Python 2.7]: http://www.python.org/download/releases/2.7.5
