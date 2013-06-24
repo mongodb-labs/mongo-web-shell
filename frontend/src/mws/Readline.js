@@ -1,8 +1,10 @@
 /* global mongo */
 mongo.Readline = function ($input) {
   this.$input = $input;
-  this.history = localStorage[mongo.const.shellHistoryKey];
-  this.history = this.history ? JSON.parse(this.history) : []; // Newest entries at Array.length.
+  if (localStorage){
+    this.history = localStorage[mongo.const.shellHistoryKey];
+  }
+  this.history = this.history ? JSON.parse(this.history) : []; // Newest entries at Array.length
   this.historyIndex = this.history.length;
 
   var readline = this;
@@ -74,13 +76,15 @@ mongo.Readline.prototype.submit = function (line) {
   // TODO: Remove old entries if we've hit the limit.
   this.history.push(line);
 
-  var history = localStorage[mongo.const.shellHistoryKey];
-  history = history ? JSON.parse(history) : [];
-  history.push(line);
-  if (history.length > mongo.const.shellHistorySize){
-    history.shift();
+  if (localStorage){
+    var history = localStorage[mongo.const.shellHistoryKey];
+    history = history ? JSON.parse(history) : [];
+    history.push(line);
+    if (history.length > mongo.const.shellHistorySize){
+      history.shift();
+    }
+    localStorage[mongo.const.shellHistoryKey] = JSON.stringify(history);
   }
-  localStorage[mongo.const.shellHistoryKey] = JSON.stringify(history);
 
   this.historyIndex = this.history.length;
 };

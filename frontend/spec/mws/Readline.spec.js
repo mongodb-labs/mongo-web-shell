@@ -1,4 +1,4 @@
-/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine */
+/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine, localStorage:true */
 describe('A Readline instance', function () {
   var $input, instance;
 
@@ -257,6 +257,14 @@ describe('A Readline instance', function () {
       expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["0","1","2","3","4"]');
       instance.submit('bump');
       expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["1","2","3","4","bump"]');
+    });
+
+    it('fails gracefully when localStorage is not available', function(){
+      localStorage = undefined;
+      instance = new mongo.Readline($input);
+      expect(instance.history).toEqual([]);
+      instance.submit('command');
+      expect(instance.history).toEqual(['command']);
     });
   });
 });
