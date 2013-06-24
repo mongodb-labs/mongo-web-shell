@@ -77,6 +77,9 @@ mongo.Readline.prototype.submit = function (line) {
   var history = localStorage[mongo.const.shellHistoryKey];
   history = history ? JSON.parse(history) : [];
   history.push(line);
+  if (history.length > mongo.const.shellHistorySize){
+    history.shift();
+  }
   localStorage[mongo.const.shellHistoryKey] = JSON.stringify(history);
 
   this.historyIndex = this.history.length;

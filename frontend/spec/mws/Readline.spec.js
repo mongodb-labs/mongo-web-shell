@@ -248,5 +248,15 @@ describe('A Readline instance', function () {
       instance.submit('command');
       expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["command"]');
     });
+
+    it('limits history size', function(){
+      var size = mongo.const.shellHistorySize = 5;
+      for (var i = 0; i < size; i++){
+        instance.submit(i.toString());
+      }
+      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["0","1","2","3","4"]');
+      instance.submit('bump');
+      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["1","2","3","4","bump"]');
+    });
   });
 });

@@ -14,6 +14,7 @@ mongo.const = (function () {
     rootElementSelector: '.mongo-web-shell',
     scriptName: 'mongoWebShell.js',
     shellBatchSize: 20,
-    shellHistoryKey: 'mongo.history'
+    shellHistoryKey: 'mongo.history',
+    shellHistorySize: 500
   };
 }());
