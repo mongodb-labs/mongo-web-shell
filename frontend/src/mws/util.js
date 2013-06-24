@@ -39,19 +39,6 @@ mongo.util = (function () {
     }
   }
 
-  /**
-   * Uses the range indices in the given AST to divide the given source into
-   * individual statements and returns each statement as an entry in an array.
-   */
-  function sourceToStatements(src, ast) {
-    var statements = [];
-    ast.body.forEach(function (statementNode) {
-      var srcIndices = statementNode.range;
-      statements.push(src.substring(srcIndices[0], srcIndices[1]));
-    });
-    return statements;
-  }
-
   function getDBCollectionResURL(resID, collection) {
     return getDBResURL(resID) + collection + '/';
   }
@@ -179,7 +166,6 @@ mongo.util = (function () {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
     mergeObjects: mergeObjects,
-    sourceToStatements: sourceToStatements,
     getDBCollectionResURL: getDBCollectionResURL,
     getDBResURL: getDBResURL,
     pruneKeys: pruneKeys,
