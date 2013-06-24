@@ -111,6 +111,14 @@ describe('A Shell', function () {
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });
 
+    it('handles multiple arguments', function(){
+      instance.$input = {
+        val: function () {return 'print(1, null, undefined, {}, {a:1}, "abc")';}
+      };
+      instance.handleInput();
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('1 null undefined {} {"a":1} abc');
+    });
+
   });
 
   describe('that has injected its HTML', function () {
