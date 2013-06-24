@@ -129,30 +129,6 @@ describe('The util module', function () {
     expect(obj).toEqual({iu: 'jjang', gd: 'top'});
   });
 
-  it('divides source code into statements based on range indicies',
-      function () {
-    var expected, sourceArr;
-    expected = sourceArr = [
-      'db.inventory.find({qty: 50});',
-      'note that this does not need to be syntactically valid',
-      ''
-    ];
-    var source = sourceArr.join('');
-
-    var ast = {body: []};
-    var startInd = 0, endInd;
-    sourceArr.forEach(function (statement) {
-      endInd = startInd + statement.length;
-      ast.body.push({range: [startInd, endInd]});
-      startInd = endInd;
-    });
-
-    var statements = mongo.util.sourceToStatements(source, ast);
-    statements.forEach(function (statement, i) {
-      expect(statement).toBe(expected[i]);
-    });
-  });
-
   it('creates a resource URL from the given parameters', function () {
     var configStore = mongo.config;
     var gru = mongo.util.getDBCollectionResURL;
