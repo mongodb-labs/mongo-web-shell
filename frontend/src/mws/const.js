@@ -13,6 +13,8 @@ mongo.const = (function () {
     keepAliveTime: 30000,
     rootElementSelector: '.mongo-web-shell',
     scriptName: 'mongoWebShell.js',
-    shellBatchSize: 20
+    shellBatchSize: 20,
+    shellHistoryKey: 'mongo.history',
+    shellHistorySize: 500
   };
 }());

@@ -1,8 +1,10 @@
-/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine */
+/* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine, localStorage:true */
 describe('A Readline instance', function () {
   var $input, instance;
 
   beforeEach(function () {
+    mongo.const.shellHistoryKey = 'temporary_key';
+    delete localStorage[mongo.const.shellHistoryKey];
     $input = $(document.createElement('input'));
     instance = new mongo.Readline($input);
   });
@@ -10,6 +12,7 @@ describe('A Readline instance', function () {
   afterEach(function () {
     $input = null;
     instance = null;
+    delete localStorage[mongo.const.shellHistoryKey];
   });
 
   it('registers a keydown handler', function () {
@@ -229,6 +232,39 @@ describe('A Readline instance', function () {
       expect(instance.$input.val.calls.length).toEqual(2);
       expect(instance.$input.val.calls[0].args).toEqual([]);
       expect(instance.$input.val.calls[1].args).toEqual(['123']);
+    });
+  });
+
+  describe('saving local command history', function(){
+    it('loads on init', function(){
+      expect(instance.history).toEqual([]);
+      localStorage[mongo.const.shellHistoryKey] = '["1","2","3"]';
+      instance = new mongo.Readline($input);
+      expect(instance.history).toEqual(['1', '2', '3']);
+    });
+
+    it('saves on input', function(){
+      expect(instance.history).toEqual([]);
+      instance.submit('command');
+      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["command"]');
+    });
+
+    it('limits history size', function(){
+      var size = mongo.const.shellHistorySize = 5;
+      for (var i = 0; i < size; i++){
+        instance.submit(i.toString());
+      }
+      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["0","1","2","3","4"]');
+      instance.submit('bump');
+      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["1","2","3","4","bump"]');
+    });
+
+    it('fails gracefully when localStorage is not available', function(){
+      localStorage = undefined;
+      instance = new mongo.Readline($input);
+      expect(instance.history).toEqual([]);
+      instance.submit('command');
+      expect(instance.history).toEqual(['command']);
     });
   });
 });
