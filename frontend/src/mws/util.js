@@ -111,39 +111,51 @@ mongo.util = (function () {
   }
 
   function stringifyQueryResult(obj) {
-    var elements = [];
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        var val = obj[key];
-        var keyString = JSON.stringify(key);
-        var valString;
+    if (typeof obj === 'object'){
+      if (!obj){ return 'null'; }
 
-        // Rewrite ObjectId's in a pretty format
-        var isObjectId = typeof(val) === 'object' &&
-            arrayEqual(Object.keys(val), ['$oid']) &&
-            typeof(val.$oid) === 'string' &&
-            /^[0-9a-f]{24}$/.test(val.$oid);
+      if ($.isArray(obj)){
+        return '[' + obj.map(function(e){
+          return stringifyQueryResult(e);
+        }).join(',\n') + ']';
+      }
 
-        // Convert the value to string accordingly
-        if (isObjectId) {
-          valString = 'ObjectId("' + val.$oid + '")';
-        } else if (typeof(val) === 'object') {
-          // Recursively find all other ObjectID's
-          valString = stringifyQueryResult(val);
-        } else {
-          valString = JSON.stringify(val);
-        }
+      var elements = [];
+      for (var key in obj) {
+        if (obj.hasOwnProperty(key)) {
+          var val = obj[key];
+          var keyString = JSON.stringify(key);
+          var valString;
 
-        // Make sure _id comes first
-        var kvPair = keyString + ': ' + valString;
-        if (key === '_id') {
-          elements.unshift(kvPair);
-        } else {
-          elements.push(kvPair);
+          // Rewrite ObjectId's in a pretty format
+          var isObjectId = typeof(val) === 'object' &&
+              arrayEqual(Object.keys(val), ['$oid']) &&
+              typeof(val.$oid) === 'string' &&
+              /^[0-9a-f]{24}$/.test(val.$oid);
+
+          // Convert the value to string accordingly
+          if (isObjectId) {
+            valString = 'ObjectId("' + val.$oid + '")';
+          } else if (typeof(val) === 'object') {
+            // Recursively find all other ObjectID's
+            valString = stringifyQueryResult(val);
+          } else {
+            valString = JSON.stringify(val);
+          }
+
+          // Make sure _id comes first
+          var kvPair = keyString + ': ' + valString;
+          if (key === '_id') {
+            elements.unshift(kvPair);
+          } else {
+            elements.push(kvPair);
+          }
         }
       }
+      return '{' + elements.join(', ') + '}';
+    } else {
+      return String(obj);
     }
-    return '{' + elements.join(', ') + '}';
   }
 
   /**
