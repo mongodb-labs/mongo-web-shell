@@ -13,16 +13,21 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
     def test_create_mws_resource(self):
         url = '/mws/'
         rv = self.app.post(url)
-        response_dict = loads(rv.data)
-        self.assertIn('res_id', response_dict)
-        res_id = response_dict['res_id']
+        new_response_dict = loads(rv.data)
+        self.assertIn('res_id', new_response_dict)
+        res_id = new_response_dict['res_id']
+        is_new = new_response_dict['is_new']
         self.assertIsNotNone(res_id)
+        self.assertTrue(is_new)
 
         # check if res_id is unchanged
         rv = self.app.post(url)
-        new_res_id = loads(rv.data)['res_id']
+        new_response_dict = loads(rv.data)
+        new_res_id = new_response_dict['res_id']
+        new_is_new = new_response_dict['is_new']
         self.assertIsNotNone(new_res_id)
         self.assertEqual(res_id, new_res_id)
+        self.assertFalse(new_is_new)
 
     def test_create_mws_resource_new_session(self):
         url = '/mws/'
