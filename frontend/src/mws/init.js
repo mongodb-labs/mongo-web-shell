@@ -10,16 +10,19 @@ mongo.init = function () {
   mongo.util.enableConsoleProtection();
   var config = mongo.config = mongo.dom.retrieveConfig();
   mongo.dom.injectStylesheet(config.cssPath);
+  // For now, assume a single resource id for all shells
+  // Initialize all shells
   $(mongo.const.rootElementSelector).each(function (index, shellElement) {
-    var shell = new mongo.Shell(shellElement, index);
-    mongo.shells[index] = shell;
-    shell.injectHTML();
-    shell.attachClickListener();
-    mongo.request.createMWSResource(shell, function (data) {
+    mongo.shells[index] = new mongo.Shell(shellElement, index);
+  });
+  // Request a resource ID, give it to all the shells, and keep it alive
+  mongo.request.createMWSResource(mongo.shells, function (data) {
+    $.each(mongo.shells, function (i, shell) {
       shell.attachInputHandler(data.res_id);
-      shell.enableInput(true);
-      setInterval(function () { shell.keepAlive(); },
-          mongo.const.keepAliveTime);
     });
+    setInterval(
+      function () { mongo.request.keepAlive(data.res_id); },
+      mongo.const.keepAliveTime
+    );
   });
 };

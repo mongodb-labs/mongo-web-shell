@@ -44,7 +44,6 @@ module.exports = function (grunt) {
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
-            LIB_DIR + 'falafel/falafel.browser.js'
           ]
         }
       }

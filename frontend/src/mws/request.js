@@ -2,22 +2,26 @@
 /* global console, mongo, noty */
 mongo.request = (function () {
   /*
-   * Creates an MWS resource on the remote server. Calls onSuccess if the data
-   * received is valid. Otherwise, prints an error to the given shell.
+   * Creates an MWS resource for a set of shells on the remote server. Calls
+   * onSuccess if the data received is valid. Otherwise, prints an error to the
+   * given shells.
    */
-  function createMWSResource(shell, onSuccess) {
-    $.post(mongo.config.baseUrl, null, function (data, textStatus, jqXHR) {
+  function createMWSResource(shells, onSuccess) {
+    $.post(mongo.config.baseUrl, null,function (data, textStatus, jqXHR) {
       if (!data.res_id) {
-        shell.insertResponseLine('ERROR: No res_id recieved! Shell disabled.');
-        console.warn('No res_id received! Shell disabled.', data);
-        return;
+        $.each(shells, function (i, shell) {
+          shell.insertError('No res_id recieved! Shell disabled.');
+        });
+      } else {
+        console.info('/mws/' + data.res_id, 'was created succssfully.');
+        onSuccess(data);
       }
-      console.info('/mws/' + data.res_id, 'was created succssfully.');
-      onSuccess(data);
-    },'json').fail(function (jqXHR, textStatus, errorThrown) {
-      shell.insertResponseLine('Failed to create resources on DB on server');
-      console.error('AJAX request failed:', textStatus, errorThrown);
-    });
+    }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
+        $.each(shells, function (i, shell) {
+          shell.insertResponseLine('Failed to create resources on DB on server');
+          console.error('AJAX request failed:', textStatus, errorThrown);
+        });
+      });
   }
 
   function makeRequest(url, params, type, name, shell, onSuccess, async) {
@@ -52,24 +56,26 @@ mongo.request = (function () {
     });
   }
 
-  function keepAlive(shell) {
-    var url = mongo.config.baseUrl + shell.mwsResourceID + '/keep-alive';
-    $.post(url, null, function (data, textStatus, jqXHR) {
-        console.info('Keep-alive succesful');
-        if (mongo.keepaliveNotification){
-          mongo.keepaliveNotification.setText('and we\'re back!');
-          setTimeout(function(){mongo.keepaliveNotification.close();}, 1500);
-        }
-      }).fail(function (jqXHR, textStatus, errorThrown) {
+  function keepAlive(res_id) {
+    var url = mongo.config.baseUrl + res_id + '/keep-alive';
+    $.post(url, null,function (data, textStatus, jqXHR) {
+      console.info('Keep-alive succesful');
+      if (mongo.keepaliveNotification) {
+        mongo.keepaliveNotification.setText('and we\'re back!');
+        setTimeout(function () {
+          mongo.keepaliveNotification.close();
+        }, 1500);
+      }
+    }).fail(function (jqXHR, textStatus, errorThrown) {
         console.error('ERROR: keep alive failed: ' + errorThrown +
-                    ' STATUS: ' + textStatus);
-        if (!mongo.keepaliveNotification){
+          ' STATUS: ' + textStatus);
+        if (!mongo.keepaliveNotification) {
           mongo.keepaliveNotification = noty({
             layout: 'topCenter',
             type: 'warning',
             text: 'Lost connection with server\nreconnecting...',
             callback: {
-              afterClose: function(){
+              afterClose: function () {
                 delete mongo.keepaliveNotification;
               }
             }
