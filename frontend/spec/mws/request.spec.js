@@ -3,38 +3,35 @@
 describe('The request module', function () {
   var RES_URL = 'resURL/';
   var configStore;
+  var xhr, requests;
 
   beforeEach(function () {
     spyOn(mongo.util, 'getDBCollectionResURL').andReturn(RES_URL);
     spyOn(mongo.util, 'getDBResURL').andReturn(RES_URL);
     configStore = mongo.config;
     mongo.config = {};
+
+    xhr = sinon.useFakeXMLHttpRequest();
+    xhr.onCreate = function (xhr) { requests.push(xhr); };
+    requests = [];
   });
 
   afterEach(function () {
     mongo.config = configStore;
     configStore = null;
+
+    xhr.restore();
   });
 
   describe('making a request', function () {
-    var requests, xhr;
     var url_, data_, method_, name_, shell_;
 
     beforeEach(function () {
-      xhr = sinon.useFakeXMLHttpRequest();
-      xhr.onCreate = function (xhr) { requests.push(xhr); };
-      requests = [];
-
       url_ = 'http://test.com/';
       data_ = {test: 'my data'};
       method_ = 'POST';
       name_ = 'test';
       shell_ = {insertResponseLine: function () {}};
-    });
-
-    afterEach(function () {
-      requests = null;
-      xhr.restore();
     });
 
     it('uses the given url and HTTP method', function () {
@@ -105,23 +102,14 @@ describe('The request module', function () {
   });
 
   describe('keeps the session alive and', function(){
-    var requests, xhr, requestSuccess = function(success){
+    var requestSuccess = function(success){
       var shell = {mwsResourceID: 'my_resource'};
       mongo.request.keepAlive(shell);
       requests[0].respond(success ? 204 : 500, {}, null);
     };
 
     beforeEach(function(){
-      requests = [];
-      xhr = sinon.useFakeXMLHttpRequest();
-      xhr.onCreate = function (xhr) { requests.push(xhr); };
-      requests = [];
       noty = jasmine.createSpy();
-    });
-
-    afterEach(function(){
-      requests = null;
-      xhr.restore();
     });
 
     it('makes a keepalive request', function () {
@@ -177,19 +165,6 @@ describe('The request module', function () {
    * failure or success.
    */
   describe('creates a request that', function () {
-    var requests, xhr;
-
-    beforeEach(function () {
-      xhr = sinon.useFakeXMLHttpRequest();
-      xhr.onCreate = function (xhr) { requests.push(xhr); };
-      requests = [];
-    });
-
-    afterEach(function () {
-      requests = null;
-      xhr.restore();
-    });
-
     it('creates an MWS resource', function () {
       var baseUrl = '/mws/';
       mongo.config.baseUrl = baseUrl;
