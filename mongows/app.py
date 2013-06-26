@@ -8,6 +8,7 @@ import yaml
 
 from .mws import mws
 from .demo import demo
+from .initializers import initializers
 
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
@@ -74,3 +75,5 @@ def register_blueprints(app):
     app.register_blueprint(mws)
     if not app.config['NO_FRONTEND']:
         app.register_blueprint(demo)
+    if not app.config['NO_INIT']:
+        app.register_blueprint(initializers)

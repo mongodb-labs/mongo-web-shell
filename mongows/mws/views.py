@@ -107,6 +107,7 @@ def create_mws_resource():
     if cursor.count():
         # TODO: handle multiple res_id per session
         res_id = cursor[0]['res_id']
+        is_new = False
     else:
         res_id = generate_res_id()
         clients.insert({
@@ -116,7 +117,8 @@ def create_mws_resource():
             'session_id': session_id,
             'timestamp': datetime.now()
         })
-    return to_json({'res_id': res_id})
+        is_new = True
+    return to_json({'res_id': res_id, 'is_new': is_new})
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
