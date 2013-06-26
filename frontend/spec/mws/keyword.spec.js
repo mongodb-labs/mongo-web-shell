@@ -4,7 +4,7 @@ describe('The keyword module', function () {
   var shellSpy;
 
   beforeEach(function () {
-    shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
+    shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine', 'insertResponseArray']);
   });
 
   afterEach(function () {
@@ -95,5 +95,12 @@ describe('The keyword module', function () {
     var message = 'Cannot change db: functionality disabled.';
     mk.use(shellSpy);
     expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
+  });
+
+  describe('the help keyword', function(){
+    it('prints out the help message', function(){
+      mongo.keyword.help(shellSpy);
+      expect(shellSpy.insertResponseArray).toHaveBeenCalled();
+    });
   });
 });
