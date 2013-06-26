@@ -50,22 +50,15 @@ mongo.init = function () {
     if (initUrls.length !== 0 && data.is_new) {
       // Handle multiple initialization urls. Need to make sure all requests have
       // finished before we call finish setup
-      var isDone = [];
-      $.each(initUrls, function () {isDone.push(false); });
+      var doneCount = 0;
       var ensureAllRequestsDone = function () {
-        for (var i = 0; i < isDone.length; i++) {
-          if (!isDone[i]) {
-            return;
-          }
+        doneCount++;
+        if (doneCount === initUrls.length) {
+          finishSetup();
         }
-        finishSetup();
       };
-      $.map(initUrls, function (url, i) {
-        $.post(url, {res_id: data.res_id}, function () {
-          isDone[i] = true;
-          ensureAllRequestsDone();
-        });
-
+      $.each(initUrls, function (i, url) {
+        $.post(url, {res_id: data.res_id}, ensureAllRequestsDone);
       });
     } else {
       finishSetup();
