@@ -111,9 +111,7 @@ mongo.util = (function () {
   }
 
   function stringifyQueryResult(obj) {
-    if (typeof obj === 'object'){
-      if (!obj){ return 'null'; }
-
+    if (obj && typeof obj === 'object'){
       if ($.isArray(obj)){
         return '[' + obj.map(function(e){
           return stringifyQueryResult(e);
