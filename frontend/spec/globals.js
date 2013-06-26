@@ -3,7 +3,7 @@
  * This file contains various global variables that are used throughout
  * testing.
  */
-$.ready = function () {}; // Prevent mongo.init() from running.
+$.ready = function () {}; // Prevent mongo.init.run() from running.
 
 var CONST = {
   css: {

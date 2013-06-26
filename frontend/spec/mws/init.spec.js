@@ -35,18 +35,18 @@ describe('The init function', function () {
   });
 
   it('enables console protection', function () {
-    mongo.init();
+    mongo.init.run();
     expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
   });
 
   it('retrieves and sets the script configuration', function () {
-    mongo.init();
+    mongo.init.run();
     expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
     expect(mongo.config).toEqual(expected.config);
   });
 
   it('injects the web shell stylesheet', function () {
-    mongo.init();
+    mongo.init.run();
     expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
         expected.config.cssPath);
   });
@@ -71,7 +71,7 @@ describe('The init function', function () {
     it('constructs a new shell', function () {
       spyOn(mongo, 'Shell');
 
-      mongo.init();
+      mongo.init.run();
       expect(mongo.Shell.calls.length).toBe(SHELL_COUNT);
       shellElements.forEach(function (element, i) {
         expect(mongo.Shell).toHaveBeenCalledWith(element, i);
@@ -83,13 +83,13 @@ describe('The init function', function () {
       var keepAlive = spyOn(mongo.request, 'keepAlive');
 
       // Unsuccessful creation.
-      mongo.init();
+      mongo.init.run();
       expect(attachInputHandler).not.toHaveBeenCalled();
       jasmine.Clock.tick(mongo.const.keepAliveTime);
       expect(keepAlive).not.toHaveBeenCalled();
 
       creationSuccess = true;
-      mongo.init();
+      mongo.init.run();
       expect(attachInputHandler.calls.length).toBe(SHELL_COUNT);
       expect(attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
       jasmine.Clock.tick(mongo.const.keepAliveTime - 1);
@@ -115,7 +115,7 @@ describe('The init function', function () {
       it('sends a request to the specified location', function () {
         shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
         var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
-        mongo.init();
+        mongo.init.run();
 
         // The call to createMSWResource is mocked and did not make a request
         expect(requests.length).toEqual(1);
@@ -133,7 +133,7 @@ describe('The init function', function () {
         shellElements[1].setAttribute('data-initialization-url', '/my/second/url');
         shellElements[2].setAttribute('data-initialization-url', '/my/third/url');
         var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
-        mongo.init();
+        mongo.init.run();
 
         // The call to createMSWResource is mocked and did not make a request
         expect(requests.length).toEqual(3);
@@ -157,7 +157,7 @@ describe('The init function', function () {
       it('does not send duplicate requsets', function () {
         shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
         shellElements[1].setAttribute('data-initialization-url', '/my/url/path');
-        mongo.init();
+        mongo.init.run();
 
         // The call to createMSWResource is mocked and did not make a request
         expect(requests.length).toEqual(1);
@@ -167,7 +167,7 @@ describe('The init function', function () {
       it('only initializes if the resource id is new', function () {
         dataObj.is_new = false;
         shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
-        mongo.init();
+        mongo.init.run();
 
         expect(requests.length).toEqual(0);
       });
