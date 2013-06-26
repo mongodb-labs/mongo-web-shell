@@ -174,6 +174,11 @@ class DBCollectionTestCase(DBTestCase):
         }
         self._make_request('update', data, self.app.put, expected_status)
 
+    def make_aggregate_request(self, query=None, expected_status=200):
+        data = dumps(query)
+        return self._make_request('aggregate?%s' % data, None, self.app.get,
+                                  expected_status)
+
     def make_drop_request(self, expected_status=200):
         self._make_request('drop', None, self.app.delete, expected_status)
 
@@ -318,6 +323,37 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         result = self.db_collection.find()
         names = [r['name'] for r in result]
         self.assertItemsEqual(names, ['Mongo2', 'Mongo2', 'NotMongo'])
+
+
+class AggregateUnitTestCase(DBCollectionTestCase):
+    def test_aggregate(self):
+        for i in range(6):
+            self.db_collection.insert({'val': i})
+
+        query = [
+            {'$match': {'val': {'$lt': 5}}},
+            {'$sort': {'val': -1}},
+            {'$skip': 1},
+            {'$limit': 2}
+        ]
+        self.db_collection.aggregate(query)
+
+        result = self.make_aggregate_request(query)
+        self.assertEqual(result['ok'], 1)
+        result = result['result']
+        self.assertEqual(len(result), 2)
+        self.assertEqual([x['val'] for x in result], [3, 2])
+
+    def test_invalid_find_session(self):
+        self.set_session_id('invalid_id')
+        query = [{'$match': {'val': {'$lt': 5}}}]
+        result = self.make_aggregate_request(query, expected_status=403)
+        error = {
+            'error': 403,
+            'reason': 'Session error. User does not have access to res_id',
+            'detail': '',
+        }
+        self.assertEqual(result, error)
 
 
 class DropUnitTestCase(DBCollectionTestCase):
