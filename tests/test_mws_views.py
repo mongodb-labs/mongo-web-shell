@@ -5,6 +5,8 @@ from mongows.mws.db import get_db
 from mongows.mws.views import get_internal_coll_name, ratelimit
 from flask import session
 
+from pymongo.errors import OperationFailure
+
 from tests import MongoWSTestCase
 from mongows.mws.views import CLIENTS_COLLECTION
 
@@ -343,6 +345,14 @@ class AggregateUnitTestCase(DBCollectionTestCase):
         result = result['result']
         self.assertEqual(len(result), 2)
         self.assertEqual([x['val'] for x in result], [3, 2])
+
+    def test_invalid_query(self):
+        result = self.make_aggregate_request({}, expected_status=400)
+        self.assertEqual(result['error'], 400)
+
+        with self.assertRaises(OperationFailure) as cm:
+            self.db_collection.aggregate({})
+        self.assertEqual(cm.exception.message, result['reason'])
 
     def test_invalid_find_session(self):
         self.set_session_id('invalid_id')
