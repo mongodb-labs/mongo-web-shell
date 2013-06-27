@@ -27,6 +27,7 @@
 
 .mws-response-list li {
   margin: 3px 0;
+  white-space: pre-wrap;
 }
 
 .mws-form {
