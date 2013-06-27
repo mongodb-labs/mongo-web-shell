@@ -115,7 +115,7 @@ mongo.util = (function () {
       if ($.isArray(obj)){
         return '[' + obj.map(function(e){
           return stringifyQueryResult(e);
-        }).join(',\n') + ']';
+        }).join(', ') + ']';
       }
 
       var elements = [];

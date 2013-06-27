@@ -329,7 +329,7 @@ describe('The util module', function () {
 
     it('prints arrays', function(){
       var result = mongo.util.stringifyQueryResult([1, 2, 'red', 'blue']);
-      expect(result).toEqual('[1,\n2,\nred,\nblue]');
+      expect(result).toEqual('[1, 2, red, blue]');
     });
   });
 
