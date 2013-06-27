@@ -12,8 +12,7 @@ var CONST = {
       internal: [
         'mws-response-list',
         'mws-input-li',
-        'mws-form',
-        'mws-input'
+        'CodeMirror'
       ],
       responseList: 'mws-response-list'
     }

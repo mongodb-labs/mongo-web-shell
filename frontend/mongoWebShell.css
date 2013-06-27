@@ -5,8 +5,8 @@
 }
 
 .mongo-web-shell, .mongo-web-shell * {
-  background-color: #000000;
-  color: #00e500;
+  background-color: #DADADA;
+  color: #252525;
   font-size: 15px;
   font-family: monospace;
 }
@@ -29,19 +29,16 @@
   margin: 3px 0;
 }
 
-.mws-form {
+.mws-input-li {
+  vertical-align: top;
+  line-height: 26px;
+}
+
+.mws-plain-result {
+  padding-left: 4px;
+}
+
+.CodeMirror {
+  height: auto !important;
   display: inline-block;
-  margin-left: 1ex; /* Space before the PS1 */
-  width: 95%; /* TODO: This doesn't fill the space properly. */
-}
-
-.mws-input {
-  border: none;
-  width: 95%;
-  padding: 0;
-  margin: 0;
-}
-
-.mws-input:focus {
-  outline: none;
 }

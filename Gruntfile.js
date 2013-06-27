@@ -23,11 +23,21 @@ module.exports = function (grunt) {
           LIB_DIR + 'noty/js/noty/layouts/top.js',
           LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
           LIB_DIR + 'noty/js/noty/themes/default.js',
+          LIB_DIR + 'codemirror/lib/codemirror.js',
+          LIB_DIR + 'codemirror/mode/javascript/javascript.js',
+          LIB_DIR + 'codemirror/addon/edit/matchbrackets.js',
           SRC_DIR + 'head.js',
           SRC_DIR + 'mws/**/*.js',
           SRC_DIR + 'tail.js'
         ],
         dest: DIST_DIR + 'mongoWebShell.js'
+      },
+      css: {
+        src: [
+          LIB_DIR + 'codemirror/lib/codemirror.css',
+          FRONTEND_DIR + 'mongoWebShell.css'
+        ],
+        dest: DIST_DIR + 'mongoWebShell.css'
       }
     },
 
@@ -44,6 +54,9 @@ module.exports = function (grunt) {
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+          ],
+          styles: [
+            DIST_DIR + 'mongoWebShell.css'
           ]
         }
       }
@@ -61,7 +74,11 @@ module.exports = function (grunt) {
     watch: {
       dist: {
         files: [SRC_DIR + '**/*'],
-        tasks: ['default']
+        tasks: ['concat:dist']
+      },
+      css: {
+        files: [FRONTEND_DIR + 'mongoWebShell.css'],
+        tasks: ['concat:css']
       }
     },
 

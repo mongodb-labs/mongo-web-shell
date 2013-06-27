@@ -1,10 +1,10 @@
-/* jshint evil: true */
-/* global console, mongo */
+/* jshint evil: true, newcap: false */
+/* global console, mongo, CodeMirror */
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
   this.$responseList = null;
   this.$inputLI = null;
-  this.$input = null;
+  this.codemirror = null;
 
   this.id = shellID;
   this.mwsResourceID = null;
@@ -30,16 +30,16 @@ mongo.Shell.prototype.injectHTML = function () {
       '<ul class="mws-response-list">' +
         '<li>' + this.$rootElement.html() + '</li>' +
         '<li class="mws-input-li">' +
-          '&gt;' +
-          '<form class="mws-form">' +
-            '<input type="text" class="mws-input" disabled="true">' +
-          '</form>' +
+          '> ' +
         '</li>' +
       '</ul>';
   this.$rootElement.html(html);
   this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.mws-input-li');
-  this.$input = this.$inputLI.find('.mws-input');
+  this.codemirror = CodeMirror(this.$inputLI.get(0), {
+    matchBrackets: true,
+    readOnly: 'nocursor'
+  });
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
@@ -58,19 +58,15 @@ mongo.Shell.prototype.injectHTML = function () {
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
-  this.$rootElement.click(this.onClick.bind(this));
+  this.$rootElement.click(function () {
+    this.codemirror.focus();
+    this.codemirror.refresh();
+  }.bind(this));
 };
 
-mongo.Shell.prototype.onClick = function () { this.$input.focus(); };
-
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
-  var shell = this;
   this.mwsResourceID = mwsResourceID;
-  this.$rootElement.find('form').submit(function (e) {
-    e.preventDefault();
-    shell.handleInput();
-  });
-  this.readline = new mongo.Readline(this.$input);
+  this.readline = new mongo.Readline(this.codemirror, this.handleInput.bind(this));
   this.enableInput(true);
 };
 
@@ -79,9 +75,9 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 mongo.Shell.prototype.handleInput = function () {
-  var userInput = this.$input.val();
-  this.$input.val('');
-  this.insertResponseLine('> ' + userInput);
+  var userInput = this.codemirror.getValue();
+  this.codemirror.setValue('');
+  this.insertResponseLine(userInput, '> ');
 
   if (mongo.keyword.handleKeywords(this, userInput)) {
     return;
@@ -112,7 +108,8 @@ mongo.Shell.prototype.eval = function (src) {
 };
 
 mongo.Shell.prototype.enableInput = function (bool) {
-  this.$input.get(0).disabled = !bool;
+  var readOnly = bool ? false : 'nocursor';
+  this.codemirror.setOption('readOnly', readOnly);
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
@@ -121,10 +118,23 @@ mongo.Shell.prototype.insertResponseArray = function (data) {
   }
 };
 
-mongo.Shell.prototype.insertResponseLine = function (data) {
+mongo.Shell.prototype.insertResponseLine = function (data, prepend) {
   var li = document.createElement('li');
-  li.innerHTML = mongo.util.toString(data);
   this.$inputLI.before(li);
+  if (prepend) {
+    li.innerHTML = prepend;
+  }
+  if (typeof(data) === 'string' && !prepend) {
+    // If we're printing an output and it's a string, don't highlight
+    li.innerHTML = mongo.util.toString(data);
+    li.className = 'mws-plain-result';
+  } else {
+    var cm = CodeMirror(li, {
+      readOnly: true,
+      value: mongo.util.toString(data)
+    });
+    cm.refresh();
+  }
 
   // Reset scroll distance so the <input> is not hidden at the bottom.
   this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
