@@ -50,7 +50,16 @@ mongo.keyword = (function () {
     shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
+  var resetHasBeenCalled = false;
   function reset(shell){
+    if (!resetHasBeenCalled || !shell.readline.getLastCommand().match(/^reset\b/)){
+      shell.insertResponseArray([
+        'You will lose all of your current data.',
+        'Please enter "reset" again to reset the shell.'
+      ]);
+      resetHasBeenCalled = true;
+      return;
+    }
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
     mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, function(){
       mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
