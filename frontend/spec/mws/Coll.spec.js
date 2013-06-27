@@ -227,6 +227,11 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/aggregate');
     });
 
+    it('takes empty params', function(){
+      coll.aggregate();
+      expect(makeRequest.calls[0].args[1]).toEqual([]);
+    });
+
     it('constructs appropriate params', function () {
       var query = [{$match: {}}];
       coll.aggregate(query);

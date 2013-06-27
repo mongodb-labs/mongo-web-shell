@@ -103,7 +103,7 @@ mongo.Coll.prototype.drop = function () {
  * message is printed and an error is thrown.
  */
 mongo.Coll.prototype.aggregate = function(query){
-  query = query || {};
+  query = query || [];
   var url = this.urlBase + 'aggregate';
   var onSuccess = function(data){
     this.shell.insertResponseLine(mongo.util.stringifyQueryResult(data));
