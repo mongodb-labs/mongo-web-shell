@@ -58,12 +58,13 @@ mongo.keyword = (function () {
       '    db.foo.find()                  list objects in collection foo',
       '    db.foo.find(query)             list objects in foo matching query',
       '    db.foo.update(query, update,   updates an object matching query with the given update',
-      '                  upsert, multi)   if no documents match and upsert is true, update is inserted',
-      '                                   if multiple documents matching query exist and multi is true',
-      '                                   all matching documents are updated',
+      '                  upsert, multi)   if no documents match and upsert is true, update is',
+      '                                   inserted if multiple documents matching query exist and',
+      '                                   multi is true all matching documents are updated',
       '    db.foo.remove(query, justOne)  removes all or just one documents matching query',
       '    db.foo.drop()                  removes the foo collection from the database',
-      '    it                             result of the last line evaluated; use to further iterate',
+      '    it                             result of the last line evaluated; use to further' +
+                                          'iterate',
       '    reset                          resets the database to its initial state'
     ]);
   }
