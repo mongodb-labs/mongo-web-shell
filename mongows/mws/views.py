@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from functools import update_wrapper
 import uuid
 
+from bson import BSON
 from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
@@ -168,6 +169,28 @@ def db_collection_insert(res_id, collection_name):
         error = '\'document\' argument not found in the insert request.'
         return err(400, error)
 
+    # Check quota
+    coll = get_internal_coll_name(res_id, collection_name)
+    try:
+        size = db.get_db().command({'collstats': coll})['size']
+    except OperationFailure as e:
+        if 'ns not found' in e.message:
+            size = 0
+        else:
+            return err(500, e.message)
+
+    # Handle inserting both a list of docs or a single doc
+    if isinstance(document, list):
+        req_size = 0
+        for d in document:
+            req_size += len(BSON.encode(d))
+    else:
+        req_size = len(BSON.encode(document))
+
+    if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
+        return err(403, 'Collection size exceeded')
+
+    # Insert document
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
     db.get_db()[internal_coll_name].insert(document)
     insert_client_collection(res_id, collection_name)
@@ -209,8 +232,27 @@ def db_collection_update(res_id, collection_name):
         error = 'update requires spec and document arguments'
         return err(400, error)
 
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    db.get_db()[internal_coll_name].update(query, update, upsert, multi=multi)
+    # Check quota
+    coll = get_internal_coll_name(res_id, collection_name)
+    try:
+        size = db.get_db().command({'collstats': coll})['size']
+    except OperationFailure as e:
+        if 'ns not found' in e.message:
+            size = 0
+        else:
+            return err(500, e.message)
+
+    # Computation of worst case size increase - update size * docs affected
+    # It would be nice if we were able to make a more conservative estimate
+    # of the space difference that an update will cause. (especially if it
+    # results in smaller documents)
+    req_size = len(BSON.encode(update)) * db.get_db()[coll].find(query).count()
+
+    if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
+        return err(403, 'Collection size exceeded')
+
+    # Update
+    db.get_db()[coll].update(query, update, upsert, multi=multi)
     insert_client_collection(res_id, collection_name)
 
     return empty_success()
