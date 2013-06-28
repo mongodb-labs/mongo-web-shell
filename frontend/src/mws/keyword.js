@@ -1,3 +1,4 @@
+/* jshint camelcase: false */
 /* global console, mongo */
 mongo.keyword = (function () {
   function handleKeywords(shell, src) {
@@ -49,6 +50,24 @@ mongo.keyword = (function () {
     shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
+  var resetHasBeenCalled = false;
+  function reset(shell){
+    if (!resetHasBeenCalled || !shell.readline.getLastCommand().match(/^reset\b/)){
+      shell.insertResponseArray([
+        'You will lose all of your current data.',
+        'Please enter "reset" again to reset the shell.'
+      ]);
+      resetHasBeenCalled = true;
+      return;
+    }
+    var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
+    mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, function(){
+      mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
+        shell.insertResponseLine('Database reset successfully');
+      });
+    });
+  }
+
   function help(shell){
     shell.insertResponseArray([
       '    help                           print out this help information',
@@ -74,6 +93,7 @@ mongo.keyword = (function () {
     it: it,
     show: show,
     use: use,
+    reset: reset,
     help: help
   };
 }());

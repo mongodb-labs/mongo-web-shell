@@ -121,7 +121,7 @@ class DBTestCase(MongoWSTestCase):
         if data:
             data = dumps({k: v for k, v in data.iteritems() if v is not None})
         result = method(url, data=data, content_type='application/json')
-        result_dict = loads(result.data)
+        result_dict = loads(result.data) if result.data else {}
         actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" %
@@ -131,6 +131,10 @@ class DBTestCase(MongoWSTestCase):
     def make_get_collection_names_request(self, expected_status=200):
         return self._make_request('getCollectionNames', None, self.app.get,
                                   expected_status)
+
+    def make_db_drop_request(self, expected_status=204):
+        self.make_request_url = '/mws/%s/db%%s' % (self.res_id)
+        return self._make_request('', None, self.app.delete, expected_status)
 
 
 class DBCollectionTestCase(DBTestCase):
@@ -421,6 +425,28 @@ class GetCollectionNamesUnitTestCase(DBTestCase):
         self.make_request_url = '/mws/%s/db/%%s' % (new_resid)
         result = self.make_get_collection_names_request()['result']
         self.assertEqual(result, ['test2'])
+
+
+class DropDBUnitTestCase(DBTestCase):
+    def test_drop_db(self):
+        testdoc = {'name': 'Mongo'}
+        colls = ['a', 'b', 'c']
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
+                                           {'$addToSet':
+                                           {'collections': {'$each': colls}}})
+        colls = [get_internal_coll_name(self.res_id, c) for c in colls]
+        for c in colls:
+            self.db[c].insert(testdoc)
+
+        actual_colls = self.db.collection_names()
+        for c in colls:
+            self.assertIn(c, actual_colls)
+
+        self.make_db_drop_request()
+
+        actual_colls = self.db.collection_names()
+        for c in colls:
+            self.assertNotIn(c, actual_colls)
 
 
 class IntegrationTestCase(DBCollectionTestCase):

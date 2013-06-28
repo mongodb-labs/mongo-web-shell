@@ -111,3 +111,7 @@ mongo.Readline.prototype.moveCursorToEnd = function() {
     }
   }, 0);
 };
+
+mongo.Readline.prototype.getLastCommand = function(){
+  return this.history[this.history.length - 1];
+};

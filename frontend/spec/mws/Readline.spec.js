@@ -267,4 +267,16 @@ describe('A Readline instance', function () {
       expect(instance.history).toEqual(['command']);
     });
   });
+
+  describe('getting the last command', function(){
+    it('handles empty history', function(){
+      instance.history = [];
+      expect(instance.getLastCommand()).toBe(undefined);
+    });
+
+    it('returns the last command', function(){
+      instance.history = ['1', '2', '3'];
+      expect(instance.getLastCommand()).toEqual('3');
+    });
+  });
 });
