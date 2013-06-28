@@ -6,9 +6,10 @@
  * required by the web shell, including the mws REST resource, the mws
  * CSS stylesheets, and calls any initialization urls
  */
-mongo.init = {
-  initUrls: {},
-  run: function () {
+mongo.init = (function(){
+  var initializationUrls = {};
+
+  var run = function () {
     mongo.util.enableConsoleProtection();
     var config = mongo.config = mongo.dom.retrieveConfig();
     mongo.dom.injectStylesheet(config.cssPath);
@@ -49,7 +50,7 @@ mongo.init = {
         });
       };
 
-      mongo.init.initUrls[data.res_id] = initUrls;
+      initializationUrls[data.res_id] = initUrls;
 
       if (data.is_new){
         mongo.init.runInitializationScripts(data.res_id, finishSetup);
@@ -57,9 +58,10 @@ mongo.init = {
         finishSetup();
       }
     });
-  },
-  runInitializationScripts: function(res_id, callback){
-    var initUrls = mongo.init.initUrls[res_id];
+  };
+
+  var runInitializationScripts = function(res_id, callback){
+    var initUrls = initializationUrls[res_id];
     if (initUrls.length !== 0){
       // Handle multiple initialization urls. Need to make sure all requests have
       // finished before we call finish setup
@@ -76,5 +78,10 @@ mongo.init = {
     } else {
       callback();
     }
-  }
-};
+  };
+
+  return {
+    run: run,
+    runInitializationScripts: runInitializationScripts
+  };
+})();
