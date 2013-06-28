@@ -96,3 +96,17 @@ mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
 };
+
+/**
+ * Makes an aggregation request to the mongod instance on the backing server.
+ * On success, the result of the aggregation is returned, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.aggregate = function(query){
+  query = query || [];
+  var url = this.urlBase + 'aggregate';
+  var onSuccess = function(data){
+    this.shell.insertResponseLine(mongo.util.stringifyQueryResult(data));
+  }.bind(this);
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, onSuccess);
+};

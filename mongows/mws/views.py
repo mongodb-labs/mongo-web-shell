@@ -9,6 +9,8 @@ from flask import session
 from . import db
 from werkzeug.exceptions import BadRequest
 
+from pymongo.errors import OperationFailure
+
 from .util import get_internal_coll_name
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
@@ -210,6 +212,20 @@ def db_collection_update(res_id, collection_name):
     insert_client_collection(res_id, collection_name)
 
     return to_json({})
+
+
+@mws.route('/<res_id>/db/<collection_name>/aggregate',
+           methods=['GET', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+def db_collection_aggregate(res_id, collection_name):
+    parse_get_json(request)
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    try:
+        result = db.get_db()[internal_coll_name].aggregate(request.json)
+        return to_json(result)
+    except OperationFailure as e:
+        return err(400, e.message)
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop',

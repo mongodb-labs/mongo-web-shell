@@ -310,6 +310,27 @@ describe('The util module', function () {
       '}';
       expect(str).toEqual(exp);
     });
+
+    it('prints nonobjects', function(){
+      [
+        ['mongo', 'mongo'],
+        [123, '123'],
+        [false, 'false'],
+        [true, 'true']
+      ].forEach(function(e){
+        expect(mongo.util.stringifyQueryResult(e[0])).toEqual(e[1]);
+      });
+    });
+
+    it('works on null and undefined values', function () {
+      expect(mongo.util.stringifyQueryResult(null)).toEqual('null');
+      expect(mongo.util.stringifyQueryResult(undefined)).toEqual('undefined');
+    });
+
+    it('prints arrays', function(){
+      var result = mongo.util.stringifyQueryResult([1, 2, 'red', 'blue']);
+      expect(result).toEqual('[1, 2, red, blue]');
+    });
   });
 
   describe('member getter', function () {

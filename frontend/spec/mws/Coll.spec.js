@@ -220,6 +220,35 @@ describe('The Collection class', function () {
     });
   });
 
+  describe('aggregate', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.aggregate([{$match: {}}]);
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/aggregate');
+    });
+
+    it('takes empty params', function(){
+      coll.aggregate();
+      expect(makeRequest.calls[0].args[1]).toEqual([]);
+    });
+
+    it('constructs appropriate params', function () {
+      var query = [{$match: {}}];
+      coll.aggregate(query);
+      expect(makeRequest.calls[0].args[1]).toEqual(query);
+    });
+
+    it('uses the GET HTTP method', function () {
+      coll.aggregate({}, {});
+      expect(makeRequest.calls[0].args[2]).toEqual('GET');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.aggregate({}, {});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+  });
+
   describe('drop', function () {
     it('uses the collection url', function () {
       coll.urlBase = 'test_url_base/';
