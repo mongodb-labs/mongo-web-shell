@@ -1,4 +1,4 @@
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn, sinon */
 describe('The keyword module', function () {
   var mk = mongo.keyword;
   var shellSpy;
@@ -97,10 +97,64 @@ describe('The keyword module', function () {
     expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
   });
 
+  describe('the reset keyword', function(){
+    beforeEach(function(){
+      shellSpy.readline = jasmine.createSpyObj('Readline', ['getLastCommand']);
+      shellSpy.readline.getLastCommand.andReturn('not reset');
+    });
+
+    it('requires confirmation on first run', function(){
+      spyOn(mongo.request, 'makeRequest');
+      shellSpy.readline.getLastCommand.andReturn('reset');
+      mongo.keyword.reset(shellSpy);
+      expect(mongo.request.makeRequest).not.toHaveBeenCalled();
+    });
+
+    it('confirms before reset', function(){
+      spyOn(mongo.request, 'makeRequest');
+      shellSpy.readline.getLastCommand.andReturn('not reset');
+      mongo.keyword.reset(shellSpy);
+      expect(mongo.request.makeRequest).not.toHaveBeenCalled();
+    });
+
+    describe('assuming the reset is confirmed', function(){
+      var xhr, requests = [];
+
+      beforeEach(function(){
+        xhr = sinon.useFakeXMLHttpRequest();
+        xhr.onCreate = function (xhr) { requests.push(xhr); };
+
+        shellSpy.readline.getLastCommand.andReturn('reset');
+        mongo.config = {baseUrl: '/test_url/'};
+        shellSpy.mwsResourceID = 'test_res_id';
+        mongo.keyword.reset(shellSpy);
+      });
+
+      it('drops the database', function(){
+        spyOn(mongo.request, 'makeRequest');
+        mongo.keyword.reset(shellSpy);
+        expect(mongo.request.makeRequest.calls[0].args[0]).toEqual('/test_url/test_res_id/db');
+        expect(mongo.request.makeRequest.calls[0].args[2]).toEqual('DELETE');
+        expect(mongo.request.makeRequest.calls[0].args[4]).toBe(shellSpy);
+      });
+
+      it('runs the initialization scripts', function(){
+        spyOn(mongo.init, 'runInitializationScripts');
+
+        mongo.keyword.reset(shellSpy);
+        requests[0].respond(204);
+        expect(mongo.init.runInitializationScripts).toHaveBeenCalled();
+
+        xhr.restore();
+      });
+    });
+  });
+
   describe('the help keyword', function(){
     it('prints out the help message', function(){
       mongo.keyword.help(shellSpy);
       expect(shellSpy.insertResponseArray).toHaveBeenCalled();
     });
   });
+
 });

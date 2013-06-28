@@ -1,2 +1,2 @@
 /* global mongo */
-$(document).ready(mongo.init);
+$(document).ready(mongo.init.run);

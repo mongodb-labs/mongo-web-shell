@@ -250,6 +250,19 @@ def db_get_collection_names(res_id):
     return to_json({'result': names[0]['collections']})
 
 
+@mws.route('/<res_id>/db',
+           methods=['DELETE', 'OPTIONS'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+def db_drop(res_id):
+    DB = db.get_db()
+    colls = DB.clients.find({'res_id': res_id}, {'collections': 1, '_id': 0})
+    for c in colls[0]['collections']:
+        DB.drop_collection(get_internal_coll_name(res_id, c))
+
+    return err(204, '')
+
+
 def generate_res_id():
     return str(uuid.uuid4())
 
