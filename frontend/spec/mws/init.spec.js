@@ -188,17 +188,15 @@ describe('The init function', function () {
         xhr.restore();
       });
 
-      // Todo: Test with a url
-
       it('condenses and inserts the json data into the database', function () {
         var firstJson = JSON.stringify({foo: [{msg: 'hi'}]});
         var secondJson = JSON.stringify({bar: [{baz: 'garply'}]});
         var expected = JSON.stringify({
+          res_id: dataObj.res_id,
           collections: {
             foo: [{msg: 'hi'}],
             bar: [{baz: 'garply'}, {baz: 'garply'}]
-          },
-          res_id: dataObj.res_id
+          }
         });
         shellElements[0].setAttribute('data-initialization-json', firstJson);
         shellElements[1].setAttribute('data-initialization-json', secondJson);
@@ -216,6 +214,58 @@ describe('The init function', function () {
         expect(attachInput).not.toHaveBeenCalled();
         requests[0].respond(204, '', '');
         expect(attachInput).toHaveBeenCalled();
+      });
+
+      it('fetches remote json', function () {
+        var localData = JSON.stringify({
+          coll: [{data: 'local'}]
+        });
+        var remoteData = JSON.stringify({
+          coll: [{data: 'remote'}]
+        });
+        var totalData = JSON.stringify({
+          res_id: dataObj.res_id,
+          collections: {
+            coll: [{data: 'local'}, {data: 'remote'}]
+          }
+        });
+        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
+        shellElements[1].setAttribute('data-initialization-json', localData);
+        mongo.init.run();
+
+        // Fetches remote json
+        expect(requests.length).toEqual(1);
+        expect(requests[0].url).toEqual('/my/json/url');
+        requests[0].respond(200, {'Content-Type': 'application/json'}, remoteData);
+
+        // Makes request to load in json
+        expect(requests.length).toEqual(2);
+        expect(requests[1].requestBody).toEqual(totalData);
+        requests[1].respond(204, '', '');
+
+        // Remote json is kept locally
+        mongo.init.runInitializationScripts(dataObj.res_id, function () {});
+        expect(requests.length).toEqual(3);
+        expect(requests[2].requestBody).toEqual(totalData);
+      });
+
+      it('handles remote json without proper headers', function () {
+        var remoteData = JSON.stringify({coll: [{data: 'remote'}]});
+        var totalData = JSON.stringify({
+          res_id: dataObj.res_id,
+          collections: {coll: [{data: 'remote'}]}
+        });
+        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
+        mongo.init.run();
+
+        // Fetches remote json
+        expect(requests.length).toEqual(1);
+        expect(requests[0].url).toEqual('/my/json/url');
+        requests[0].respond(200, null, remoteData);
+
+        // Makes request to load in json
+        expect(requests.length).toEqual(2);
+        expect(requests[1].requestBody).toEqual(totalData);
       });
 
       it('only initializes if the resource id is new', function () {

@@ -7,6 +7,7 @@ from mongows.initializers.util import (
 )
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId
+from mongows.mws.views import CLIENTS_COLLECTION
 from tests import MongoWSTestCase
 
 
@@ -19,6 +20,40 @@ class UseResIdTestCase(MongoWSTestCase):
                 self.assertEqual(coll.name, 'myresid.foo')
             coll = db.foo
             self.assertEqual(coll.name, 'foo')
+
+    def test_updates_collection_list(self):
+        with self.real_app.app_context():
+            db = get_db()
+            res_id = 'myresid.'
+
+            # Setup resource id record
+            clients_collection = db[CLIENTS_COLLECTION]
+            clients_collection.remove({'res_id': res_id})
+            clients_collection.insert({
+                'res_id': res_id,
+                'collections': []
+            })
+
+            def get_collections():
+                return clients_collection.find(
+                    {'res_id': res_id},
+                    {'_id': 0, 'collections': 1}
+                )[0]['collections']
+
+            with UseResId(res_id):
+                self.assertItemsEqual(get_collections(), [])
+                db.foo.insert({'message': 'test'})
+                self.assertItemsEqual(get_collections(), ['foo'])
+
+                db.bar.update({}, {'message': 'test'})
+                self.assertItemsEqual(get_collections(), ['foo'])
+                db.bar.update({}, {'message': 'test'}, upsert=True)
+                self.assertItemsEqual(get_collections(), ['foo', 'bar'])
+
+                db.foo.drop()
+                self.assertItemsEqual(get_collections(), ['bar'])
+                db.drop_collection('bar')
+                self.assertItemsEqual(get_collections(), [])
 
 
 class InitializersTestCase(MongoWSTestCase):
