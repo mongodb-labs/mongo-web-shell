@@ -1,5 +1,5 @@
 /* jshint camelcase: false */
-/* global mongo */
+/* global mongo, console */
 /**
  * Injects a mongo web shell into the DOM wherever an element of class
  * 'mongo-web-shell' can be found. Additionally sets up the resources
@@ -15,12 +15,21 @@ mongo.init = (function(){
     mongo.dom.injectStylesheet(config.cssPath);
 
     var initUrls = [];
+    var initJsons = [];
     // For now, assume a single resource id for all shells
     // Initialize all shells and grab any initialization urls
     $(mongo.const.rootElementSelector).each(function (index, shellElement) {
       var initUrl = shellElement.getAttribute('data-initialization-url');
       if (initUrl) {
         initUrls.push(initUrl);
+      }
+      var initJson = shellElement.getAttribute('data-initialization-json');
+      if (initJson) {
+        try {
+          initJsons.push(JSON.parse(initJson));
+        } catch (e) {
+          console.error('Unable to parse initialization json: ' + initJson);
+        }
       }
       mongo.shells[index] = new mongo.Shell(shellElement, index);
     });
@@ -37,6 +46,28 @@ mongo.init = (function(){
     }
     initUrls = unique;
 
+    // Condense JSON to a single object
+    // The JSON should be a top level object in which the keys are collection
+    // names which map to an array of documents which are to be inserted into
+    // the specified collection.
+    var condensedJson = {};
+    for (var j = 0; j < initJsons.length; j++) {
+      var initJson = initJsons[j];
+      for (var collection in  initJson) {
+        if (initJson.hasOwnProperty(collection)) {
+          if (!$.isArray(initJson[collection])) {
+            console.error('Json format is incorrect, top level collection ' +
+              'name ' + collection + 'does not map to an array: ' + initJson);
+            continue;
+          }
+          if (!condensedJson.hasOwnProperty(collection)) {
+            condensedJson[collection] = [];
+          }
+          condensedJson[collection] = condensedJson[collection].concat(initJson[collection]);
+        }
+      }
+    }
+
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
       setInterval(
@@ -50,6 +81,12 @@ mongo.init = (function(){
         });
       };
 
+      if (Object.keys(condensedJson).length > 0) {
+        initUrls.push([
+          '/init/load_json',
+          {collections: condensedJson}
+        ]);
+      }
       initializationUrls[data.res_id] = initUrls;
 
       if (data.is_new){
@@ -73,7 +110,19 @@ mongo.init = (function(){
         }
       };
       $.each(initUrls, function (i, url){
-        $.post(url, {res_id: res_id}, ensureAllRequestsDone);
+        var data = {};
+        if ($.isArray(url)) {
+          data = url[1] || {};
+          url = url[0];
+        }
+        data.res_id = res_id;
+        $.ajax({
+          type: 'POST',
+          url: url,
+          data: JSON.stringify(data),
+          contentType: 'application/json',
+          success: ensureAllRequestsDone
+        });
       });
     } else {
       callback();
