@@ -44,16 +44,22 @@ class UseResIdTestCase(MongoWSTestCase):
                 self.assertItemsEqual(get_collections(), [])
                 db.foo.insert({'message': 'test'})
                 self.assertItemsEqual(get_collections(), ['foo'])
+                self.assertItemsEqual(list(db.foo.find({}, {'_id': 0})),
+                                      [{'message': 'test'}])
 
                 db.bar.update({}, {'message': 'test'})
                 self.assertItemsEqual(get_collections(), ['foo'])
                 db.bar.update({}, {'message': 'test'}, upsert=True)
                 self.assertItemsEqual(get_collections(), ['foo', 'bar'])
+                self.assertItemsEqual(list(db.bar.find({}, {'_id': 0})),
+                                      [{'message': 'test'}])
 
                 db.foo.drop()
                 self.assertItemsEqual(get_collections(), ['bar'])
+                self.assertNotIn(res_id + 'foo', db.collection_names())
                 db.drop_collection('bar')
                 self.assertItemsEqual(get_collections(), [])
+                self.assertNotIn(res_id + 'bar', db.collection_names())
 
 
 class InitializersTestCase(MongoWSTestCase):

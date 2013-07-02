@@ -1,3 +1,4 @@
+from io import SEEK_SET
 from bson.json_util import loads
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId
@@ -12,9 +13,8 @@ def load_data_from_mongoexport(res_id, export_location, collection_name,
     inserted into the given collection.
     """
     with open(export_location) as export:
-    # export = open(export_location)
         first_char = export.read(1)
-        export.seek(-1)
+        export.seek(0, SEEK_SET)
         if first_char == '[':
             # Data is already in an array
             documents = loads(export.read())

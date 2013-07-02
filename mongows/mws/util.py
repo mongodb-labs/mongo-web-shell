@@ -24,15 +24,17 @@ class UseResId:
             return self.old_get_attr(db, name)
 
         def drop_collection(db, name):
-            self.old_drop_collection(db, name)
             if isinstance(name, Collection):
                 name = name.name
+            name = '%s%s' % (self.res_id, name)
             self.remove_client_collection(name)
+            self.old_drop_collection(db, name)
         Database.__getattr__ = __getattr__
         Database.drop_collection = drop_collection
 
         self.old_insert = Collection.insert
         self.old_update = Collection.update
+        self.old_drop = Collection.drop
 
         def insert(coll, *args, **kwargs):
             self.insert_client_collection(coll.name)
@@ -43,14 +45,21 @@ class UseResId:
                 self.insert_client_collection(coll.name)
             self.old_update(coll, *args, **kwargs)
 
+        def drop(coll):
+            self.remove_client_collection(coll.name)
+            # Call through to db.drop, making sure it doesn't re-mangle
+            self.old_drop_collection(coll.database, coll.name)
+
         Collection.insert = insert
         Collection.update = update
+        Collection.drop = drop
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         Database.__getattr__ = self.old_get_attr
         Database.drop_collection = self.old_drop_collection
         Collection.insert = self.old_insert
         Collection.update = self.old_update
+        Collection.drop = self.old_drop
 
     def insert_client_collection(self, name):
         if name.startswith(self.res_id):
