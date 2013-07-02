@@ -1,9 +1,11 @@
 import StringIO
 from bson.json_util import dumps
 import mock
+from werkzeug.exceptions import NotFound, InternalServerError
 from mongows.initializers.util import (
     load_data_from_mongoexport,
     load_data_from_json,
+    load_data_from_mongodump,
 )
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId
@@ -172,3 +174,54 @@ class InitializersTestCase(MongoWSTestCase):
 
             db['myresid.first_coll'].drop()
             db['myresid.viewing_preferences'].drop()
+
+    @mock.patch('mongows.initializers.util.Popen')
+    @mock.patch('mongows.initializers.util.os')
+    def test_loads_dumped_bson_data(self, os_mock, Popen_mock):
+        popen_instance = mock.MagicMock()
+        popen_instance.poll.return_value = 0
+        Popen_mock.return_value = popen_instance
+        os_mock.path.exists.return_value = True
+
+        with self.real_app.app_context():
+            res_id = 'myresid.'
+            collection_name = 'collname'
+            dump_location = '/my/dump/location'
+            load_data_from_mongodump(res_id, dump_location, collection_name)
+            Popen_mock.assert_called_with((
+                'mongorestore',
+                '-d', 'mws',
+                '-c', '%s%s' % (res_id, collection_name),
+                dump_location
+            ))
+            popen_instance.communicate.assert_called_once_with()  # no args
+
+            collections = get_db()[CLIENTS_COLLECTION].find(
+                {'res_id': res_id},
+                {'_id': 0, 'collections': 1}
+            )[0]['collections']
+            self.assertIn(collection_name, collections)
+
+    @mock.patch('mongows.initializers.util.Popen')
+    @mock.patch('mongows.initializers.util.os')
+    def test_loading_nonexistant_dump_throws_404(self, os_mock, Popen_mock):
+        # Popen_mock is needed to make sure a subprocess isn't actually created
+        run_load = lambda: load_data_from_mongodump('myresid.',
+                                                    '/does/not/exist',
+                                                    'collname')
+        os_mock.path.exists.return_value = False
+        self.assertRaises(NotFound, run_load)
+
+    @mock.patch('mongows.initializers.util.Popen')
+    @mock.patch('mongows.initializers.util.os')
+    def test_mongorestore_errors_throw_500(self, os_mock, Popen_mock):
+        os_mock.path.exists.return_value = True
+        popen_instance = mock.MagicMock()
+        Popen_mock.return_value = popen_instance
+        popen_instance.poll.return_value = 1  # error code from mongorestore
+
+        run_load = lambda: load_data_from_mongodump('myresid.',
+                                                    '/does/not/exist',
+                                                    'collname')
+
+        self.assertRaises(InternalServerError, run_load)

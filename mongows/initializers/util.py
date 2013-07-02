@@ -1,5 +1,8 @@
 from io import SEEK_SET
+import os
+from subprocess import Popen
 from bson.json_util import loads
+from werkzeug.exceptions import NotFound, InternalServerError
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId
 
@@ -43,6 +46,26 @@ def load_data_from_json(res_id, file_name, remove_id=False):
                 if remove_id:
                     _remove_id(documents)
                 db[collection].insert(documents)
+
+
+def load_data_from_mongodump(res_id, dump_location, collection_name):
+    """
+    The dump location should point to a .bson file, not a directory structure
+    as created by mongodump. Instead, use the .bson files inside this
+    directory structure.
+    """
+    if not os.path.exists(dump_location):
+        raise NotFound('Unable to find dump file')
+    p = Popen((
+        'mongorestore',
+        '-d', 'mws',
+        '-c', '%s%s' % (res_id, collection_name),
+        dump_location
+    ))
+    p.communicate()  # Wait for process to finish
+    if p.poll() != 0:
+        raise InternalServerError('Loading dumped data failed')
+    UseResId(res_id).insert_client_collection(collection_name)
 
 
 def _remove_id(documents):
