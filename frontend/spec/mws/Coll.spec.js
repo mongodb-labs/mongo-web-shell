@@ -239,13 +239,25 @@ describe('The Collection class', function () {
     });
 
     it('uses the GET HTTP method', function () {
-      coll.aggregate({}, {});
+      coll.aggregate({});
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
     });
 
     it('uses the collection\'s shell', function () {
-      coll.aggregate({}, {});
+      coll.aggregate({});
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('retuns the aggregation results', function () {
+      var results = {
+        status: 'ok',
+        results: ['a', 'b', 'c']
+      };
+      makeRequest.andCallFake(function () {
+        arguments[5](results);
+      });
+      var actual = coll.aggregate({});
+      expect(actual).toEqual(results);
     });
   });
 

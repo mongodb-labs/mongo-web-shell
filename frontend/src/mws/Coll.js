@@ -104,9 +104,12 @@ mongo.Coll.prototype.drop = function () {
  */
 mongo.Coll.prototype.aggregate = function(query){
   query = query || [];
+  var results = {};
   var url = this.urlBase + 'aggregate';
   var onSuccess = function(data){
-    this.shell.insertResponseLine(mongo.util.stringifyQueryResult(data));
+    results = data;
   }.bind(this);
-  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, onSuccess);
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
+                            onSuccess, false); // Sync request, blocking
+  return results;
 };
