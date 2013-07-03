@@ -261,4 +261,36 @@ describe('A Cursor', function () {
     expect(instance.next()).toEqual({a: 1});
     expect(instance.toArray()).toEqual([{b: 2}, {c: 3}]);
   });
+
+  describe('counting results', function () {
+    it('doesn\'t execute the query', function () {
+      instance.count();
+      expect(instance._executed).toBe(false);
+    });
+
+    it('gets the count from the server', function () {
+      var query = {a: {$gt: 2}};
+      var projection = {_id: 0, b: 1};
+      coll.urlBase = 'my_coll_url/';
+      instance = new mongo.Cursor(coll, query, projection);
+      result = {count: 12};
+
+      expect(instance.count()).toEqual(12);
+      expect(makeRequest.calls.length).toEqual(1);
+      var args = makeRequest.calls[0].args;
+      expect(args[0]).toEqual('my_coll_url/count'); // Url
+      expect(args[1]).toEqual({query: query}); // params
+      expect(args[2]).toEqual('GET'); // GET request
+      expect(args[4]).toEqual(coll.shell); // Use the collection's shell
+      expect(args[6]).toEqual(false); // Synchronous
+    });
+
+    it('ignores skip and limit by default', function () {
+      // Todo: Need to build functionality for skip and limit to test this
+    });
+
+    it('can incorporate skip and limit', function () {
+      // Todo: Need to build functionality for skip and limit to test this
+    });
+  });
 });

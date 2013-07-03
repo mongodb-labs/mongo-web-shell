@@ -124,3 +124,15 @@ mongo.Cursor.prototype.toArray = function () {
   this._arr = a;
   return a;
 };
+
+mongo.Cursor.prototype.count = function () {
+  var count = 0;
+  var url = this._coll.urlBase + 'count';
+  var params = this._query ? {query: this._query} : {};
+  var updateCount = function (data) {
+    count = data.count;
+  };
+  mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell,
+                            updateCount, false); // Sync request, blocking
+  return count;
+};
