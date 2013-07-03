@@ -34,13 +34,7 @@ mongo.Coll.prototype.toString = function () {
  * server.
  */
 mongo.Coll.prototype.find = function (query, projection) {
-  var url = this.urlBase + 'find';
-  var params = {query: query, projection: projection};
-  var doFind = function (onSuccess, async) {
-    mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', this.shell,
-      onSuccess, async);
-  }.bind(this);
-  return new mongo.Cursor(this.shell, doFind);
+  return new mongo.Cursor(this, query, projection);
 };
 
 mongo.Coll.prototype.insert = function (doc) {

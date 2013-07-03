@@ -1,90 +1,118 @@
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/* global beforeEach, describe, expect, it, jasmine, mongo, spyOn */
 describe('A Cursor', function () {
-  var instance, batchSize = 2, getShellBatchSizeSpy, insertResponseLineSpy,
-      queryFuncSpy, queryArgs;
+  var instance, batchSize;
+  var getShellBatchSizeSpy, insertResponseLineSpy, makeRequest;
+  var coll, result;
 
   beforeEach(function () {
+    batchSize = 2;
     insertResponseLineSpy = jasmine.createSpy('insertResponseLine');
     getShellBatchSizeSpy = jasmine.createSpy('getShellBatchSize').andCallFake(
         function () {
       return batchSize;
     });
-    var shell = {
-      getShellBatchSize: getShellBatchSizeSpy,
-      insertResponseLine: insertResponseLineSpy,
-      lastUsedCursor: null
+    coll = {
+      shell: {
+        getShellBatchSize: getShellBatchSizeSpy,
+        insertResponseLine: insertResponseLineSpy,
+        lastUsedCursor: null
+      },
+      urlBase: 'coll_url_base/'
     };
-    queryFuncSpy = jasmine.createSpy('queryFuncSpy');
-    queryArgs = 'some args';
-    instance = new mongo.Cursor(shell, queryFuncSpy);
-  });
+    instance = new mongo.Cursor(coll);
 
-  afterEach(function () {
-    queryFuncSpy = null;
-    queryArgs = null;
-    instance = null;
+    result = {
+      result: ['test', 'results', 'here']
+    };
+    makeRequest = spyOn(mongo.request, 'makeRequest').andCallFake(function () {
+      var success = arguments[5];
+      if (success) {
+        success(result);
+      }
+    });
   });
 
   it('stores a query result', function () {
-    var str = 'str';
-    instance._query.func = function (success) {
-      // Simulate response from server
-      success({result: [str, 'does', 'not', 'matter']});
-    };
-    expect(instance._query.result).toBeNull();
+    var results = ['a', 'series', 'of', 'results'];
+    result.result = results.slice(0);
     instance._executeQuery();
-    expect(instance._query.result).toContain(str);
+    for (var i = 0; i < results.length; i++) {
+      expect(instance.hasNext()).toBe(true);
+      expect(instance.next()).toEqual(results[i]);
+    }
+    expect(instance.hasNext()).toBe(false);
   });
 
   describe('depending on query state', function () {
-    var stateStore, callbackSpy;
+    var callbackSpy;
 
     beforeEach(function () {
-      stateStore = instance._query.wasExecuted;
       callbackSpy = jasmine.createSpy('callback');
     });
 
-    afterEach(function () {
-      instance._query.wasExecuted = stateStore;
-      stateStore = null;
-      callbackSpy = null;
-    });
-
-    describe('before execution', function () {
-      // Cursor._query.func, who calls the success callback, is a spy and so
-      // the callback cannot be properly tested here.
-      beforeEach(function () {
-        instance._query.wasExecuted = false;
+    describe('on first execution', function () {
+      it('uses the collection url', function () {
+        coll.urlBase = 'my_coll_url/';
+        instance._executeQuery();
+        expect(makeRequest.calls[0].args[0]).toEqual(coll.urlBase + 'find');
       });
 
-      it('calls the on success callback', function () {
-        queryFuncSpy.andCallFake(function (success) {
-          success({result: []});
-        });
-        instance._executeQuery(callbackSpy);
-        expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).toHaveBeenCalled();
-        expect(callbackSpy).toHaveBeenCalled();
+      it('constructs appropriate params', function () {
+        var query = {count: {$gt: 5}};
+        var projection = {_id: 0, name: 1};
+
+        instance = new mongo.Cursor(coll, query, projection);
+        instance._executeQuery();
+        var params = makeRequest.mostRecentCall.args[1];
+        expect(params.query).toEqual(query);
+        expect(params.projection).toEqual(projection);
+
+        instance = new mongo.Cursor(coll, query);
+        instance._executeQuery();
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.query).toEqual(query);
+        expect(params.projection).toBeUndefined();
+
+        instance = new mongo.Cursor(coll);
+        instance._executeQuery();
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.query).toBeUndefined();
+        expect(params.projection).toBeUndefined();
       });
 
-      it('executes asynchronous queries', function () {
+      it('uses the get HTTP method', function () {
+        instance._executeQuery();
+        expect(makeRequest.calls[0].args[2]).toEqual('GET');
+      });
+
+      it('uses the collection\'s shell', function () {
+        instance._executeQuery();
+        expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      });
+
+      it('uses the supplied on async flag', function () {
         var async = true;
-        instance._executeQuery(callbackSpy, async);
-        expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
-      });
+        instance._executeQuery(null, async);
+        expect(instance._executed).toBe(true);
+        expect(makeRequest.calls[0].args[6]).toBe(async);
 
-      it('executes synchronous queries', function () {
-        var async = false;
-        instance._executeQuery(callbackSpy, async);
-        expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy.calls[0].args[1]).toEqual(async);
+        async = false;
+        instance._executed = false;
+        instance._executeQuery(null, async);
+        expect(instance._executed).toBe(true);
+        expect(makeRequest.calls[1].args[6]).toBe(async);
       });
 
       it('executes default asynchronous queries', function () {
         instance._executeQuery(callbackSpy);
-        expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy.calls[0].args[1]).toEqual(true);
+        expect(instance._executed).toBe(true);
+        expect(makeRequest.calls[0].args[6]).toEqual(true);
+      });
+
+      it('calls the on success callback', function () {
+        instance._executeQuery(callbackSpy);
+        expect(instance._executed).toBe(true);
+        expect(callbackSpy).toHaveBeenCalled();
       });
 
       it('does not warn the user and returns false', function () {
@@ -95,7 +123,7 @@ describe('A Cursor', function () {
 
       describe('will execute a query when it', function () {
         beforeEach(function () {
-          spyOn(instance, '_executeQuery');
+          spyOn(instance, '_executeQuery').andCallThrough();
         });
 
         it('prints the next batch of results', function () {
@@ -112,6 +140,11 @@ describe('A Cursor', function () {
           instance.next();
           expect(instance._executeQuery).toHaveBeenCalled();
         });
+
+        it('creates an array of the results', function () {
+          instance.toArray();
+          expect(instance._executeQuery).toHaveBeenCalled();
+        });
       });
 
       describe('will execute a function that', function () {
@@ -125,13 +158,13 @@ describe('A Cursor', function () {
 
     describe('after execution', function () {
       beforeEach(function () {
-        instance._query.wasExecuted = true;
+        instance._executed = true;
       });
 
       it('does not re-execute and calls the on success callback', function () {
         instance._executeQuery(callbackSpy);
-        expect(instance._query.wasExecuted).toBe(true);
-        expect(queryFuncSpy).not.toHaveBeenCalled();
+        expect(instance._executed).toBe(true);
+        expect(makeRequest).not.toHaveBeenCalled();
         expect(callbackSpy).toHaveBeenCalled();
       });
 
@@ -143,23 +176,11 @@ describe('A Cursor', function () {
 
       describe('calls a success callback that', function () {
         var RESULTS = '123456'.split('');
-        var shellBatchSizeStore, queryStore;
 
         beforeEach(function () {
-          queryStore = instance._query.result;
-          shellBatchSizeStore = batchSize;
-          instance._query.result = RESULTS.slice(0); // A copy.
-          instance._query.wasExecuted = true;
-          spyOn(instance, '_executeQuery').andCallFake(function (onSuccess) {
-            onSuccess();
-          });
-        });
-
-        afterEach(function () {
-          instance._query.result = queryStore;
-          batchSize = shellBatchSizeStore;
-          queryStore = null;
-          shellBatchSizeStore = null;
+          instance._storeQueryResult(RESULTS.slice(0)); // A copy.
+          instance._executed = true;
+          spyOn(instance, '_executeQuery').andCallThrough();
         });
 
         it('stringifies the query results', function () {
@@ -174,20 +195,15 @@ describe('A Cursor', function () {
           instance._shell.lastUsedCursor = null;
           for (var i = 1; i < 3; i++) {
             batchSize = i + 1;
-            var oldResultLen = instance._query.result.length;
             instance._printBatch();
             expect(instance._shell.lastUsedCursor).toEqual(instance);
             expect(getShellBatchSizeSpy.calls.length).toBe(i);
-            expect(instance._query.result.length).toBe(
-                oldResultLen - batchSize);
             expect(insertResponseLineSpy).toHaveBeenCalled();
           }
-          batchSize = instance._query.result.length + 1;
+          batchSize = instance._result.length + 1;
           instance._printBatch();
-          expect(instance._query.result.length).toBe(0);
           var oldInsertCalls = insertResponseLineSpy.calls.length;
           instance._printBatch();
-          expect(instance._query.result.length).toBe(0);
           expect(insertResponseLineSpy.calls.length).toBe(oldInsertCalls);
         });
 
@@ -195,7 +211,7 @@ describe('A Cursor', function () {
           var actual = instance.hasNext();
           expect(instance._executeQuery.calls.length).toBe(1);
           expect(actual).toBe(true);
-          instance._query.result = [];
+          instance._result = [];
           actual = instance.hasNext();
           expect(instance._executeQuery.calls.length).toBe(2);
           expect(actual).toBe(false);
@@ -208,9 +224,9 @@ describe('A Cursor', function () {
           }
           RESULTS.forEach(function (val) { expect(actual).toContain(val); });
           var oldCallCount = insertResponseLineSpy.calls.length;
-          expect(instance.next()).toBeUndefined();
-          // Error message.
-          expect(insertResponseLineSpy.calls.length).toBe(oldCallCount + 1);
+          expect(instance.next.bind(instance)).toThrow('Cursor does not have any more elements.');
+          // Should throw error, not print anything.
+          expect(insertResponseLineSpy.calls.length).toBe(oldCallCount);
         });
       });
 
@@ -222,5 +238,27 @@ describe('A Cursor', function () {
         });
       });
     });
+  });
+
+  it('converts query results to an array', function () {
+    var results = [{a: 1}, {b: 2}, {c: 3}];
+    result.result = results.slice(0);
+
+    var array = instance.toArray();
+    expect(array).toEqual(results);
+
+    // Converting to array should consume the cursor
+    instance._printBatch();
+    expect(insertResponseLineSpy).not.toHaveBeenCalled();
+
+    // To fit the shell's behavior, make sure we're not copying the array
+    array[0] = {foo: 'bar'};
+    expect(instance.toArray()).toEqual([{foo: 'bar'}, {b: 2}, {c: 3}]);
+
+    // Only uses what's left of the cursor
+    result.result = results.slice(0);
+    instance = new mongo.Cursor(coll);
+    expect(instance.next()).toEqual({a: 1});
+    expect(instance.toArray()).toEqual([{b: 2}, {c: 3}]);
   });
 });
