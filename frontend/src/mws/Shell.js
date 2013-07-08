@@ -50,6 +50,7 @@ mongo.Shell.prototype.injectHTML = function () {
   }.bind(this);
   this.$sandbox.contentWindow.__get = mongo.util.__get;
   this.$sandbox.contentWindow.db = this.db;
+  mongo.types.setToJsonFunctions(this.$sandbox.contentWindow);
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
