@@ -85,50 +85,6 @@ describe('The util module', function () {
     });
   });
 
-  it('merges the key-values pairs in two objects together', function () {
-    var mergeObj = mongo.util.mergeObjects;
-
-    expect(mergeObj()).toEqual({});
-    var obj1 = {key: 'val'};
-    expect(mergeObj(obj1)).toEqual({key: 'val'});
-    var obj2 = {iu: 'jjang'};
-    expect(mergeObj(obj1, obj2)).toEqual({key: 'val', iu: 'jjang'});
-    var obj3 = {gd: 'top'};
-    var mergedObj = {key: 'val', iu: 'jjang', gd: 'top'};
-    expect(mergeObj(obj1, obj2, obj3)).toEqual(mergedObj);
-
-    var collideObj1 = {key: 'value', iu: 'jjang'};
-    var collideObj2 = {key: 'values', gd: 'top'};
-    expect(mergeObj(obj1, collideObj1, collideObj2)).toEqual(mergedObj);
-
-    var proto = new KeyValProto();
-    expect(mergeObj(proto)).toEqual({});
-    proto.iu = 'jjang';
-    expect(mergeObj(proto)).toEqual({iu: 'jjang'});
-    expect(mergeObj(proto, {key: 'value'})).toEqual({iu: 'jjang',
-        key: 'value'});
-  });
-
-  it('adds the own properties of one object to another', function() {
-    var aop = mongo.util._addOwnProperties;
-
-    var obj = {};
-    aop(obj, {});
-    expect(obj).toEqual({});
-    aop(obj, {key: 'val'});
-    expect(obj).toEqual({key: 'val'});
-    aop(obj, {iu: 'jjang', gd: 'top'});
-    expect(obj).toEqual({key: 'val', iu: 'jjang', gd: 'top'});
-
-    var proto = new KeyValProto();
-    obj = {iu: 'jjang'};
-    aop(obj, proto);
-    expect(obj).toEqual({iu: 'jjang'});
-    proto.gd = 'top';
-    aop(obj, proto);
-    expect(obj).toEqual({iu: 'jjang', gd: 'top'});
-  });
-
   it('creates a resource URL from the given parameters', function () {
     var configStore = mongo.config;
     var gru = mongo.util.getDBCollectionResURL;
@@ -140,67 +96,6 @@ describe('The util module', function () {
     mongo.config = {baseUrl: 123};
     expect(gru('a', 'b')).toBe('123a/db/b/');
     mongo.config = configStore;
-  });
-
-  it('prunes the given keys from the given object if undefined or null',
-      function () {
-    function Parent() {
-      this.a = 'a';
-      this.b = null;
-    }
-    function Child(y, z) {
-      this.y = y;
-      this.z = z;
-    }
-    Child.prototype = Parent;
-
-    var keysToDelete = ['b', 'z'];
-    var actual = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', b: undefined, y: undefined, z: null}, // 1
-      {a: 'a'}, // 2
-      {}, // 3
-      new Parent(), // 4
-      new Child('y', 'z'), // 5
-      new Child('y') // 6
-    ];
-    var expected = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', y: undefined}, // 1
-      {a: 'a'}, // 2
-      {} // 3
-    ];
-    var tmp = new Parent();
-    delete tmp.b;
-    expected.push(tmp);  // 4
-    expected.push(new Child('y', 'z')); // 5
-    tmp = new Child('y');
-    delete tmp.z;
-    expected.push(tmp); // 6
-
-    actual.forEach(function (obj, i) {
-      mongo.util.pruneKeys(obj, keysToDelete);
-      expect(obj).toEqual(expected[i]);
-    });
-    actual = {a: 'a', b: 'b'};
-    mongo.util.pruneKeys(actual, []);
-    expect(actual).toEqual({a: 'a', b: 'b'});
-  });
-
-  it('stringifies the keys of the given object', function () {
-    var js = JSON.stringify;
-    var actual =  [
-      {str: 'a', number: 0, obj: {key: 'val'}},
-      {}
-    ];
-    var expected = [
-      {str: js('a'), number: js(0), obj: JSON.stringify({key: 'val'})},
-      {}
-    ];
-    actual.forEach(function (obj, i) {
-      mongo.util.stringifyKeys(obj);
-      expect(obj).toEqual(expected[i]);
-    });
   });
 
   describe('provides an interface for stringifying objects', function(){
