@@ -113,5 +113,7 @@ mongo.Readline.prototype.moveCursorToEnd = function() {
 };
 
 mongo.Readline.prototype.getLastCommand = function(){
-  return this.history[this.history.length - 1];
+  // By the time our code is able to call this function, we will already have
+  // added the current command to the history, which we want to ignore.
+  return this.history[this.history.length - 2];
 };
