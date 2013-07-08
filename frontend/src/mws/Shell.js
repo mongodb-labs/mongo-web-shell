@@ -38,19 +38,21 @@ mongo.Shell.prototype.injectHTML = function () {
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
-  this.$sandbox = $('<iframe width="0" height="0"></iframe>')
+  this.sandbox = $('<iframe width="0" height="0"></iframe>')
     .css({visibility : 'hidden'})
-    .appendTo('body');
-  this.$sandbox = this.$sandbox.get(0);
+    .appendTo('body')
+    .get(0);
+  this.context = this.sandbox.contentWindow;
 
-  this.$sandbox.contentWindow.print = function(){
+  this.context.print = function(){
     this.insertResponseLine($.makeArray(arguments).map(function(e){
       return mongo.util.toString(e);
     }).join(' '));
   }.bind(this);
-  this.$sandbox.contentWindow.__get = mongo.util.__get;
-  this.$sandbox.contentWindow.db = this.db;
-  mongo.types.setToJsonFunctions(this.$sandbox.contentWindow);
+  this.context.__get = mongo.util.__get;
+  this.context.db = this.db;
+
+  this.context.tojson = mongo.jsonUtils.tojson;
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
@@ -96,7 +98,7 @@ mongo.Shell.prototype.handleInput = function () {
  * throw any exceptions eval throws.
  */
 mongo.Shell.prototype.eval = function (src) {
-  var out = this.$sandbox.contentWindow.eval(src);
+  var out = this.context.eval(src);
   // TODO: Since the result is returned asynchronously, multiple JS
   // statements entered on one line in the shell may have their results
   // printed out of order. Fix this.
@@ -127,7 +129,7 @@ mongo.Shell.prototype.insertResponseLine = function (data) {
 };
 
 mongo.Shell.prototype.insertError = function (err) {
-  if (err instanceof Error || err instanceof this.$sandbox.contentWindow.Error) {
+  if (err instanceof Error || err instanceof this.context.Error) {
     err = err.toString();
   } else if (err.message) {
     err = 'ERROR: ' + err.message;

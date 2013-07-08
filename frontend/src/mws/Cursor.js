@@ -58,8 +58,7 @@ mongo.Cursor.prototype._printBatch = function () {
     var batchSize = this._shell.getShellBatchSize();
     var n = 0;
     while (this.hasNext() && n < batchSize){
-      var resultString = mongo.util.stringifyQueryResult(this.next());
-      this._shell.insertResponseLine(resultString);
+      this._shell.insertResponseLine(this.next());
       n++;
     }
 
