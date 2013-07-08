@@ -271,12 +271,14 @@ describe('A Readline instance', function () {
   describe('getting the last command', function(){
     it('handles empty history', function(){
       instance.history = [];
-      expect(instance.getLastCommand()).toBe(undefined);
+      expect(instance.getLastCommand()).toBeUndefined();
     });
 
-    it('returns the last command', function(){
+    it('ignores the command that is currently being executed', function () {
+      instance.history = ['1'];
+      expect(instance.getLastCommand()).toBeUndefined();
       instance.history = ['1', '2', '3'];
-      expect(instance.getLastCommand()).toEqual('3');
+      expect(instance.getLastCommand()).toEqual('2');
     });
   });
 });

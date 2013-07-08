@@ -101,6 +101,7 @@ describe('The keyword module', function () {
     beforeEach(function(){
       shellSpy.readline = jasmine.createSpyObj('Readline', ['getLastCommand']);
       shellSpy.readline.getLastCommand.andReturn('not reset');
+      mongo.keyword._resetHasBeenCalled = false;
     });
 
     it('requires confirmation on first run', function(){
@@ -130,12 +131,16 @@ describe('The keyword module', function () {
         mongo.keyword.reset(shellSpy);
       });
 
+      afterEach(function () {
+        xhr.restore();
+      });
+
       it('drops the database', function(){
-        spyOn(mongo.request, 'makeRequest');
+        var makeRequest = spyOn(mongo.request, 'makeRequest');
         mongo.keyword.reset(shellSpy);
-        expect(mongo.request.makeRequest.calls[0].args[0]).toEqual('/test_url/test_res_id/db');
-        expect(mongo.request.makeRequest.calls[0].args[2]).toEqual('DELETE');
-        expect(mongo.request.makeRequest.calls[0].args[4]).toBe(shellSpy);
+        expect(makeRequest.calls[0].args[0]).toEqual('/test_url/test_res_id/db');
+        expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+        expect(makeRequest.calls[0].args[4]).toBe(shellSpy);
       });
 
       it('runs the initialization scripts', function(){
@@ -144,8 +149,19 @@ describe('The keyword module', function () {
         mongo.keyword.reset(shellSpy);
         requests[0].respond(204);
         expect(mongo.init.runInitializationScripts).toHaveBeenCalled();
+      });
 
-        xhr.restore();
+      it('requires confirmation to reset again immediately', function () {
+        var makeRequest = spyOn(mongo.request, 'makeRequest');
+        // Already confirmed, should be called
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(1);
+
+        // Re-resetting, should re-confirm
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(1);
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(2);
       });
     });
   });
