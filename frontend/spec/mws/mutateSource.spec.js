@@ -8,6 +8,14 @@ describe('The mutateSource module', function () {
     expect(mutated).toEqual(expected);
   });
 
+  it('doesn\'t wrap bracketed identifiers in quotes', function () {
+    var source = 'i = 0; a[i];';
+    var mutated = mongo.mutateSource.swapMemberAccesses(source);
+
+    var expected = 'i = 0; __get(a, i);';
+    expect(mutated).toEqual(expected);
+  });
+
   it('doesn\'t change object field writes', function () {
     var source = 'a.foo = a.foo; foo.bar.baz = "hello"';
     var mutated = mongo.mutateSource.swapMemberAccesses(source);
