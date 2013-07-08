@@ -239,6 +239,19 @@ def db_collection_drop(res_id, collection_name):
     return empty_success()
 
 
+@mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+@ratelimit
+def db_collection_count(res_id, collection_name):
+    parse_get_json(request)
+    query = request.json.get('query')
+
+    internal_coll_name = get_internal_coll_name(res_id, collection_name)
+    count = db.get_db()[internal_coll_name].find(query).count()
+    return to_json({'count': count})
+
+
 @mws.route('/<res_id>/db/getCollectionNames',
            methods=['GET', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)

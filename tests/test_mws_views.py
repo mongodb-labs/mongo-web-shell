@@ -118,14 +118,22 @@ class DBTestCase(MongoWSTestCase):
 
     def _make_request(self, endpoint, data, method, expected_status):
         url = self.make_request_url % (endpoint)
-        if data:
-            data = dumps({k: v for k, v in data.iteritems() if v is not None})
+        if data is not None:
+            if isinstance(data, dict):
+                data = dumps(
+                    {k: v for k, v in data.iteritems() if v is not None}
+                )
+            else:
+                data = dumps(data)
+            if method == self.app.get:
+                url = '%s?%s' % (url, data)
+                data = None
         result = method(url, data=data, content_type='application/json')
-        result_dict = loads(result.data) if result.data else {}
         actual_status = result.status_code
         self.assertEqual(actual_status, expected_status,
                          "Expected request status to be %s, got %s instead" %
                          (expected_status, actual_status))
+        result_dict = loads(result.data) if result.data else {}
         return result_dict
 
     def make_get_collection_names_request(self, expected_status=200):
@@ -156,8 +164,8 @@ class DBCollectionTestCase(DBTestCase):
 
     def make_find_request(self, query=None, projection=None,
                           expected_status=200):
-        data = dumps({'query': query, 'projection': projection})
-        return self._make_request('find?%s' % data, None, self.app.get,
+        data = {'query': query, 'projection': projection}
+        return self._make_request('find', data, self.app.get,
                                   expected_status)
 
     def make_insert_request(self, document, expected_status=204):
@@ -181,12 +189,15 @@ class DBCollectionTestCase(DBTestCase):
         self._make_request('update', data, self.app.put, expected_status)
 
     def make_aggregate_request(self, query=None, expected_status=200):
-        data = dumps(query)
-        return self._make_request('aggregate?%s' % data, None, self.app.get,
+        return self._make_request('aggregate', query, self.app.get,
                                   expected_status)
 
     def make_drop_request(self, expected_status=204):
         self._make_request('drop', None, self.app.delete, expected_status)
+
+    def make_count_request(self, query, expected_status=200):
+        data = {'query': query}
+        return self._make_request('count', data, self.app.get, expected_status)
 
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
@@ -361,6 +372,18 @@ class AggregateUnitTestCase(DBCollectionTestCase):
             'detail': '',
         }
         self.assertEqual(result, error)
+
+
+class CountTestCase(DBCollectionTestCase):
+    # Todo: When skip and limit are implemented, make sure count can use them
+    def test_get_query_count(self):
+        self.db_collection.insert([{'n': i} for i in xrange(10)])
+        response = self.make_count_request({'n': {'$gt': 5}})
+        self.assertEqual(response['count'], 4)
+
+        self.db_collection.insert([{'n': i} for i in xrange(10)])
+        response = self.make_count_request({'n': {'$gt': 4}})
+        self.assertEqual(response['count'], 10)
 
 
 class DropUnitTestCase(DBCollectionTestCase):
