@@ -186,6 +186,19 @@ describe('The util module', function () {
       var result = mongo.util.toString([1, 2, 'red', 'blue']);
       expect(result).toEqual('[ 1, 2, "red", "blue" ]');
     });
+
+    it('pretty prints long outputs', function () {
+      // More than 80 char output string
+      var original = {
+        'this is a very long key': 'this is a very long value',
+        'this is also a very long key': 'this is also a very long value'
+      };
+      var expected = '{\n' +
+        '\t"this is a very long key" : "this is a very long value",\n' +
+        '\t"this is also a very long key" : "this is also a very long value"\n' +
+      '}';
+      expect(mongo.util.toString(original)).toEqual(expected);
+    });
   });
 
   describe('member getter', function () {
