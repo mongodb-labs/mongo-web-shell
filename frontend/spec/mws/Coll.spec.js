@@ -50,65 +50,15 @@ describe('The Collection class', function () {
   });
 
   describe('find', function () {
-    it('returns a cursor with the proper shell', function () {
-      var cursor = coll.find({}, {});
-      expect(cursor._shell).toEqual(coll.shell);
+    it('returns a cursor', function () {
+      spyOn(mongo, 'Cursor').andCallThrough();
+      var query = {foo: 'bar'};
+      var projection = {baz: 'garply'};
+      var cursor = coll.find(query, projection);
+      expect(mongo.Cursor.calls.length).toEqual(1);
+      expect(mongo.Cursor).toHaveBeenCalledWith(coll, query, projection);
+      expect(cursor instanceof mongo.Cursor).toBe(true);
     });
-
-    describe('cursor query function', function () {
-      var queryFunc, query_, projection_;
-      var onSuccess_, async_;
-      beforeEach(function () {
-        spyOn(mongo, 'Cursor');
-
-        query_ = {a: 1, b: {$gt: 2}};
-        projection_ = {_id: 0, c: 1};
-        coll.find(query_, projection_);
-        queryFunc = mongo.Cursor.calls[0].args[1];
-
-        onSuccess_ = function () {};
-        async_ = true;
-      });
-
-      it('uses the collection url', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[0]).toEqual(coll.urlBase + 'find');
-      });
-
-      it('constructs appropriate params', function () {
-        queryFunc(onSuccess_, async_);
-        var params = makeRequest.calls[0].args[1];
-        expect(params.query).toEqual(query_);
-        expect(params.projection).toEqual(projection_);
-      });
-
-      it('uses the get HTTP method', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[2]).toEqual('GET');
-      });
-
-      it('uses the collection\'s shell', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
-      });
-
-      it('uses the supplied on success function', function () {
-        var onSuccess = function () { return 'test on success function'; };
-        queryFunc(onSuccess, async_);
-        expect(makeRequest.calls[0].args[5]).toBe(onSuccess);
-      });
-
-      it('uses the supplied on async flag', function () {
-        var async = true;
-        queryFunc(onSuccess_, async);
-        expect(makeRequest.calls[0].args[6]).toBe(async);
-
-        async = false;
-        queryFunc(onSuccess_, async);
-        expect(makeRequest.calls[1].args[6]).toBe(async);
-      });
-    });
-
   });
 
   describe('insert', function () {
