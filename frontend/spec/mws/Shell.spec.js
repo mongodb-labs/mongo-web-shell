@@ -325,14 +325,14 @@ describe('A Shell', function () {
   it('gets the shellBatchSize', function () {
     var expected = [0, 20, 40];
     expected.forEach(function (val) {
-      instance.vars.DBQuery.shellBatchSize = val;
+      instance.shellBatchSize = val;
       expect(instance.getShellBatchSize()).toBe(val);
     });
 
     expected = [null, undefined, NaN, '', [], {}, 'iu'];
     expected.forEach(function (val) {
       // TODO: Check insertResponseLine.
-      instance.vars.DBQuery.shellBatchSize = val;
+      instance.shellBatchSize = val;
       var willThrow = function () { instance.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });

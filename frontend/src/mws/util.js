@@ -17,55 +17,12 @@ mongo.util = (function () {
     return typeof val === 'number' && !isNaN(val);
   }
 
-  /**
-   * Returns an object with the combined key-value pairs from the given
-   * objects, for pairs not on the objects' prototypes. If there are indentical
-   * keys, the pairs of the arguments given in an earlier position take
-   * precedence over those given in later arguments.
-   */
-  function mergeObjects() {
-    var out = {};
-    for (var i = arguments.length - 1; i >= 0; i--) {
-      addOwnProperties(out, arguments[i]);
-    }
-    return out;
-  }
-
-  function addOwnProperties(out, obj) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        out[key] = obj[key];
-      }
-    }
-  }
-
   function getDBCollectionResURL(resID, collection) {
     return getDBResURL(resID) + collection + '/';
   }
 
   function getDBResURL(resID) {
     return mongo.config.baseUrl + resID + '/db/';
-  }
-
-  /**
-   * Removes the given keys from the given object if they are undefined or
-   * null. This can be used to make requests with optional args more compact.
-   */
-  function pruneKeys(obj, keys) {
-    keys.forEach(function (key) {
-      var val = obj[key];
-      if (val === undefined || val === null) {
-        delete obj[key];
-      }
-    });
-  }
-
-  function stringifyKeys(obj) {
-    for (var key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        obj[key] = JSON.stringify(obj[key]);
-      }
-    }
   }
 
   function hasDefinedProperty(obj, prop) {
@@ -175,16 +132,11 @@ mongo.util = (function () {
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
-    mergeObjects: mergeObjects,
     getDBCollectionResURL: getDBCollectionResURL,
     getDBResURL: getDBResURL,
-    pruneKeys: pruneKeys,
-    stringifyKeys: stringifyKeys,
     toString: toString,
     arrayEqual: arrayEqual,
     stringifyQueryResult: stringifyQueryResult,
-    __get: objectMemberGetter,
-
-    _addOwnProperties: addOwnProperties
+    __get: objectMemberGetter
   };
 }());

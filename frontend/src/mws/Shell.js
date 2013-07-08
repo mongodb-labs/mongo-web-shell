@@ -10,12 +10,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
-  // Todo: Should we put this somewhere else?
-  this.vars = {
-    DBQuery: {
-      shellBatchSize: mongo.const.shellBatchSize
-    }
-  };
+  this.shellBatchSize = mongo.const.shellBatchSize;
   this.db = new mongo.DB(this, 'test');
 
   this.injectHTML();
@@ -146,7 +141,7 @@ mongo.Shell.prototype.insertError = function (err) {
  * otherwise throws an error.
  */
 mongo.Shell.prototype.getShellBatchSize = function () {
-  var size = this.vars.DBQuery.shellBatchSize;
+  var size = this.shellBatchSize;
   if (!mongo.util.isNumeric(size)) {
     this.insertResponseLine('ERROR: Please set ' +
       'DBQuery.shellBatchSize to a valid numerical value.');
