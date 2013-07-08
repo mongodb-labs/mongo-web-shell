@@ -176,6 +176,13 @@ describe('A Readline instance', function () {
         expect(actual).toBe(expectedHistory[0]);
       }
     });
+
+    it('remembers the command first being written', function () {
+      instance.historyIndex = instance.history.length;
+      instance.$input.val('my partial command');
+      instance.getOlderHistoryEntry();
+      expect(instance.getNewerHistoryEntry()).toEqual('my partial command');
+    });
   });
 
   it('submits input lines', function () {

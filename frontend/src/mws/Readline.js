@@ -6,6 +6,7 @@ mongo.Readline = function ($input) {
   }
   this.history = this.history ? JSON.parse(this.history) : []; // Newest entries at Array.length
   this.historyIndex = this.history.length;
+  this.historyFirstCommand = '';
 
   var readline = this;
   this.$input.keydown(function (event) { readline.keydown(event); });
@@ -48,8 +49,7 @@ mongo.Readline.prototype.getNewerHistoryEntry = function () {
   this.historyIndex = Math.min(this.historyIndex + 1, this.history.length);
   if (this.historyIndex === this.history.length) {
     if (old !== this.historyIndex) {
-      // TODO: Restore the command first being written.
-      return '';
+      return this.historyFirstCommand;
     }
     return undefined;
   }
@@ -64,6 +64,10 @@ mongo.Readline.prototype.getNewerHistoryEntry = function () {
  */
 mongo.Readline.prototype.getOlderHistoryEntry = function () {
   if (this.history.length === 0) { return undefined; }
+
+  if (this.historyIndex === this.history.length) {
+    this.historyFirstCommand = this.$input.val();
+  }
 
   this.historyIndex = Math.max(this.historyIndex - 1, 0);
   return this.history[this.historyIndex];
