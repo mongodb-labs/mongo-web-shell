@@ -130,7 +130,7 @@ def keep_mws_alive(res_id):
     clients = db.get_db()[CLIENTS_COLLECTION]
     clients.update({'session_id': session.get('session_id'), 'res_id': res_id},
                    {'$set': {'timestamp': datetime.now()}})
-    return '', 204
+    return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
@@ -166,10 +166,9 @@ def db_collection_insert(res_id, collection_name):
         return err(400, error)
 
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    objIDs = db.get_db()[internal_coll_name].insert(document)
+    db.get_db()[internal_coll_name].insert(document)
     insert_client_collection(res_id, collection_name)
-    result = {'result': objIDs}
-    return to_json(result)
+    return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
@@ -189,7 +188,7 @@ def db_collection_remove(res_id, collection_name):
     else:
         db.get_db()[internal_coll_name].remove(constraint)
 
-    return to_json({})
+    return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
@@ -211,7 +210,7 @@ def db_collection_update(res_id, collection_name):
     db.get_db()[internal_coll_name].update(query, update, upsert, multi=multi)
     insert_client_collection(res_id, collection_name)
 
-    return to_json({})
+    return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
@@ -237,7 +236,7 @@ def db_collection_drop(res_id, collection_name):
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
     db.get_db().drop_collection(internal_coll_name)
     remove_client_collection(res_id, collection_name)
-    return to_json({})
+    return empty_success()
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
@@ -260,7 +259,7 @@ def db_drop(res_id):
     for c in colls[0]['collections']:
         DB.drop_collection(get_internal_coll_name(res_id, c))
 
-    return err(204, '')
+    return empty_success()
 
 
 def generate_res_id():
@@ -280,6 +279,10 @@ def to_json(result):
         error = 'Error in find while trying to convert the results to ' + \
                 'JSON format.'
         return err(500, error)
+
+
+def empty_success():
+    return '', 204
 
 
 def parse_get_json(request):
