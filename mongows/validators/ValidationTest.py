@@ -34,5 +34,5 @@ class ValidationTest:
 
     # Require all inheriting classes to implement a run method
     @abstractmethod
-    def run():
+    def run(self):
         pass
