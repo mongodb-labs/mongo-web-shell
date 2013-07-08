@@ -18,7 +18,7 @@ mongo.mutateSource = (function () {
     var propSource = node.property.source();
     // Since we're going to be using the a['b'] syntax,
     // we need to wrap identifier properties in quotes.
-    if (node.property.type === 'Identifier') {
+    if (node.property.type === 'Identifier' && node.computed === false) {
       propSource = '"' + propSource + '"';
     }
 
