@@ -3,6 +3,8 @@ from urlparse import urlparse
 from flask import current_app
 import pymongo
 
+from pymongo.errors import ConnectionFailure, AutoReconnect
+
 db = None
 
 
