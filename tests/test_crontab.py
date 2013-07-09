@@ -80,6 +80,9 @@ class ExpireSessionsTestCase(MongoWSTestCase):
         self.assertIn('31', coll_names)
         self.assertIn('32', coll_names)
 
+        for name in ['20', '21', '22', '30', '31', '32']:
+            self.db[name].drop()
+
     @mock.patch('mongows.crontab.Scheduler')
     @mock.patch('mongows.crontab.expire_sessions')
     def test_run_scheduler_starts_expire_sessions_job(self,
