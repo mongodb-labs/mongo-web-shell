@@ -32,6 +32,13 @@ describe('A Cursor', function () {
     });
   });
 
+  it('can represent itself as a string', function () {
+    coll.toString = function () {return 'my.name.space';};
+    expect(instance.toString()).toEqual('Cursor: my.name.space -> { }');
+    instance = new mongo.Cursor(coll, {test: 'query'});
+    expect(instance.toString()).toEqual('Cursor: my.name.space -> { "test" : "query" }');
+  });
+
   it('stores a query result', function () {
     var results = ['a', 'series', 'of', 'results'];
     result.result = results.slice(0);

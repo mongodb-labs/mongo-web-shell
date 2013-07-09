@@ -176,6 +176,11 @@ mongo.Cursor.prototype.size = function () {
   return this.count(true);
 };
 
+mongo.Cursor.prototype.toString = function () {
+  var query = this._query || {};
+  return 'Cursor: ' + this._coll.toString() + ' -> ' + mongo.jsonUtils.tojson(query);
+};
+
 mongo.Cursor.prototype.__methodMissing = function (field) {
   if (mongo.util.isInteger(field)) {
     return this.toArray()[field];
