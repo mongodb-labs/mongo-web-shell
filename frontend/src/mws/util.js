@@ -17,6 +17,10 @@ mongo.util = (function () {
     return typeof val === 'number' && !isNaN(val);
   }
 
+  function isInteger(obj) {
+    return typeof(obj) === 'number' && obj % 1 === 0;
+  }
+
   function getDBCollectionResURL(resID, collection) {
     return getDBResURL(resID) + collection + '/';
   }
@@ -52,10 +56,10 @@ mongo.util = (function () {
     return obj.__methodMissing(field);
   }
 
-
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
+    isInteger: isInteger,
     getDBCollectionResURL: getDBCollectionResURL,
     getDBResURL: getDBResURL,
     toString: toString,

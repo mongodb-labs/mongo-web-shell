@@ -126,7 +126,7 @@ mongo.Cursor.prototype.sort = function (sort) {
 
 mongo.Cursor.prototype.skip = function (skip) {
   this._ensureNotExecuted('skip');
-  if (typeof(skip) !== 'number' || skip % 1 !== 0) {
+  if (!mongo.util.isInteger(skip)) {
     throw new Error('Skip amount must be an integer.');
   }
   this._skip = skip;
@@ -135,7 +135,7 @@ mongo.Cursor.prototype.skip = function (skip) {
 
 mongo.Cursor.prototype.limit = function (limit) {
   this._ensureNotExecuted('limit');
-  if (typeof(limit) !== 'number' || limit % 1 !== 0) {
+  if (!mongo.util.isInteger(limit)) {
     throw new Error('Limit amount must be an integer.');
   }
   this._limit = limit;
@@ -174,4 +174,11 @@ mongo.Cursor.prototype.count = function (useSkipLimit) {
 
 mongo.Cursor.prototype.size = function () {
   return this.count(true);
+};
+
+mongo.Cursor.prototype.__methodMissing = function (field) {
+  if (mongo.util.isInteger(field)) {
+    return this.toArray()[field];
+  }
+  return undefined;
 };

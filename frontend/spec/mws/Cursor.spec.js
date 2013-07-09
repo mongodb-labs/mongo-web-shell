@@ -308,6 +308,15 @@ describe('A Cursor', function () {
     expect(instance.toArray()).toEqual([{b: 2}, {c: 3}]);
   });
 
+  it('acts as an array', function () {
+    var results = [{a: 1}, {b: 2}, {c: 3}];
+    result.result = results.slice();
+    $.each(results, function (i, expected) {
+      // This only works with the method missing functionality
+      expect(mongo.util.__get(instance, i)).toEqual(expected);
+    });
+  });
+
   describe('counting results', function () {
     it('doesn\'t execute the query', function () {
       instance.count();
