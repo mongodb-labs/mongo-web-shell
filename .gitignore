@@ -11,5 +11,11 @@ frontend/dist/
 _SpecRunner.html
 *.pyc
 
+# scripts
+/mongows/initializers/scripts/*
+!/mongows/initializers/scripts/__init__.py
+/mongows/validators/scripts/*
+!/mongows/validators/scripts/__init__.py
+
 # misc
 .DS_Store
