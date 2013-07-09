@@ -235,13 +235,6 @@ describe('A Cursor', function () {
           spyOn(instance, '_executeQuery').andCallThrough();
         });
 
-        it('stringifies the query results', function () {
-          var value = 'StringifiedQueryResults';
-          spyOn(mongo.util, 'stringifyQueryResult').andReturn(value);
-          instance._printBatch();
-          expect(insertResponseLineSpy).toHaveBeenCalledWith(value);
-        });
-
         it('prints the next batch of results', function () {
           // TODO: Check insertResponseArray when added?
           instance._shell.lastUsedCursor = null;
@@ -250,7 +243,8 @@ describe('A Cursor', function () {
             instance._printBatch();
             expect(instance._shell.lastUsedCursor).toEqual(instance);
             expect(getShellBatchSizeSpy.calls.length).toBe(i);
-            expect(insertResponseLineSpy).toHaveBeenCalled();
+            expect(insertResponseLineSpy.calls.length).toBe(batchSize + 1);
+            insertResponseLineSpy.reset();
           }
           batchSize = instance._result.length + 1;
           instance._printBatch();
