@@ -11,7 +11,7 @@ def get_internal_coll_name(res_id, collection_name):
 class UseResId:
     def __init__(self, res_id):
         self.res_id = str(res_id)
-        self.id_length = len(res_id)
+        self.id_length = len(self.res_id)
         self.client_collection = get_db()[mongows.mws.views.CLIENTS_COLLECTION]
 
     def __enter__(self):

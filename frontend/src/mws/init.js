@@ -31,47 +31,29 @@ mongo.init = (function(){
     // names which map to an array of documents which are to be inserted into
     // the specified collection.
     var condensedJson = {};
-    for (var j = 0; j < jsonArray.length; j++) {
-      var jsonData = jsonArray[j];
-      for (var collection in  jsonData) {
-        if (jsonData.hasOwnProperty(collection)) {
-          if (!$.isArray(jsonData[collection])) {
-            console.error('Json format is incorrect, top level collection ' +
-              'name ' + collection + 'does not map to an array: ' + jsonData);
-            continue;
-          }
-          if (!condensedJson.hasOwnProperty(collection)) {
-            condensedJson[collection] = [];
-          }
-          condensedJson[collection] = condensedJson[collection].concat(jsonData[collection]);
+    $.each(jsonArray, function (i, jsonData) {
+      $.each(jsonData, function (collection, documents) {
+        if (!$.isArray(documents)) {
+          console.error('Json format is incorrect, top level collection ' +
+            'name ' + collection + 'does not map to an array: ' + jsonData);
+        } else {
+          var oldJson = condensedJson[collection] || [];
+          condensedJson[collection] = oldJson.concat(documents);
         }
-      }
-    }
+      });
+    });
     return condensedJson;
   }
 
   function ensureAllRequests(ajaxOptions, callback) {
-    if (ajaxOptions.length === 0) {
+    var requests = $.map(ajaxOptions, function (options) {
+      return $.ajax(options);
+    });
+    // When expects each promise to be passed in as an argument, but we have
+    // an array, so we need to use apply.
+    $.when.apply($, requests).then(function () {
       callback();
-    } else {
-      var doneCount = 0;
-      var ensureAllRequestsDone = function(){
-        doneCount++;
-        if (doneCount === ajaxOptions.length){
-          callback();
-        }
-      };
-      $.each(ajaxOptions, function (i, options){
-        var oldSuccess = options.success;
-        options.success = function (data) {
-          if (oldSuccess) {
-            oldSuccess(data);
-          }
-          ensureAllRequestsDone();
-        };
-        $.ajax(options);
-      });
-    }
+    });
   }
 
   var run = function () {
@@ -111,12 +93,6 @@ mongo.init = (function(){
         mongo.const.keepAliveTime
       );
 
-      var finishSetup = function () {
-        $.each(mongo.shells, function (i, shell) {
-          shell.attachInputHandler(data.res_id);
-        });
-      };
-
       // Need to make sure that urls are unique and converted to $.ajax options
       initUrls = $.map(uniqueArray(initUrls), function (url) {
         return {
@@ -139,11 +115,12 @@ mongo.init = (function(){
         };
       });
 
+      // Get all of the remote JSON literals
       ensureAllRequests(initJsonUrls, function () {
         // Condense JSON to a single object
         initJson = condenseJsonArray(initJson);
 
-        // Add local json literal to initialization requests
+        // Add local JSON literal to initialization requests
         if (Object.keys(initJson).length > 0) {
           initUrls.push({
             type: 'POST',
@@ -157,6 +134,11 @@ mongo.init = (function(){
         }
         initializationUrls[data.res_id] = initUrls;
 
+        var finishSetup = function () {
+          $.each(mongo.shells, function (i, shell) {
+            shell.attachInputHandler(data.res_id);
+          });
+        };
         if (data.is_new) {
           mongo.init.runInitializationScripts(data.res_id, finishSetup);
         } else {
@@ -167,6 +149,8 @@ mongo.init = (function(){
   };
 
   var runInitializationScripts = function(res_id, callback){
+    // Send requests to all initialization urls for a res id, then call the
+    // callback when all are done.
     ensureAllRequests(initializationUrls[res_id], callback);
   };
 
