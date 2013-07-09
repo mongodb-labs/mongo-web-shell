@@ -200,8 +200,9 @@ class DBCollectionTestCase(DBTestCase):
     def make_drop_request(self, expected_status=204):
         self._make_request('drop', None, self.app.delete, expected_status)
 
-    def make_count_request(self, query, expected_status=200):
-        data = {'query': query}
+    def make_count_request(self, query=None, skip=None, limit=None,
+                           expected_status=200):
+        data = {'query': query, 'skip': skip, 'limit': limit}
         return self._make_request('count', data, self.app.get, expected_status)
 
     def set_session_id(self, new_id):
@@ -398,7 +399,6 @@ class AggregateUnitTestCase(DBCollectionTestCase):
 
 
 class CountTestCase(DBCollectionTestCase):
-    # Todo: When skip and limit are implemented, make sure count can use them
     def test_get_query_count(self):
         self.db_collection.insert([{'n': i} for i in xrange(10)])
         response = self.make_count_request({'n': {'$gt': 5}})
@@ -407,6 +407,14 @@ class CountTestCase(DBCollectionTestCase):
         self.db_collection.insert([{'n': i} for i in xrange(10)])
         response = self.make_count_request({'n': {'$gt': 4}})
         self.assertEqual(response['count'], 10)
+
+    def test_uses_skip_and_limit_info(self):
+        self.db_collection.insert([{'n': i} for i in xrange(10)])
+        response = self.make_count_request({}, skip=0, limit=1)
+        self.assertEqual(response['count'], 1)
+
+        response = self.make_count_request({}, skip=8, limit=0)
+        self.assertEqual(response['count'], 2)
 
 
 class DropUnitTestCase(DBCollectionTestCase):

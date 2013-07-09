@@ -332,11 +332,31 @@ describe('A Cursor', function () {
     });
 
     it('ignores skip and limit by default', function () {
-      // Todo: Need to build functionality for skip and limit to test this
+      instance.skip(3).limit(7);
+      instance.count();
+      var params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toBeUndefined();
+      expect(params.limit).toBeUndefined();
     });
 
     it('can incorporate skip and limit', function () {
-      // Todo: Need to build functionality for skip and limit to test this
+      instance.skip(3).limit(7);
+      instance.count(false);
+      var params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toBeUndefined();
+      expect(params.limit).toBeUndefined();
+
+      instance.count(true);
+      params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toEqual(3);
+      expect(params.limit).toEqual(7);
+    });
+
+    it('uses size as an alias for count', function () {
+      var value = 14;
+      spyOn(instance, 'count').andReturn(value);
+      expect(instance.size()).toEqual(value);
+      expect(instance.count).toHaveBeenCalledWith(true);
     });
   });
 });

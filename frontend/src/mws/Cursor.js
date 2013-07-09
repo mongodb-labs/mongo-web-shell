@@ -154,14 +154,24 @@ mongo.Cursor.prototype.toArray = function () {
   return a;
 };
 
-mongo.Cursor.prototype.count = function () {
+mongo.Cursor.prototype.count = function (useSkipLimit) {
+  useSkipLimit = !!useSkipLimit; // Default false
   var count = 0;
   var url = this._coll.urlBase + 'count';
-  var params = this._query ? {query: this._query} : {};
+  var params = {};
+  if (this._query) { params.query = this._query; }
+  if (useSkipLimit) {
+    if (this._skip) { params.skip = this._skip; }
+    if (this._limit) { params.limit = this._limit; }
+  }
   var updateCount = function (data) {
     count = data.count;
   };
   mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell,
                             updateCount, false); // Sync request, blocking
   return count;
+};
+
+mongo.Cursor.prototype.size = function () {
+  return this.count(true);
 };
