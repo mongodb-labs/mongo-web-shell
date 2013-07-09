@@ -162,9 +162,14 @@ class DBCollectionTestCase(DBTestCase):
         super(DBCollectionTestCase, self).setUp()
         self.db_collection.drop()
 
-    def make_find_request(self, query=None, projection=None,
-                          expected_status=200):
-        data = {'query': query, 'projection': projection}
+    def make_find_request(self, query=None, projection=None, skip=None,
+                          limit=None, expected_status=200):
+        data = {
+            'query': query,
+            'projection': projection,
+            'skip': skip,
+            'limit': limit,
+        }
         return self._make_request('find', data, self.app.get,
                                   expected_status)
 
@@ -212,6 +217,24 @@ class FindUnitTestCase(DBCollectionTestCase):
         result = self.make_find_request(query)
         self.assertEqual(len(result), 1)
         self.assertEqual(result['result'][0]['name'], 'mongo')
+
+    def test_skipping_results(self):
+        self.db_collection.insert([{'val': i} for i in xrange(10)])
+
+        response = self.make_find_request(query={}, skip=4)
+        result = response['result']
+        self.assertEqual(len(result), 6)
+        values = [r['val'] for r in result]
+        self.assertItemsEqual(values, range(4, 10))
+
+    def test_limiting_results(self):
+        self.db_collection.insert([{'val': i} for i in xrange(10)])
+
+        response = self.make_find_request(query={}, limit=4)
+        result = response['result']
+        self.assertEqual(len(result), 4)
+        values = [r['val'] for r in result]
+        self.assertItemsEqual(values, range(4))
 
     def test_invalid_find_session(self):
         self.set_session_id('invalid_id')
