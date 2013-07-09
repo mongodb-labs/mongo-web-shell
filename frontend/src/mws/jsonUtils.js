@@ -5,7 +5,6 @@ mongo.jsonUtils = (function () {
       return String(x);
     }
     indent = indent || '';
-//    nolint = nolint === undefined ? true : nolint;
 
     switch (typeof x) {
     case 'string':
