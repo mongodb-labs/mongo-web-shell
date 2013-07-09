@@ -1,4 +1,4 @@
-/* global console, mongo */
+/* global console, mongo, Error */
 /**
  * A wrapper over the result set of a query, that users can iterate through to
  * retrieve results. Before the query is executed, users may modify the query
@@ -37,6 +37,8 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
     var params = {};
     if (this._query) { params.query = this._query; }
     if (this._fields) { params.projection = this._fields; }
+    if (this._skip) { params.skip = this._skip; }
+    if (this._limit) { params.limit = this._limit; }
     var wrappedSuccess = function (data) {
       this._storeQueryResult(data.result);
       if (onSuccess) {
@@ -93,6 +95,16 @@ mongo.Cursor.prototype._warnIfExecuted = function (methodName) {
   return this._executed;
 };
 
+/**
+ * If a query has been executed from this cursor, throw an Error. Otherwise
+ * returns false.
+ */
+mongo.Cursor.prototype._ensureNotExecuted = function (methodName) {
+  if (this._executed) {
+    throw new Error('Cannot ' + methodName + ' results after query has been executed.');
+  }
+};
+
 mongo.Cursor.prototype.hasNext = function () {
   this._executeQuery(null, false); // Sync query, blocks
   return this._result.length > 0;
@@ -110,6 +122,24 @@ mongo.Cursor.prototype.sort = function (sort) {
   if (this._warnIfExecuted('sort')) { return this; }
   // TODO: Implement.
   console.debug('mongo.Cursor would be sorted with', sort, this);
+  return this;
+};
+
+mongo.Cursor.prototype.skip = function (skip) {
+  this._ensureNotExecuted('skip');
+  if (typeof(skip) !== 'number' || skip % 1 !== 0) {
+    throw new Error('Skip amount must be an integer.');
+  }
+  this._skip = skip;
+  return this;
+};
+
+mongo.Cursor.prototype.limit = function (limit) {
+  this._ensureNotExecuted('limit');
+  if (typeof(limit) !== 'number' || limit % 1 !== 0) {
+    throw new Error('Limit amount must be an integer.');
+  }
+  this._limit = limit;
   return this;
 };
 

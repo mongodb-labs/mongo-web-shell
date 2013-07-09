@@ -43,6 +43,20 @@ describe('A Cursor', function () {
     expect(instance.hasNext()).toBe(false);
   });
 
+  it('requires skipped amount to be an integer', function () {
+    var illegalValues = ['hello', 1.123, true, {a: 'b'}];
+    $.each(illegalValues, function (i, value) {
+      expect(function () {instance.skip(value);}).toThrow('Skip amount must be an integer.');
+    });
+  });
+
+  it('requires limited amount to be an integer', function () {
+    var illegalValues = ['hello', 1.123, true, {a: 'b'}];
+    $.each(illegalValues, function (i, value) {
+      expect(function () {instance.limit(value);}).toThrow('Limit amount must be an integer.');
+    });
+  });
+
   describe('depending on query state', function () {
     var callbackSpy;
 
@@ -78,6 +92,32 @@ describe('A Cursor', function () {
         params = makeRequest.mostRecentCall.args[1];
         expect(params.query).toBeUndefined();
         expect(params.projection).toBeUndefined();
+      });
+
+      it('will skip results', function () {
+        instance._executeQuery();
+        var params = makeRequest.mostRecentCall.args[1];
+        expect(params.skip).toBeUndefined();
+
+        instance = new mongo.Cursor(coll);
+        var result = instance.skip(7);
+        expect(result).toBe(instance);
+        instance._executeQuery();
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.skip).toEqual(7);
+      });
+
+      it('will limit results', function () {
+        instance._executeQuery();
+        var params = makeRequest.mostRecentCall.args[1];
+        expect(params.limit).toBeUndefined();
+
+        instance = new mongo.Cursor(coll);
+        var result = instance.limit(12);
+        expect(result).toBe(instance);
+        instance._executeQuery();
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.limit).toEqual(12);
       });
 
       it('uses the get HTTP method', function () {
@@ -172,6 +212,18 @@ describe('A Cursor', function () {
         var actual = instance._warnIfExecuted('methodName');
         expect(actual).toBe(true);
         expect(insertResponseLineSpy).toHaveBeenCalled();
+      });
+
+      it('does not allow skipping of results', function () {
+        expect(function () {
+          instance.skip(3);
+        }).toThrow('Cannot skip results after query has been executed.');
+      });
+
+      it('does not allow limiting of results', function () {
+        expect(function () {
+          instance.limit(3);
+        }).toThrow('Cannot limit results after query has been executed.');
       });
 
       describe('calls a success callback that', function () {

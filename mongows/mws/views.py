@@ -144,9 +144,12 @@ def db_collection_find(res_id, collection_name):
     parse_get_json(request)
     query = request.json.get('query')
     projection = request.json.get('projection')
+    skip = request.json.get('skip', 0)
+    limit = request.json.get('limit', 0)
 
     internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    cursor = db.get_db()[internal_coll_name].find(query, projection)
+    cursor = db.get_db()[internal_coll_name].find(query, projection,
+                                                  skip, limit)
     documents = list(cursor)
     result = {'result': documents}
     return to_json(result)
