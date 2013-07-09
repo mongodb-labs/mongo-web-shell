@@ -11,19 +11,21 @@ class ValidationTest:
         self.res_id = res_id
         self.db = get_db()
 
-    def __hashDict(self, d):
-        for key in d:
-            if isinstance(d[key], dict):
-                d[key] = __hashDict(d[key])
-        return tuple(d.items())
+    def __hashable(self, d):
+        if isinstance(d, dict):
+            return tuple({k: self.__hashable(d[k]) for k in d}.items())
+        elif isinstance(d, list):
+            return tuple([self.__hashable(v) for v in d])
+        else:
+            return d
 
     def __precompute(self, collection, data_only, data, check_id):
         with UseResId(self.res_id):
             query = {'$or': data} if data_only else {}
             projection = None if check_id else {'_id': 0}
             result = self.db[collection].find(query, projection)
-            data = (self.__hashDict(x) for x in data)
-            result = (self.__hashDict(x) for x in result)
+            data = (self.__hashable(x) for x in data)
+            result = (self.__hashable(x) for x in result)
             return data, result
 
     # Collection must exactly equal the data set

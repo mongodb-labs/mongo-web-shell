@@ -39,6 +39,35 @@ class CollectionEqualsUnitTest(ValidationUtilsTestCase):
             {'_id': 'id1', 'a': 1},
             {'_id': 'id2', 'a': 2}], True))
 
+    def test_recursive(self):
+        data = {
+            'a': {
+                'b': {
+                    'c': 1,
+                    'd': [2, 3, 4]
+                },
+                'e': {'f': 'five'}
+            },
+            'g': 6.,
+            'h': True
+        }
+        self.db.test_coll.insert(dict(data))  # insert modifies data, use copy
+        self.assertTrue(self.validator.collection_equals('coll', [data]))
+
+        data2 = {
+            'h': True,
+            'a': {
+                'e': {'f': 'five'},
+                'b': {
+                    'd': [2, 3, 4],
+                    'c': 1
+                }
+            },
+            'g': 6.
+        }
+
+        self.assertTrue(self.validator.collection_equals('coll', [data2]))
+
 
 class CollectionContainsUnitTest(ValidationUtilsTestCase):
     def test_contains(self):
@@ -62,6 +91,18 @@ class CollectionContainsUnitTest(ValidationUtilsTestCase):
             {'_id': 'id1', 'a': 1}], True))
         self.assertFalse(self.validator.collection_contains('coll', [
             {'_id': 'id1', 'a': 1}, {'_id': 'id2', 'b': 2}]), True)
+
+    def test_contains_multiple(self):
+        for i in range(3):
+            self.db.test_coll.insert({'a': 0})
+        self.assertTrue(self.validator.collection_contains('coll',
+                                                           [{'a': 0},
+                                                            {'a': 0}]))
+        self.assertFalse(self.validator.collection_contains('coll',
+                                                            [{'a': 0},
+                                                             {'a': 0},
+                                                             {'a': 0},
+                                                             {'a': 0}]))
 
 
 class CollectionContainsAnyUnitTest(ValidationUtilsTestCase):
