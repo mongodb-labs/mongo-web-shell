@@ -8,7 +8,7 @@ from mongows.initializers.util import (
     load_data_from_mongodump,
 )
 from mongows.mws.db import get_db
-from mongows.mws.util import UseResId
+from mongows.mws.util import UseResId, get_collection_names
 from mongows.mws.views import CLIENTS_COLLECTION
 from tests import MongoWSTestCase
 
@@ -37,6 +37,8 @@ class UseResIdTestCase(MongoWSTestCase):
             })
 
             def get_collections():
+                # Can't use the util function because we would be using it
+                # inside the with, so the collection name would be mangled
                 return clients_collection.find(
                     {'res_id': res_id},
                     {'_id': 0, 'collections': 1}
@@ -195,12 +197,7 @@ class InitializersTestCase(MongoWSTestCase):
                 dump_location
             ))
             popen_instance.communicate.assert_called_once_with()  # no args
-
-            collections = get_db()[CLIENTS_COLLECTION].find(
-                {'res_id': res_id},
-                {'_id': 0, 'collections': 1}
-            )[0]['collections']
-            self.assertIn(collection_name, collections)
+            self.assertIn(collection_name, get_collection_names(res_id))
 
     @mock.patch('mongows.initializers.util.Popen')
     @mock.patch('mongows.initializers.util.os')
