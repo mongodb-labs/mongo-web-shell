@@ -2,7 +2,8 @@ from bson.json_util import loads, dumps
 import datetime
 import mock
 from mongows.mws.db import get_db
-from mongows.mws.views import get_internal_coll_name, ratelimit
+from mongows.mws.util import get_internal_coll_name, get_collection_names
+from mongows.mws.views import ratelimit
 from flask import session
 
 from pymongo.errors import OperationFailure
@@ -175,8 +176,8 @@ class DBCollectionTestCase(DBTestCase):
 
     def make_insert_request(self, document, expected_status=204):
         data = {'document': document}
-        self._make_request('insert', data, self.app.post,
-                           expected_status)
+        return self._make_request('insert', data, self.app.post,
+                                  expected_status)
 
     def make_remove_request(self, constraint, just_one=False,
                             expected_status=204):
@@ -278,7 +279,7 @@ class InsertUnitTestCase(DBCollectionTestCase):
         limit = self.real_app.config['QUOTA_COLLECTION_SIZE'] = 150
         self.make_insert_request([
             {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
-        ], expected_status=200)
+        ], expected_status=204)
 
         result = self.make_insert_request([
             {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
@@ -383,7 +384,7 @@ class UpdateUnitTestCase(DBCollectionTestCase):
             {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
         ])
         self.make_update_request({'name': 'Mongo'}, {'name': 'Mongo2'},
-                                 expected_status=200)
+                                 expected_status=204)
 
         result = self.make_update_request({'name': 'Mongo'},
                                           {'$set': {'a': list(range(50))}},
@@ -404,7 +405,7 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         self.make_update_request({},
                                  {'$set': {'a': list(range(12))}},
                                  multi=False,
-                                 expected_status=200)
+                                 expected_status=204)
 
         result = self.make_update_request({},
                                           {'$set': {'a': list(range(12))}},
@@ -546,6 +547,8 @@ class DropDBUnitTestCase(DBTestCase):
         actual_colls = self.db.collection_names()
         for c in colls:
             self.assertNotIn(c, actual_colls)
+
+        self.assertItemsEqual(get_collection_names(self.res_id), [])
 
 
 class IntegrationTestCase(DBCollectionTestCase):

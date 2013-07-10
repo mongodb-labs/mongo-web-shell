@@ -7,10 +7,11 @@ from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
 
-from . import db
 from werkzeug.exceptions import BadRequest
 
 from pymongo.errors import OperationFailure
+from mongows.mws.db import get_db
+from mongows.mws.util import UseResId, get_collection_names
 
 from .util import get_internal_coll_name
 
@@ -85,7 +86,7 @@ def ratelimit(f):
             return err(401, error)
 
         config = current_app.config
-        coll = db.get_db()[config['RATELIMIT_COLLECTION']]
+        coll = get_db()[config['RATELIMIT_COLLECTION']]
         coll.insert({'session_id': session_id, 'timestamp': datetime.now()})
 
         delta = timedelta(seconds=config['RATELIMIT_EXPIRY'])
@@ -104,7 +105,7 @@ def ratelimit(f):
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
     session['session_id'] = session_id
-    clients = db.get_db()[CLIENTS_COLLECTION]
+    clients = get_db()[CLIENTS_COLLECTION]
 
     cursor = clients.find({'session_id': session_id}, {'res_id': 1, '_id': 0})
     if cursor.count():
@@ -128,7 +129,7 @@ def create_mws_resource():
 @crossdomain(origin=REQUEST_ORIGIN)
 @check_session_id
 def keep_mws_alive(res_id):
-    clients = db.get_db()[CLIENTS_COLLECTION]
+    clients = get_db()[CLIENTS_COLLECTION]
     clients.update({'session_id': session.get('session_id'), 'res_id': res_id},
                    {'$set': {'timestamp': datetime.now()}})
     return empty_success()
@@ -148,12 +149,10 @@ def db_collection_find(res_id, collection_name):
     skip = request.json.get('skip', 0)
     limit = request.json.get('limit', 0)
 
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    cursor = db.get_db()[internal_coll_name].find(query, projection,
-                                                  skip, limit)
-    documents = list(cursor)
-    result = {'result': documents}
-    return to_json(result)
+    with UseResId(res_id):
+        cursor = get_db()[collection_name].find(query, projection, skip, limit)
+        documents = list(cursor)
+        return to_json({'result': documents})
 
 
 @mws.route('/<res_id>/db/<collection_name>/insert',
@@ -172,7 +171,7 @@ def db_collection_insert(res_id, collection_name):
     # Check quota
     coll = get_internal_coll_name(res_id, collection_name)
     try:
-        size = db.get_db().command({'collstats': coll})['size']
+        size = get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
         if 'ns not found' in e.message:
             size = 0
@@ -191,10 +190,9 @@ def db_collection_insert(res_id, collection_name):
         return err(403, 'Collection size exceeded')
 
     # Insert document
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    db.get_db()[internal_coll_name].insert(document)
-    insert_client_collection(res_id, collection_name)
-    return empty_success()
+    with UseResId(res_id):
+        get_db()[collection_name].insert(document)
+        return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
@@ -206,15 +204,13 @@ def db_collection_remove(res_id, collection_name):
     constraint = request.json.get('constraint') if request.json else {}
     just_one = request.json and request.json.get('just_one', False)
 
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-
-    if just_one:
-        db.get_db()[internal_coll_name].find_and_modify(constraint,
-                                                        remove=True)
-    else:
-        db.get_db()[internal_coll_name].remove(constraint)
-
-    return empty_success()
+    with UseResId(res_id):
+        collection = get_db()[collection_name]
+        if just_one:
+            collection.find_and_modify(constraint, remove=True)
+        else:
+            collection.remove(constraint)
+        return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
@@ -234,8 +230,9 @@ def db_collection_update(res_id, collection_name):
 
     # Check quota
     coll = get_internal_coll_name(res_id, collection_name)
+    db = get_db()
     try:
-        size = db.get_db().command({'collstats': coll})['size']
+        size = db.command({'collstats': coll})['size']
     except OperationFailure as e:
         if 'ns not found' in e.message:
             size = 0
@@ -246,16 +243,15 @@ def db_collection_update(res_id, collection_name):
     # It would be nice if we were able to make a more conservative estimate
     # of the space difference that an update will cause. (especially if it
     # results in smaller documents)
-    req_size = len(BSON.encode(update)) * db.get_db()[coll].find(query).count()
+    req_size = len(BSON.encode(update)) * db[coll].find(query).count()
 
     if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
         return err(403, 'Collection size exceeded')
 
     # Update
-    db.get_db()[coll].update(query, update, upsert, multi=multi)
-    insert_client_collection(res_id, collection_name)
-
-    return empty_success()
+    with UseResId(res_id):
+        db[collection_name].update(query, update, upsert, multi=multi)
+        return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
@@ -264,10 +260,10 @@ def db_collection_update(res_id, collection_name):
 @check_session_id
 def db_collection_aggregate(res_id, collection_name):
     parse_get_json(request)
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
     try:
-        result = db.get_db()[internal_coll_name].aggregate(request.json)
-        return to_json(result)
+        with UseResId(res_id):
+            result = get_db()[collection_name].aggregate(request.json)
+            return to_json(result)
     except OperationFailure as e:
         return err(400, e.message)
 
@@ -278,9 +274,8 @@ def db_collection_aggregate(res_id, collection_name):
 @check_session_id
 @ratelimit
 def db_collection_drop(res_id, collection_name):
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    db.get_db().drop_collection(internal_coll_name)
-    remove_client_collection(res_id, collection_name)
+    with UseResId(res_id):
+        get_db().drop_collection(collection_name)
     return empty_success()
 
 
@@ -292,9 +287,9 @@ def db_collection_count(res_id, collection_name):
     parse_get_json(request)
     query = request.json.get('query')
 
-    internal_coll_name = get_internal_coll_name(res_id, collection_name)
-    count = db.get_db()[internal_coll_name].find(query).count()
-    return to_json({'count': count})
+    with UseResId(res_id):
+        count = get_db()[collection_name].find(query).count()
+        return to_json({'count': count})
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
@@ -302,9 +297,7 @@ def db_collection_count(res_id, collection_name):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_get_collection_names(res_id):
-    names = db.get_db()[CLIENTS_COLLECTION].find({'res_id': res_id},
-                                                 {'collections': 1, '_id': 0})
-    return to_json({'result': names[0]['collections']})
+    return to_json({'result': get_collection_names(res_id)})
 
 
 @mws.route('/<res_id>/db',
@@ -312,12 +305,12 @@ def db_get_collection_names(res_id):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_drop(res_id):
-    DB = db.get_db()
-    colls = DB.clients.find({'res_id': res_id}, {'collections': 1, '_id': 0})
-    for c in colls[0]['collections']:
-        DB.drop_collection(get_internal_coll_name(res_id, c))
-
-    return empty_success()
+    DB = get_db()
+    collections = get_collection_names(res_id)
+    with UseResId(res_id):
+        for c in collections:
+            DB.drop_collection(c)
+        return empty_success()
 
 
 def generate_res_id():
@@ -326,7 +319,7 @@ def generate_res_id():
 
 def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
-    return_value = db.get_db()[CLIENTS_COLLECTION].find_one(query)
+    return_value = get_db()[CLIENTS_COLLECTION].find_one(query)
     return False if return_value is None else True
 
 
@@ -348,20 +341,6 @@ def parse_get_json(request):
         request.json = loads(request.args.keys()[0])
     except ValueError:
         raise BadRequest
-
-
-def insert_client_collection(res_id, coll):
-    clients = db.get_db()[CLIENTS_COLLECTION]
-    clients.update({'res_id': res_id},
-                   {'$addToSet': {'collections': coll}},
-                   multi=True)
-
-
-def remove_client_collection(res_id, coll):
-    clients = db.get_db()[CLIENTS_COLLECTION]
-    clients.update({'res_id': res_id},
-                   {'$pull': {'collections': coll}},
-                   multi=True)
 
 
 def err(code, message, detail=''):

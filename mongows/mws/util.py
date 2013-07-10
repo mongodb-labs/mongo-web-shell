@@ -8,6 +8,16 @@ def get_internal_coll_name(res_id, collection_name):
     return '%s%s' % (res_id, collection_name)
 
 
+def get_collection_names(res_id):
+    """
+    Get the collection names associated with a given resource id. Should not be
+    called from within a 'with UseResId(res_id)' block.
+    """
+    return get_db()[mongows.mws.views.CLIENTS_COLLECTION].find(
+        {'res_id': res_id}, {'collections': 1, '_id': 0}
+    )[0]['collections']
+
+
 class UseResId:
     def __init__(self, res_id):
         self.res_id = str(res_id)
