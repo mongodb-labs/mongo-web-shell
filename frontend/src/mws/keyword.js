@@ -83,7 +83,7 @@ mongo.keyword = (function () {
       '                                   multi is true all matching documents are updated',
       '    db.foo.remove(query, justOne)  removes all or just one documents matching query',
       '    db.foo.drop()                  removes the foo collection from the database',
-      '    it                             result of the last line evaluated; use to further' +
+      '    it                             result of the last line evaluated; use to further ' +
                                           'iterate',
       '    reset                          resets the database to its initial state'
     ]);
