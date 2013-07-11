@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>MongoDB Web Shell Sample Page</title>
+  <style type="text/css">
+    {% include "default.css" %}
+  </style>
+</head>
+<body>
+  <div class="content-wrapper">
+    <h1>Welcome to the mongoDB web shell!</h1>
+    <p id="prompt">Try</p>
+    <div class="mongo-web-shell">
+      <p>connecting to database</p>
+      <p>type "help" for help</p>
+    </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script src="/dist/mongoWebShell.js" data-css-path="/mongoWebShell.css"></script>
+  <script type="text/javascript">
+    $(window).load(function(){
+      var shell = mongo.shells[0];
+      $('#prompt').html('Try running an insert command<br />' +
+                        'You can do this by typing db.collection.insert(...)');
+
+      mongo.events.bindOnce(shell, 'mws.db.collection.insert', function(e, data){
+        $('#prompt').html('Great job. You called insert with ' +
+                          JSON.stringify($.makeArray(data.arguments)) +
+                          ' as arguments<br />'+
+                          'Try running a find command to make sure your ' +
+                          'data was saved to the database.<br />' +
+                          'You can do this by typing db.collection.find(...)');
+
+      }).then(function(){
+        return mongo.events.bindOnce(shell, 'mws.db.collection.find', function(e, data){
+          $('#prompt').html('Great job. You called find with ' +
+                            JSON.stringify($.makeArray(data.arguments)) + ' as arguments<br />' +
+                            'Try cleaning up this data with db.collection.remove(...)');
+        });
+      }).then(function(){
+        return mongo.events.bindOnce(shell, 'mws.db.collection.remove', function(e, data){
+          $('#prompt').html('Great job. You called remove with ' +
+                            JSON.stringify($.makeArray(data.arguments)) +
+                            ' as arguments<br />You graduate!');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -8,3 +8,8 @@ demo = Blueprint(
 @demo.route('/')
 def render():
     return render_template('default.html')
+
+
+@demo.route('/events_demo')
+def render_events_demo():
+    return render_template('events_demo.html')
