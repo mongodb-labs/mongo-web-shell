@@ -1,4 +1,4 @@
-/* global describe, it, beforeEach, mongo, spyOn, expect */
+/* global describe, it, beforeEach, mongo, spyOn, expect, jasmine */
 /* jshint camelcase: false */
 describe('The Collection class', function () {
   var name_, db_, coll, makeRequest;
@@ -58,6 +58,39 @@ describe('The Collection class', function () {
       expect(mongo.Cursor.calls.length).toEqual(1);
       expect(mongo.Cursor).toHaveBeenCalledWith(coll, query, projection);
       expect(cursor instanceof mongo.Cursor).toBe(true);
+    });
+  });
+
+  describe('findOne', function () {
+    var cursor;
+    beforeEach(function () {
+      cursor = {
+        next: jasmine.createSpy(),
+        hasNext: jasmine.createSpy().andReturn(true),
+        limit: jasmine.createSpy()
+      };
+      cursor.limit.andReturn(cursor);
+      spyOn(coll, 'find').andReturn(cursor);
+    });
+
+    it('runs a query limiting to a single result', function () {
+      var query = {name: 'Mal Reynolds'};
+      var projection = {_id: 0, rank: 1};
+      coll.findOne(query, projection);
+
+      expect(coll.find).toHaveBeenCalledWith(query, projection);
+      expect(cursor.limit).toHaveBeenCalledWith(1);
+    });
+
+    it('returns the found value', function () {
+      var value = 'my value';
+      cursor.next.andReturn(value);
+      expect(coll.findOne()).toEqual(value);
+    });
+
+    it('returns null if there are no values', function () {
+      cursor.hasNext.andReturn(false);
+      expect(coll.findOne()).toBeNull();
     });
   });
 

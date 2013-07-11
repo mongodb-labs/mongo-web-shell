@@ -126,7 +126,7 @@ mongo.Cursor.prototype.sort = function (sort) {
 
 mongo.Cursor.prototype.skip = function (skip) {
   this._ensureNotExecuted('skip');
-  if (typeof(skip) !== 'number' || skip % 1 !== 0) {
+  if (!mongo.util.isInteger(skip)) {
     throw new Error('Skip amount must be an integer.');
   }
   this._skip = skip;
@@ -135,7 +135,7 @@ mongo.Cursor.prototype.skip = function (skip) {
 
 mongo.Cursor.prototype.limit = function (limit) {
   this._ensureNotExecuted('limit');
-  if (typeof(limit) !== 'number' || limit % 1 !== 0) {
+  if (!mongo.util.isInteger(limit)) {
     throw new Error('Limit amount must be an integer.');
   }
   this._limit = limit;
@@ -154,14 +154,36 @@ mongo.Cursor.prototype.toArray = function () {
   return a;
 };
 
-mongo.Cursor.prototype.count = function () {
+mongo.Cursor.prototype.count = function (useSkipLimit) {
+  useSkipLimit = !!useSkipLimit; // Default false
   var count = 0;
   var url = this._coll.urlBase + 'count';
-  var params = this._query ? {query: this._query} : {};
+  var params = {};
+  if (this._query) { params.query = this._query; }
+  if (useSkipLimit) {
+    if (this._skip) { params.skip = this._skip; }
+    if (this._limit) { params.limit = this._limit; }
+  }
   var updateCount = function (data) {
     count = data.count;
   };
   mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell,
                             updateCount, false); // Sync request, blocking
   return count;
+};
+
+mongo.Cursor.prototype.size = function () {
+  return this.count(true);
+};
+
+mongo.Cursor.prototype.toString = function () {
+  var query = this._query || {};
+  return 'Cursor: ' + this._coll.toString() + ' -> ' + mongo.jsonUtils.tojson(query);
+};
+
+mongo.Cursor.prototype.__methodMissing = function (field) {
+  if (mongo.util.isInteger(field)) {
+    return this.toArray()[field];
+  }
+  return undefined;
 };

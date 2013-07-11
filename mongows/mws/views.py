@@ -241,9 +241,13 @@ def db_collection_drop(res_id, collection_name):
 def db_collection_count(res_id, collection_name):
     parse_get_json(request)
     query = request.json.get('query')
+    skip = request.json.get('skip', 0)
+    limit = request.json.get('limit', 0)
+    use_skip_limit = bool(skip or limit)
 
     with UseResId(res_id):
-        count = get_db()[collection_name].find(query).count()
+        cursor = get_db()[collection_name].find(query, skip=skip, limit=limit)
+        count = cursor.count(use_skip_limit)
         return to_json({'count': count})
 
 

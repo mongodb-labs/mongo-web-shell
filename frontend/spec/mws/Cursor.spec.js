@@ -32,6 +32,13 @@ describe('A Cursor', function () {
     });
   });
 
+  it('can represent itself as a string', function () {
+    coll.toString = function () {return 'my.name.space';};
+    expect(instance.toString()).toEqual('Cursor: my.name.space -> { }');
+    instance = new mongo.Cursor(coll, {test: 'query'});
+    expect(instance.toString()).toEqual('Cursor: my.name.space -> { "test" : "query" }');
+  });
+
   it('stores a query result', function () {
     var results = ['a', 'series', 'of', 'results'];
     result.result = results.slice(0);
@@ -308,6 +315,15 @@ describe('A Cursor', function () {
     expect(instance.toArray()).toEqual([{b: 2}, {c: 3}]);
   });
 
+  it('acts as an array', function () {
+    var results = [{a: 1}, {b: 2}, {c: 3}];
+    result.result = results.slice();
+    $.each(results, function (i, expected) {
+      // This only works with the method missing functionality
+      expect(mongo.util.__get(instance, i)).toEqual(expected);
+    });
+  });
+
   describe('counting results', function () {
     it('doesn\'t execute the query', function () {
       instance.count();
@@ -332,11 +348,31 @@ describe('A Cursor', function () {
     });
 
     it('ignores skip and limit by default', function () {
-      // Todo: Need to build functionality for skip and limit to test this
+      instance.skip(3).limit(7);
+      instance.count();
+      var params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toBeUndefined();
+      expect(params.limit).toBeUndefined();
     });
 
     it('can incorporate skip and limit', function () {
-      // Todo: Need to build functionality for skip and limit to test this
+      instance.skip(3).limit(7);
+      instance.count(false);
+      var params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toBeUndefined();
+      expect(params.limit).toBeUndefined();
+
+      instance.count(true);
+      params = makeRequest.mostRecentCall.args[1];
+      expect(params.skip).toEqual(3);
+      expect(params.limit).toEqual(7);
+    });
+
+    it('uses size as an alias for count', function () {
+      var value = 14;
+      spyOn(instance, 'count').andReturn(value);
+      expect(instance.size()).toEqual(value);
+      expect(instance.count).toHaveBeenCalledWith(true);
     });
   });
 });
