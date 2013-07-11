@@ -36,8 +36,12 @@
       }).then(function(){
         return mongo.events.bindOnce(shell, 'mws.db.collection.find', function(e, data){
           $('#prompt').html('Great job. You called find with ' +
-                            JSON.stringify($.makeArray(data.arguments)) + ' as arguments<br />' +
-                            'Try cleaning up this data with db.collection.remove(...)');
+                            JSON.stringify($.makeArray(data.arguments)) + ' as arguments');
+        });
+      }).then(function(){
+        return mongo.events.bindOnce(shell, 'mws.db.collection.find.callback', function(e, data){
+          $('#prompt').append('<br />Find returned with ' + data.result.length + ' results<br />' +
+                              'Try cleaning up this data with db.collection.remove(...)');
         });
       }).then(function(){
         return mongo.events.bindOnce(shell, 'mws.db.collection.remove', function(e, data){
