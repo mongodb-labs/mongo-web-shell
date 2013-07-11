@@ -37,6 +37,15 @@ mongo.Coll.prototype.find = function (query, projection) {
   return new mongo.Cursor(this, query, projection);
 };
 
+mongo.Coll.prototype.findOne = function (query, projection) {
+  var cursor = this.find(query, projection).limit(1);
+  if (cursor.hasNext()) {
+    return cursor.next();
+  } else {
+    return null;
+  }
+};
+
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
