@@ -2,7 +2,8 @@ from bson.json_util import loads, dumps
 import datetime
 import mock
 from mongows.mws.db import get_db
-from mongows.mws.views import get_internal_coll_name, ratelimit
+from mongows.mws.util import get_internal_coll_name, get_collection_names
+from mongows.mws.views import ratelimit
 from flask import session
 
 from pymongo.errors import OperationFailure
@@ -494,6 +495,8 @@ class DropDBUnitTestCase(DBTestCase):
         actual_colls = self.db.collection_names()
         for c in colls:
             self.assertNotIn(c, actual_colls)
+
+        self.assertItemsEqual(get_collection_names(self.res_id), [])
 
 
 class IntegrationTestCase(DBCollectionTestCase):
