@@ -49,6 +49,7 @@ mongo.Coll.prototype.toString = function () {
  * server.
  */
 mongo.Coll.prototype.find = function (query, projection) {
+  mongo.events.functionTrigger(this.shell, 'db.collection.find', arguments);
   return new mongo.Cursor(this, query, projection);
 };
 
@@ -64,6 +65,7 @@ mongo.Coll.prototype.findOne = function (query, projection) {
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
+  mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments);
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
 };
 
@@ -75,6 +77,7 @@ mongo.Coll.prototype.insert = function (doc) {
 mongo.Coll.prototype.remove = function (constraint, justOne) {
   var url = this.urlBase + 'remove';
   var params = {constraint: constraint, just_one: justOne};
+  mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments);
   mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
 };
 
@@ -89,6 +92,8 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
  */
 mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   var url = this.urlBase + 'update';
+  mongo.events.functionTrigger(this.shell, 'db.collection.update', arguments);
+
   // handle options document for 2.2+
   if (typeof upsert === 'object'){
     if (multi !== undefined){
@@ -112,6 +117,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
+  mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments);
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
 };
 
@@ -127,6 +133,8 @@ mongo.Coll.prototype.aggregate = function(query){
   var onSuccess = function(data){
     results = data;
   }.bind(this);
+
+  mongo.events.functionTrigger(this.shell, 'db.collection.aggregate', arguments);
   mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
                             onSuccess, false); // Sync request, blocking
   return results;
