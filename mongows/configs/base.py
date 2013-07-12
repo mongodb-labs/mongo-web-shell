@@ -19,3 +19,5 @@ PORT = 5000
 RATELIMIT_COLLECTION = 'ratelimit'
 RATELIMIT_QUOTA = 500  # requests per expiry
 RATELIMIT_EXPIRY = 60  # expiry in seconds
+
+QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes

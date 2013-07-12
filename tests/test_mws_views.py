@@ -176,13 +176,14 @@ class DBCollectionTestCase(DBTestCase):
 
     def make_insert_request(self, document, expected_status=204):
         data = {'document': document}
-        self._make_request('insert', data, self.app.post,
-                           expected_status)
+        return self._make_request('insert', data, self.app.post,
+                                  expected_status)
 
     def make_remove_request(self, constraint, just_one=False,
                             expected_status=204):
         data = {'constraint': constraint, 'just_one': just_one}
-        self._make_request('remove', data, self.app.delete, expected_status)
+        return self._make_request('remove', data, self.app.delete,
+                                  expected_status)
 
     def make_update_request(self, query, update, upsert=False, multi=False,
                             expected_status=204):
@@ -192,14 +193,16 @@ class DBCollectionTestCase(DBTestCase):
             'upsert': upsert,
             'multi': multi,
         }
-        self._make_request('update', data, self.app.put, expected_status)
+        return self._make_request('update', data, self.app.put,
+                                  expected_status)
 
     def make_aggregate_request(self, query=None, expected_status=200):
         return self._make_request('aggregate', query, self.app.get,
                                   expected_status)
 
     def make_drop_request(self, expected_status=204):
-        self._make_request('drop', None, self.app.delete, expected_status)
+        return self._make_request('drop', None, self.app.delete,
+                                  expected_status)
 
     def make_count_request(self, query=None, skip=None, limit=None,
                            expected_status=200):
@@ -272,6 +275,23 @@ class InsertUnitTestCase(DBCollectionTestCase):
         self.set_session_id('invalid_session')
         document = {'name': 'mongo'}
         self.make_insert_request(document, expected_status=403)
+
+    def test_insert_quota(self):
+        limit = self.real_app.config['QUOTA_COLLECTION_SIZE'] = 150
+        self.make_insert_request([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ], expected_status=204)
+
+        result = self.make_insert_request([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ], expected_status=403)
+
+        error = {
+            'error': 403,
+            'reason': 'Collection size exceeded',
+            'detail': ''
+        }
+        self.assertEqual(result, error)
 
 
 class RemoveUnitTestCase(DBCollectionTestCase):
@@ -358,6 +378,46 @@ class UpdateUnitTestCase(DBCollectionTestCase):
         result = self.db_collection.find()
         names = [r['name'] for r in result]
         self.assertItemsEqual(names, ['Mongo2', 'Mongo2', 'NotMongo'])
+
+    def test_update_quota(self):
+        limit = self.real_app.config['QUOTA_COLLECTION_SIZE'] = 500
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
+        self.make_update_request({'name': 'Mongo'}, {'name': 'Mongo2'},
+                                 expected_status=204)
+
+        result = self.make_update_request({'name': 'Mongo'},
+                                          {'$set': {'a': list(range(50))}},
+                                          expected_status=403)
+        error = {
+            'error': 403,
+            'reason': 'Collection size exceeded',
+            'detail': ''
+        }
+        self.assertEqual(result, error)
+
+    def test_multi_update_quota(self):
+        limit = self.real_app.config['QUOTA_COLLECTION_SIZE'] = 500
+        self.db_collection.insert([
+            {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
+        ])
+
+        self.make_update_request({},
+                                 {'$set': {'a': list(range(12))}},
+                                 multi=False,
+                                 expected_status=204)
+
+        result = self.make_update_request({},
+                                          {'$set': {'a': list(range(12))}},
+                                          multi=True,
+                                          expected_status=403)
+        error = {
+            'error': 403,
+            'reason': 'Collection size exceeded',
+            'detail': ''
+        }
+        self.assertEqual(result, error)
 
 
 class AggregateUnitTestCase(DBCollectionTestCase):
