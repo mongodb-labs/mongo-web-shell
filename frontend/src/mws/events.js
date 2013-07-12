@@ -2,18 +2,18 @@
 /* jshint noarg: false */
 mongo.events = {
   trigger: function(shell, event, data){
-    data = $.extend({}, {shell: shell}, data);
+    data = $.extend({shell: shell}, data);
     console.info('[' + shell.id + '] ' + event + ' triggered with data ', data);
     $(shell.$rootElement).trigger('mws.' + event, data);
   },
 
   functionTrigger: function(shell, event, args, data){
-    data = $.extend({}, {'arguments': args}, data);
+    data = $.extend({'arguments': args}, data);
     mongo.events.trigger(shell, event, data);
   },
 
   callbackTrigger: function(shell, event, result, data){
-    data = $.extend({}, {result: result}, data);
+    data = $.extend({result: result}, data);
     mongo.events.trigger(shell, event, data);
   },
 
@@ -30,7 +30,7 @@ mongo.events = {
   },
 
   bindOnce: function(shell, event, handler, data){
-    data = $.extend({}, {shell: shell}, data);
+    data = $.extend({shell: shell}, data);
     var wrappedHandler = function(){
       handler.apply(shell, arguments);
       $(shell.$rootElement).unbind('mws:' + event, arguments.callee.caller);
