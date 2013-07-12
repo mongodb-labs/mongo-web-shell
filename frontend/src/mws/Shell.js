@@ -121,7 +121,7 @@ mongo.Shell.prototype.insertResponseArray = function (data) {
 
 mongo.Shell.prototype.insertResponseLine = function (data) {
   var li = document.createElement('li');
-  li.innerHTML = mongo.util.toString(data);
+  $(li).addClass('mws-response').html(mongo.util.toString(data));
   this.$inputLI.before(li);
 
   // Reset scroll distance so the <input> is not hidden at the bottom.
