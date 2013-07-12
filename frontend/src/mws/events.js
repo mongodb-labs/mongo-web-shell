@@ -4,7 +4,7 @@ mongo.events = {
   trigger: function(shell, event, data){
     data = $.extend({shell: shell}, data);
     console.info('[' + shell.id + '] ' + event + ' triggered with data ', data);
-    $(shell.$rootElement).trigger('mws.' + event, data);
+    $(shell.$rootElement).trigger('mws:' + event, data);
   },
 
   functionTrigger: function(shell, event, args, data){

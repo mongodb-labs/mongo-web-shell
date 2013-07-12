@@ -44,7 +44,7 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
       if (onSuccess) {
         onSuccess();
       }
-      mongo.events.callbackTrigger(this._shell, 'cursor.execute', data.result);
+      mongo.events.callbackTrigger(this._shell, 'cursor:execute', data.result);
     }.bind(this);
 
     mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', this._shell,
