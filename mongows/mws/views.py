@@ -11,9 +11,11 @@ from werkzeug.exceptions import BadRequest
 
 from pymongo.errors import OperationFailure
 from mongows.mws.db import get_db
-from mongows.mws.util import UseResId, get_collection_names
-
-from .util import get_internal_coll_name
+from mongows.mws.util import (
+    UseResId,
+    get_collection_names,
+    get_internal_coll_name
+)
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
