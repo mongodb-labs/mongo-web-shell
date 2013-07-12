@@ -26,7 +26,7 @@
                         'You can do this by typing db.collection.insert(...)');
 
       mongo.events.bindOnce(shell, 'mws.db.collection.insert', function(e, data){
-        $('#prompt').html('Great job. You called insert with ' +
+        $('#prompt').html('Great job. You called insert on ' + data.collection + ' with ' +
                           JSON.stringify($.makeArray(data.arguments)) +
                           ' as arguments<br />'+
                           'Try running a find command to make sure your ' +
@@ -35,7 +35,7 @@
 
       }).then(function(){
         return mongo.events.bindOnce(shell, 'mws.db.collection.find', function(e, data){
-          $('#prompt').html('Great job. You called find with ' +
+          $('#prompt').html('Great job. You called find on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) + ' as arguments');
         });
       }).then(function(){
@@ -45,7 +45,7 @@
         });
       }).then(function(){
         return mongo.events.bindOnce(shell, 'mws.db.collection.remove', function(e, data){
-          $('#prompt').html('Great job. You called remove with ' +
+          $('#prompt').html('Great job. You called remove on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) +
                             ' as arguments<br />You graduate!');
         });
