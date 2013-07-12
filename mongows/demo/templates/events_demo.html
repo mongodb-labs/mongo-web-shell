@@ -39,7 +39,7 @@
                             JSON.stringify($.makeArray(data.arguments)) + ' as arguments');
         });
       }).then(function(){
-        return mongo.events.bindOnce(shell, 'mws.db.collection.find.callback', function(e, data){
+        return mongo.events.bindOnce(shell, 'mws.cursor.execute', function(e, data){
           $('#prompt').append('<br />Find returned with ' + data.result.length + ' results<br />' +
                               'Try cleaning up this data with db.collection.remove(...)');
         });
