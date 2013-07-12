@@ -17,5 +17,5 @@ NO_INIT = False
 PORT = 5000
 
 RATELIMIT_COLLECTION = 'ratelimit'
-RATELIMIT_QUOTA = 500
-RATELIMIT_EXPIRY = 60
+RATELIMIT_QUOTA = 500  # requests per expiry
+RATELIMIT_EXPIRY = 60  # expiry in seconds
