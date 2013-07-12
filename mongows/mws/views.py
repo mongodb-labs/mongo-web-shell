@@ -173,6 +173,7 @@ def db_collection_insert(res_id, collection_name):
     try:
         size = get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
+        # TODO: handle multiple res_id per session
         if 'ns not found' in e.message:
             size = 0
         else:
@@ -234,6 +235,7 @@ def db_collection_update(res_id, collection_name):
     try:
         size = db.command({'collstats': coll})['size']
     except OperationFailure as e:
+        # TODO: handle multiple res_id per session
         if 'ns not found' in e.message:
             size = 0
         else:
