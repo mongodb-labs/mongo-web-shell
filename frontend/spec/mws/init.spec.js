@@ -43,6 +43,7 @@ describe('The init function', function () {
       res_id: 'iu',
       is_new: true
     };
+    mongo.shells = [];
     mongo.init._initState = {};
   });
 
@@ -300,6 +301,112 @@ describe('The init function', function () {
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
+      });
+    });
+
+    describe('locks shells with a given res_id', function(){
+      it('when no stored state exists', function(){
+        expect(mongo.init._initState).toEqual({});
+        mongo.init._lockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+
+      it('when a stored state exists', function(){
+        mongo.init._initState = {
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        };
+        mongo.init._lockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 2,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+    });
+
+    describe('unlocks shells with a given res_id', function(){
+      var $shell;
+      beforeEach(function(){
+        mongo.init._lockShells('iu');
+        $shell = $('<div />').mws();
+      });
+
+      afterEach(function(){
+        $shell.remove();
+      });
+
+      it('when no more inits are pending', function(){
+
+        mongo.init._unlockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 0,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+      });
+
+      it('except when one or more inits are pending', function(){
+        mongo.init._lockShells('iu');
+
+        mongo.init._unlockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+
+      it('only if the specified promises have resolved', function(){
+        var d = [$.Deferred(), $.Deferred()];
+        var promises = d.map(function(d){ return d.promise(); });
+        mongo.init._unlockShells('iu', promises);
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[0].resolve();
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[1].resolve();
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
       });
     });
   });

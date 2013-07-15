@@ -205,6 +205,8 @@ mongo.init = (function(){
     run: run,
     runInitializationScripts: runInitializationScripts,
     jQuery: jQueryInit,
-    _initState: initState
+    _initState: initState,
+    _lockShells: lockShells,
+    _unlockShells: unlockShells
   };
 })();
