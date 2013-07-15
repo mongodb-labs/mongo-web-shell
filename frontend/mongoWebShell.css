@@ -27,6 +27,9 @@
 
 .mws-response-list li {
   margin: 3px 0;
+}
+
+.mws-response-list .mws-response {
   white-space: pre-wrap;
 }
 
