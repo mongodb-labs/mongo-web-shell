@@ -148,7 +148,7 @@ mongo.init = (function(){
 
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
-      res_id = data.res_id;
+      mongo.init._res_id = data.res_id;
 
       setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
@@ -165,7 +165,7 @@ mongo.init = (function(){
     // Send requests to all initialization urls for a res id, then call the
     // callback when all are done.
     $.each(mongo.shells, function(i, e){
-      initShell(e.$rootElement, res_id, {create_new: false, init_data: init_data});
+      mongo.init._initShell(e.$rootElement, res_id, {create_new: false, init_data: init_data});
     });
 
     callback();
@@ -178,14 +178,16 @@ mongo.init = (function(){
         options = $.extend({}, $.mws.defaults, options);
 
         this.addClass('mongo-web-shell').each(function(i, e){
-          initShell(e, res_id, $.extend({
-            init_url: e.getAttribute('data-initialization-url'),
-            init_json: e.getAttribute('data-initialization-json')
+          mongo.init._initShell(e, mongo.init._res_id, $.extend({
+            init_url: $(e).data('initialization-url') || undefined,
+            init_json: $(e).data('initialization-json') || undefined
           }, options));
         });
 
         if (options.height){ this.height(options.height); }
         if (options.width){ this.width(options.width); }
+
+        return this;
       }
     });
 
@@ -197,6 +199,10 @@ mongo.init = (function(){
         init_json: undefined,
         height: undefined,
         width: undefined
+      },
+
+      setDefaults: function(options){
+        return $.extend($.mws.defaults, options);
       }
     };
   };
@@ -207,6 +213,8 @@ mongo.init = (function(){
     jQuery: jQueryInit,
     _initState: initState,
     _lockShells: lockShells,
-    _unlockShells: unlockShells
+    _unlockShells: unlockShells,
+    _initShell: initShell,
+    _res_id: res_id
   };
 })();

@@ -135,7 +135,7 @@ describe('The init function', function () {
       });
 
       it('sends a request to the specified location', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -150,9 +150,9 @@ describe('The init function', function () {
       });
 
       it('can handle multiple initialization urls', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/first/url');
-        shellElements[1].setAttribute('data-initialization-url', '/my/second/url');
-        shellElements[2].setAttribute('data-initialization-url', '/my/third/url');
+        $(shellElements[0]).data('initialization-url', '/my/first/url');
+        $(shellElements[1]).data('initialization-url', '/my/second/url');
+        $(shellElements[2]).data('initialization-url', '/my/third/url');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -175,8 +175,8 @@ describe('The init function', function () {
       });
 
       it('does not send duplicate requsets', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
-        shellElements[1].setAttribute('data-initialization-url', '/my/url/path');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
+        $(shellElements[1]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -186,7 +186,7 @@ describe('The init function', function () {
 
       it('only initializes if the resource id is new', function () {
         dataObj.is_new = false;
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
@@ -223,10 +223,10 @@ describe('The init function', function () {
           }
         });
 
-        shellElements[0].setAttribute('data-initialization-json', firstJson);
-        shellElements[1].setAttribute('data-initialization-json', secondJson);
+        $(shellElements[0]).data('initialization-json', firstJson);
+        $(shellElements[1]).data('initialization-json', secondJson);
         // Duplicate json should be allowed
-        shellElements[2].setAttribute('data-initialization-json', secondJson);
+        $(shellElements[2]).data('initialization-json', secondJson);
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -253,8 +253,8 @@ describe('The init function', function () {
         var remoteData = JSON.stringify({
           coll: [{data: 'remote'}]
         });
-        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
-        shellElements[1].setAttribute('data-initialization-json', localData);
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
+        $(shellElements[1]).data('initialization-json', localData);
         mongo.init.run();
 
         // Fetches remote json
@@ -282,7 +282,7 @@ describe('The init function', function () {
           res_id: dataObj.res_id,
           collections: {coll: [{data: 'remote'}]}
         });
-        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
         mongo.init.run();
 
         // Fetches remote json
@@ -297,7 +297,7 @@ describe('The init function', function () {
 
       it('only initializes if the resource id is new', function () {
         dataObj.is_new = false;
-        shellElements[0].setAttribute('data-initialization-json', '{"test": "json"}');
+        $(shellElements[0]).data('initialization-json', '{"test": "json"}');
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
@@ -408,6 +408,100 @@ describe('The init function', function () {
           expect(shell.$input.prop('disabled')).toBe(false);
         });
       });
+    });
+  });
+
+  describe('sets up the jQuery methods that', function(){
+    describe('construct an instance of the web shell', function(){
+      var initShell, shellElement, expectedOptions;
+      beforeEach(function(){
+        initShell = spyOn(mongo.init, '_initShell');
+        mongo.init._res_id = 'res_id';
+        shellElement = $('<div class="mongo-web-shell" />').appendTo(document.body);
+
+        expectedOptions = $.extend(true, {}, $.mws.defaults);
+        for (var prop in expectedOptions){
+          if (expectedOptions[prop] === undefined) { delete expectedOptions[prop]; }
+        }
+      });
+
+      afterEach(function(){
+        shellElement.remove();
+      });
+
+      it('from a single container', function(){
+        var e = $('.mongo-web-shell').first().mws();
+
+        expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', expectedOptions);
+      });
+
+      it('from multiple containers', function(){
+        $(document.body).append('<div class="mongo-web-shell" />');
+
+        var e = $('.mongo-web-shell').mws();
+        expect(e.length).toBe(2);
+
+        expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', expectedOptions);
+        expect(initShell).toHaveBeenCalledWith(e[1], 'res_id', expectedOptions);
+
+        e.remove();
+      });
+
+      describe('with data attributes', function(){
+        it('specifying the init url', function(){
+          shellElement.data('initialization-url', '/init/url');
+          var e = $('.mongo-web-shell').mws();
+          expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
+            init_url: '/init/url'
+          }));
+        });
+
+        it('specifying the json url', function(){
+          shellElement.data('initialization-json', '/init/json/url');
+          var e = $('.mongo-web-shell').mws();
+          expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
+            init_json: '/init/json/url'
+          }));
+        });
+
+        it('specifying inline json', function(){
+          shellElement.data('initialization-json', '{a:1}');
+          var e = $('.mongo-web-shell').mws();
+          expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
+            init_json: '{a:1}'
+          }));
+        });
+      });
+
+      it('with custom parameters', function(){
+        var opt = {
+          create_new: false,
+          init_data: false,
+          init_url: '/init/url',
+          init_json: '/init/json/url'
+        }, e = $('.mongo-web-shell').mws(opt);
+        expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, opt));
+      });
+
+      it('with a specified height', function(){
+        $('.mongo-web-shell').mws({height: 100});
+        expect(shellElement.height()).toBe(100);
+      });
+
+      it('with a specified width', function(){
+        $('.mongo-web-shell').mws({width: 100});
+        expect(shellElement.width()).toBe(100);
+      });
+    });
+
+    it('has configurable defaults', function(){
+      var opt = {
+        init_data: false,
+        init_url: '/init/url',
+        init_json: '/init/json/url'
+      };
+      $.mws.setDefaults(opt);
+      expect($.mws.defaults).toEqual($.extend({create_new: true}, opt));
     });
   });
 });
