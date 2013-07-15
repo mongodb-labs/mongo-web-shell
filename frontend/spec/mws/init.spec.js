@@ -118,7 +118,7 @@ describe('The init function', function () {
         var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
         mongo.init.run();
 
-        // The call to createMSWResource is mocked and did not make a request
+        // The call to createMWSResource is mocked and did not make a request
         expect(requests.length).toEqual(1);
         expect(requests[0].url).toEqual('/my/url/path');
         expect(requests[0].requestBody).toEqual('{"res_id":"' + dataObj.res_id + '"}');
@@ -136,7 +136,7 @@ describe('The init function', function () {
         var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
         mongo.init.run();
 
-        // The call to createMSWResource is mocked and did not make a request
+        // The call to createMWSResource is mocked and did not make a request
         expect(requests.length).toEqual(3);
         expect(requests[0].url).toEqual('/my/first/url');
         expect(requests[1].url).toEqual('/my/second/url');
@@ -160,7 +160,7 @@ describe('The init function', function () {
         shellElements[1].setAttribute('data-initialization-url', '/my/url/path');
         mongo.init.run();
 
-        // The call to createMSWResource is mocked and did not make a request
+        // The call to createMWSResource is mocked and did not make a request
         expect(requests.length).toEqual(1);
         expect(requests[0].url).toEqual('/my/url/path');
       });
@@ -205,7 +205,7 @@ describe('The init function', function () {
         var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
         mongo.init.run();
 
-        // The call to createMSWResource is mocked and did not make a request
+        // The call to createMWSResource is mocked and did not make a request
         expect(requests.length).toEqual(1);
         expect(requests[0].url).toEqual('/init/load_json');
         expect(requests[0].requestBody).toEqual(expected);
