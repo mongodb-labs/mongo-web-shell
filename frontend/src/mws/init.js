@@ -23,6 +23,7 @@
  */
 mongo.init = (function(){
   var initState = {};
+  var res_id;
 
   var loadUrl = function(url, res_id){
     return $.ajax({
@@ -97,7 +98,8 @@ mongo.init = (function(){
     });
   };
 
-  var initShell = function(shellElement, res_id, create_new, init_data){
+  var initShell = function(shellElement, res_id, options){
+    var create_new = options.create_new, init_data = options.init_data;
     var waitFor = [];
 
     if (create_new){
@@ -111,14 +113,14 @@ mongo.init = (function(){
       lockShells(res_id);
 
       // Load init urls
-      var initUrl = shellElement.getAttribute('data-initialization-url');
+      var initUrl = options.init_url;
       if (initUrl && $.inArray(initUrl, mongo.init._initState[res_id].initUrls) === -1) {
         mongo.init._initState[res_id].initUrls.push(initUrl);
         waitFor.push(loadUrl(initUrl, res_id));
       }
 
       // Load init JSON/urls
-      var jsonAttr = shellElement.getAttribute('data-initialization-json');
+      var jsonAttr = options.init_json;
       if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
         // If it looks like a JSON object, assume it is supposed to be and try to parse it
         try {
@@ -138,6 +140,7 @@ mongo.init = (function(){
   };
 
   var run = function () {
+    mongo.init.jQuery(jQuery);
     mongo.util.enableConsoleProtection();
     var config = mongo.config = mongo.dom.retrieveConfig();
     mongo.dom.injectStylesheet(config.cssPath);
@@ -145,6 +148,8 @@ mongo.init = (function(){
 
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
+      res_id = data.res_id;
+
       setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
         mongo.const.keepAliveTime
@@ -152,9 +157,7 @@ mongo.init = (function(){
 
       // For now, assume a single resource id for all shells
       // Initialize all shells and process initialization urls
-      $(mongo.const.rootElementSelector).each(function (index, shellElement) {
-        initShell(shellElement, data.res_id, true, data.is_new);
-      });
+      $(mongo.const.rootElementSelector).mws({create_new: true, init_data: data.is_new});
     });
   };
 
@@ -162,15 +165,46 @@ mongo.init = (function(){
     // Send requests to all initialization urls for a res id, then call the
     // callback when all are done.
     $.each(mongo.shells, function(i, e){
-      initShell(e.$rootElement, res_id, false, init_data);
+      initShell(e.$rootElement, res_id, {create_new: false, init_data: init_data});
     });
 
     callback();
   };
 
+  // set up $.mws
+  var jQueryInit = function($){
+    $.fn.extend({
+      mws: function(options){
+        options = $.extend({}, $.mws.defaults, options);
+
+        this.addClass('mongo-web-shell').each(function(i, e){
+          initShell(e, res_id, $.extend({
+            init_url: e.getAttribute('data-initialization-url'),
+            init_json: e.getAttribute('data-initialization-json')
+          }, options));
+        });
+
+        if (options.height){ this.height(options.height); }
+        if (options.width){ this.width(options.width); }
+      }
+    });
+
+    $.mws = {
+      defaults: {
+        create_new: true,
+        init_data: true,
+        init_url: undefined,
+        init_json: undefined,
+        height: undefined,
+        width: undefined
+      }
+    };
+  };
+
   return {
     run: run,
     runInitializationScripts: runInitializationScripts,
+    jQuery: jQueryInit,
     _initState: initState
   };
 })();
