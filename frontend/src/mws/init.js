@@ -94,7 +94,14 @@ mongo.init = (function(){
         });
       }
     }, function(){
-      console.err('one or more waitFor events failed during initialization');
+      $.each(mongo.shells, function(i, e){
+        e.insertResponseArray([
+          'One or more scripts failed during initialization.',
+          'Your data may not be completely loaded.  Use the "reset" command to try again.'
+        ]);
+        mongo.init._initState[res_id].pending--;
+        e.enableInput(true);
+      });
     });
   };
 

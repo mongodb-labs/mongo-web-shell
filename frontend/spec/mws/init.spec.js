@@ -408,6 +408,26 @@ describe('The init function', function () {
           expect(shell.$input.prop('disabled')).toBe(false);
         });
       });
+
+      it('notifying the user if initialization problems occured', function(){
+        spyOn(mongo.Shell.prototype, 'insertResponseArray');
+        var d = [$.Deferred(), $.Deferred()];
+        var promises = d.map(function(d){ return d.promise(); });
+        mongo.init._unlockShells('iu', promises);
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[0].reject();
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+        expect(mongo.Shell.prototype.insertResponseArray).toHaveBeenCalledWith([
+          'One or more scripts failed during initialization.',
+          'Your data may not be completely loaded.  Use the "reset" command to try again.'
+        ]);
+      });
     });
   });
 });
