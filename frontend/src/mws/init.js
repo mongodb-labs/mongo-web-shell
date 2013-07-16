@@ -175,14 +175,18 @@ mongo.init = (function(){
   var jQueryInit = function($){
     $.fn.extend({
       mws: function(options){
-        options = $.extend({}, $.mws.defaults, options);
-
         this.addClass('mongo-web-shell').each(function(i, e){
-          mongo.init._initShell(e, mongo.init._res_id, $.extend({
+          // determine the initialization options for the current shell
+          // preferring undefined over null prevents null properties from overwriting defaults
+          var opt = $.extend({}, $.mws.defaults, {
             init_url: $(e).data('initialization-url') || undefined,
             init_json: $(e).data('initialization-json') || undefined
-          }, options));
+          }, options);
+
+          mongo.init._initShell(e, mongo.init._res_id, opt);
         });
+
+        options = $.extend({}, $.mws.defaults, options);
 
         if (options.height){ this.height(options.height); }
         if (options.width){ this.width(options.width); }
