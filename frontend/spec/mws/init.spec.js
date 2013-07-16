@@ -494,6 +494,77 @@ describe('The init function', function () {
       });
     });
 
+    describe('manipulates an existing web shell by', function(){
+      var $shell, shell;
+      beforeEach(function(){
+        mongo.init._res_id = 'res_id';
+        $shell = $('<div />').appendTo(document.body).mws();
+        shell = $shell.data('shell');
+      });
+      it('locking it', function(){
+        expect(shell.$input[0].disabled).toBe(false);
+        $shell.mws('lock');
+        expect(shell.$input[0].disabled).toBe(true);
+      });
+
+      it('unlocking it', function(){
+        shell.$input[0].disabled = true;
+        $shell.mws('unlock');
+        expect(shell.$input[0].disabled).toBe(false);
+      });
+
+      it('setting the width', function(){
+        $shell.mws('width', 100);
+        expect($shell.width()).toBe(100);
+      });
+
+      it('setting the height', function(){
+        $shell.mws('height', 100);
+        expect($shell.height()).toBe(100);
+      });
+
+      it('loading data from a url', function(){
+        var initShell = spyOn(mongo.init, '_initShell');
+        $shell.mws('loadUrl', '/my/data/url');
+        expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
+          create_new: false,
+          init_data: true,
+          init_url: '/my/data/url'
+        });
+      });
+
+      it('loading data from json', function(){
+        var initShell = spyOn(mongo.init, '_initShell');
+        $shell.mws('loadJSON', {coll: [{a: 1}]});
+        expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
+          create_new: false,
+          init_data: true,
+          init_json: {coll: [{a: 1}]}
+        });
+      });
+
+      it('loading data from a json url', function(){
+        var initShell = spyOn(mongo.init, '_initShell');
+        $shell.mws('loadJSON', '/my/json/url');
+        expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
+          create_new: false,
+          init_data: true,
+          init_json: '/my/json/url'
+        });
+      });
+
+      it('setting its input', function(){
+        $shell.mws('input', 'command');
+        expect(shell.$input.val()).toEqual('command');
+      });
+
+      it('submitting its input', function(){
+        spyOn(shell, 'handleInput');
+        $shell.mws('submit');
+        expect(shell.handleInput).toHaveBeenCalled();
+      });
+    });
+
     it('has configurable defaults', function(){
       var opt = {
         init_data: false,

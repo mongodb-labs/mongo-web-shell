@@ -121,7 +121,9 @@ mongo.init = (function(){
 
       // Load init JSON/urls
       var jsonAttr = options.init_json;
-      if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
+      if (typeof jsonAttr === 'object'){
+        waitFor.push(loadJSON(jsonAttr, res_id));
+      } else if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
         // If it looks like a JSON object, assume it is supposed to be and try to parse it
         try {
           waitFor.push(loadJSON(JSON.parse(jsonAttr), res_id));
@@ -175,23 +177,79 @@ mongo.init = (function(){
   var jQueryInit = function($){
     $.fn.extend({
       mws: function(options){
-        this.addClass('mongo-web-shell').each(function(i, e){
-          // determine the initialization options for the current shell
-          // preferring undefined over null prevents null properties from overwriting defaults
-          var opt = $.extend({}, $.mws.defaults, {
-            init_url: $(e).data('initialization-url') || undefined,
-            init_json: $(e).data('initialization-json') || undefined
-          }, options);
+        switch (typeof options){
+        case 'string':
+          // manipulate properties of existing shell
+          switch (options){
+          case 'lock':
+            this.each(function(i, e){ $(e).data('shell').enableInput(false); });
+            break;
 
-          mongo.init._initShell(e, mongo.init._res_id, opt);
-        });
+          case 'unlock':
+            this.each(function(i, e){ $(e).data('shell').enableInput(true); });
+            break;
 
-        options = $.extend({}, $.mws.defaults, options);
+          case 'width':
+            this.width(arguments[1]);
+            break;
 
-        if (options.height){ this.height(options.height); }
-        if (options.width){ this.width(options.width); }
+          case 'height':
+            this.height(arguments[1]);
+            break;
 
-        return this;
+          case 'loadUrl':
+            // loads data from url into first selected shell
+            mongo.init._initShell(this[0], mongo.init._res_id, {
+              create_new: false,
+              init_data: true,
+              init_url: arguments[1]
+            });
+            break;
+
+          case 'loadJSON':
+            // loads data from json into first selected shell
+            mongo.init._initShell(this[0], mongo.init._res_id, {
+              create_new: false,
+              init_data: true,
+              init_json: arguments[1]
+            });
+            break;
+
+          case 'input':
+            var val = arguments[1];
+            this.each(function(i, e){
+              $(e).data('shell').$input.val(val);
+            });
+            break;
+
+          case 'submit':
+            this.each(function(i, e){ $(e).data('shell').handleInput(); });
+            break;
+          }
+          break;
+
+        case 'object':
+        case 'undefined': // accept no parameters as call to default constructor
+          this.addClass('mongo-web-shell').each(function(i, e){
+            // determine the initialization options for the current shell
+            // preferring undefined over null prevents null properties from overwriting defaults
+            var opt = $.extend({}, $.mws.defaults, {
+              init_url: $(e).data('initialization-url') || undefined,
+              init_json: $(e).data('initialization-json') || undefined
+            }, options);
+
+            mongo.init._initShell(e, mongo.init._res_id, opt);
+          });
+
+          options = $.extend({}, $.mws.defaults, options);
+
+          if (options.height){ this.height(options.height); }
+          if (options.width){ this.width(options.width); }
+
+          return this;
+        default:
+          throw new TypeError('Parameter must be a string or options object');
+        }
       }
     });
 

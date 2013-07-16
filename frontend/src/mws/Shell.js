@@ -46,7 +46,7 @@ mongo.Shell.prototype.injectHTML = function () {
           '</form>' +
         '</li>' +
       '</ul>';
-  this.$rootElement.html(html);
+  this.$rootElement.html(html).data('shell', this);
   this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.mws-input-li');
   this.$input = this.$inputLI.find('.mws-input');
