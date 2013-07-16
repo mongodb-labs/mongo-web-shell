@@ -90,6 +90,11 @@ describe('The jQuery methods', function(){
       $shell = $('<div />').appendTo(document.body).mws();
       shell = $shell.data('shell');
     });
+
+    afterEach(function(){
+      $shell.remove();
+    });
+
     it('locking it', function(){
       expect(shell.$input[0].disabled).toBe(false);
       $shell.mws('lock');
