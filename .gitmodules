@@ -10,3 +10,6 @@
 [submodule "frontend/lib/noty"]
 	path = frontend/lib/noty
 	url = git://github.com/needim/noty.git
+[submodule "frontend/lib/blockui"]
+	path = frontend/lib/blockui
+	url = git://github.com/malsup/blockui.git

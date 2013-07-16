@@ -23,6 +23,7 @@ module.exports = function (grunt) {
           LIB_DIR + 'noty/js/noty/layouts/top.js',
           LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
           LIB_DIR + 'noty/js/noty/themes/default.js',
+          LIB_DIR + 'blockui/jquery.blockUI.js',
           SRC_DIR + 'head.js',
           SRC_DIR + 'mws/**/*.js',
           SRC_DIR + 'tail.js'

@@ -111,6 +111,18 @@ mongo.Shell.prototype.eval = function (src) {
 
 mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
+  if (bool){
+    $(this.$rootElement).unblock();
+  } else {
+    $(this.$rootElement).block({
+      message: '<img src="/spinner.gif" />',
+      css: {
+        width: null,
+        backgroundColor: 'none',
+        border: 'none'
+      }
+    });
+  }
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
