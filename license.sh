@@ -18,5 +18,6 @@ find . -type f ! -path './frontend/lib/*' \
                ! -path './node_modules/*' \
                ! -path './venv/*' \
                ! -path './.git/*' \
+               ! -path './frontend/dist/mongoWebShell.js' \
                \( -name '*.py' -o -name '*.js' \) \
 	| while read file; do applyLicense "$file" $1; done
