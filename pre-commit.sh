@@ -1,6 +1,14 @@
-#!/bin/sh
+#!/bin/bash
 
 . ./venv/bin/activate
+
+echo 'Checking for licenses'
+missing=`./license.sh --check`
+if [[ -n $missing ]]; then
+    echo The following files are missing licenses:
+    echo "$missing"
+    exit 1
+fi
 
 echo "Running tests..."
 git stash -u --keep-index > /dev/null
