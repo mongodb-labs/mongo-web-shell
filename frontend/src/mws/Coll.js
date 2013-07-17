@@ -158,3 +158,19 @@ mongo.Coll.prototype.dropIndexes = function(){
   var url = this.urlBase + 'dropIndexes';
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDropIndexes', this.shell);
 };
+
+/**
+ * Makes a request to get the indexes of the collection to the mongod instance on
+ * the backing server.  On success, index information is returned, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.getIndexes = function(){
+  var results = [];
+  var url = this.urlBase + 'getIndexes';
+  var onSuccess = function(data){
+    results = data;
+  }.bind(this);
+  mongo.request.makeRequest(url, null, 'GET', 'dbCollectionGetIndexes', this.shell, onSuccess,
+                            false);
+  return results;
+};
