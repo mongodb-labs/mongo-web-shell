@@ -231,7 +231,7 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
 
-    it('retuns the aggregation results', function () {
+    it('returns the aggregation results', function () {
       var results = {
         status: 'ok',
         results: ['a', 'b', 'c']
@@ -258,6 +258,100 @@ describe('The Collection class', function () {
 
     it('uses the collection\'s shell', function () {
       coll.drop();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+  });
+
+  describe('ensureIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/ensureIndex');
+    });
+
+    it('constructs appropriate params', function () {
+      var keys = {a: 1, b: '2d'};
+      var options = {
+        background: true,
+        unique: true,
+        name: 'index',
+        dropDups: true,
+        sparse: true,
+        expireAfterSeconds: 60
+      };
+      coll.ensureIndex(keys, options);
+      var params = makeRequest.calls[0].args[1];
+      expect(params.keys).toEqual(keys);
+      expect(params.options).toEqual(options);
+    });
+
+    it('uses the POST HTTP method', function () {
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[2]).toEqual('POST');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+  });
+
+  describe('reIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/reIndex');
+    });
+
+    it('uses the PUT HTTP method', function () {
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[2]).toEqual('PUT');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+  });
+
+  describe('dropIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/dropIndex');
+    });
+
+    it('constructs appropriate params', function () {
+      coll.dropIndex('name');
+      var params = makeRequest.calls[0].args[1];
+      expect(params.name).toEqual('name');
+    });
+
+    it('uses the DELETE HTTP method', function () {
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+  });
+
+  describe('dropIndexes', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.dropIndexes();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/dropIndexes');
+    });
+
+    it('uses the DELETE HTTP method', function () {
+      coll.dropIndexes();
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.dropIndexes();
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
   });

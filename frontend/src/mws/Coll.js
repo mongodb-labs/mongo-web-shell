@@ -116,3 +116,45 @@ mongo.Coll.prototype.aggregate = function(query){
                             onSuccess, false); // Sync request, blocking
   return results;
 };
+
+/**
+ * Makes a request to create the specified index to the mongod instance on
+ * the backing server.  On success, the index is created, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.ensureIndex = function(keys, options){
+  var url = this.urlBase + 'ensureIndex';
+  var data = {keys: keys, options: options};
+  mongo.request.makeRequest(url, data, 'POST', 'dbCollectionEnsureIndex', this.shell);
+};
+
+/**
+ * Makes a request to reindex all indexes of the collection to the mongod instance on
+ * the backing server.  On success, the collection is reindexed, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.reIndex = function(){
+  var url = this.urlBase + 'reIndex';
+  mongo.request.makeRequest(url, null, 'PUT', 'dbCollectionReIndex', this.shell);
+};
+
+/**
+ * Makes a request to drop the specified index to the mongod instance on
+ * the backing server.  On success, the index is dropped, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.dropIndex = function(name){
+  var url = this.urlBase + 'dropIndex';
+  var data = {name: name};
+  mongo.request.makeRequest(url, data, 'DELETE', 'dbCollectionDropIndex', this.shell);
+};
+
+/**
+ * Makes a request to drop all indexes of the collection to the mongod instance on
+ * the backing server.  On success, all indexes are dropped, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.dropIndexes = function(){
+  var url = this.urlBase + 'dropIndexes';
+  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDropIndexes', this.shell);
+};
