@@ -234,6 +234,10 @@ class DBCollectionTestCase(DBTestCase):
         return self._make_request('dropIndexes', None, self.app.delete,
                                   expected_status)
 
+    def make_get_indexes_request(self, expected_status=200):
+        return self._make_request('getIndexes', None, self.app.get,
+                                  expected_status)
+
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
             sess['session_id'] = new_id
@@ -584,6 +588,26 @@ class DropIndexesTestCase(DBCollectionTestCase):
         info = self.db_collection.index_information()
         self.assertFalse('idx1' in info)
         self.assertFalse('idx2' in info)
+
+
+class GetIndexesTestCase(DBCollectionTestCase):
+    def test_get_indexes(self):
+        self.db_collection.ensure_index('a', 1, name='idx')
+        result = self.make_get_indexes_request()
+        self.assertEqual(result, [
+            {
+                'ns': self.db_collection.full_name,
+                'name': '_id_',
+                'key': {'_id': 1},
+                'v': 1
+            },
+            {
+                'ns': self.db_collection.full_name,
+                'name': 'idx',
+                'key': {'a': 1},
+                'v': 1
+            }
+        ])
 
 
 class DropUnitTestCase(DBCollectionTestCase):

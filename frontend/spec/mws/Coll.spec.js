@@ -355,4 +355,27 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
   });
+
+  describe('getIndexes', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/getIndexes');
+    });
+
+    it('uses the GET HTTP method', function () {
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[2]).toEqual('GET');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('returns the indexes array', function () {
+      makeRequest.andCallFake(function(a, b, c, d, e, fn){ fn(['data']); });
+      expect(coll.getIndexes()).toEqual(['data']);
+    });
+  });
 });

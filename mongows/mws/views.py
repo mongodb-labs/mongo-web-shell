@@ -331,6 +331,16 @@ def db_collection_drop_indexes(res_id, collection_name):
     return empty_success()
 
 
+@mws.route('/<res_id>/db/<collection_name>/getIndexes', methods=['GET'])
+@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@check_session_id
+@ratelimit
+def db_collection_get_indexes(res_id, collection_name):
+    db = get_db()
+    coll = get_internal_coll_name(res_id, collection_name)
+    return to_json(list(db['system.indexes'].find({'ns': db[coll].full_name})))
+
+
 @mws.route('/<res_id>/db/getCollectionNames',
            methods=['GET', 'OPTIONS'])
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
