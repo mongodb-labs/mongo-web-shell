@@ -17,6 +17,7 @@ module.exports = function (grunt) {
     concat: {
       dist: {
         src: [
+          LIB_DIR + 'es5-shim/es5-shim.min.js',
           LIB_DIR + 'esprima/esprima.js',
           LIB_DIR + 'falafel/falafel.browser.js',
           LIB_DIR + 'noty/js/noty/jquery.noty.js',
