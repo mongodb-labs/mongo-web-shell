@@ -16,6 +16,9 @@ function applyLicense {
 		fi
 	fi
 }
+
+trap "rm -f licenses/temp$$" SIGHUP SIGINT SIGPIPE SIGTERM
+
 find . -type f ! -path './frontend/lib/*' \
                ! -path './node_modules/*' \
                ! -path './venv/*' \
