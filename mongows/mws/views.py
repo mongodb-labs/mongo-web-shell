@@ -170,15 +170,8 @@ def db_collection_insert(res_id, collection_name):
         raise MWSServerError(400, error)
 
     # Check quota
-    coll = get_internal_coll_name(res_id, collection_name)
-    try:
-        size = get_db().command({'collstats': coll})['size']
-    except OperationFailure as e:
-        # TODO: handle multiple res_id per session
-        if 'ns not found' in e.message:
-            size = 0
-        else:
-            raise MWSServerError(500, e.message)
+    db = get_db()
+    size = get_collection_size(db, res_id, collection_name)
 
     # Handle inserting both a list of docs or a single doc
     if isinstance(document, list):
@@ -193,7 +186,7 @@ def db_collection_insert(res_id, collection_name):
 
     # Insert document
     with UseResId(res_id):
-        get_db()[collection_name].insert(document)
+        db[collection_name].insert(document)
         return empty_success()
 
 
@@ -231,28 +224,20 @@ def db_collection_update(res_id, collection_name):
         raise MWSServerError(400, error)
 
     # Check quota
-    coll = get_internal_coll_name(res_id, collection_name)
     db = get_db()
-    try:
-        size = db.command({'collstats': coll})['size']
-    except OperationFailure as e:
-        # TODO: handle multiple res_id per session
-        if 'ns not found' in e.message:
-            size = 0
-        else:
-            raise MWSServerError(500, e.message)
+    size = get_collection_size(db, res_id, collection_name)
 
-    # Computation of worst case size increase - update size * docs affected
-    # It would be nice if we were able to make a more conservative estimate
-    # of the space difference that an update will cause. (especially if it
-    # results in smaller documents)
-    req_size = len(BSON.encode(update)) * db[coll].find(query).count()
-
-    if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
-        raise MWSServerError(403, 'Collection size exceeded')
-
-    # Update
     with UseResId(res_id):
+        # Computation of worst case size increase - update size * docs affected
+        # It would be nice if we were able to make a more conservative estimate
+        # of the space difference that an update will cause. (especially if it
+        # results in smaller documents)
+        affected = db[collection_name].find(query).count()
+        req_size = len(BSON.encode(update)) * affected
+
+        if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
+            raise MWSServerError(403, 'Collection size exceeded')
+
         db[collection_name].update(query, update, upsert, multi=multi)
         return empty_success()
 
@@ -347,4 +332,16 @@ def parse_get_json(request):
     try:
         request.json = loads(request.args.keys()[0])
     except ValueError:
-        raise BadRequest
+        raise MWSServerError(400, 'Error parsing JSON data',
+                             'Invalid GET parameter data')
+
+
+def get_collection_size(db, res_id, collection_name):
+    coll = get_internal_coll_name(res_id, collection_name)
+    try:
+        return db.command({'collstats': coll})['size']
+    except OperationFailure as e:
+        if 'ns not found' in e.message:
+            return 0
+        else:
+            raise MWSServerError(500, e.message)
