@@ -1,6 +1,6 @@
 /* global mongo */
 mongo.Readline = function (codemirror, submitFunction) {
-  this.codemirror = codemirror;
+  this.inputBox = codemirror;
   this.submitFunction = submitFunction;
   if (localStorage){
     this.history = localStorage[mongo.const.shellHistoryKey];
@@ -8,7 +8,7 @@ mongo.Readline = function (codemirror, submitFunction) {
   this.history = this.history ? JSON.parse(this.history) : []; // Newest entries at Array.length
   this.historyIndex = this.history.length;
 
-  this.codemirror.on('keydown', function (codemirror, event) {this.keydown(event);}.bind(this));
+  this.inputBox.on('keydown', function (codemirror, event) {this.keydown(event);}.bind(this));
 };
 
 mongo.Readline.prototype.keydown = function (event) {
@@ -22,7 +22,7 @@ mongo.Readline.prototype.keydown = function (event) {
     line = this.getNewerHistoryEntry();
     break;
   case key.enter:
-    this.submit(this.codemirror.getValue());
+    this.submit(this.inputBox.getValue());
     break;
   default:
     return;
@@ -30,7 +30,7 @@ mongo.Readline.prototype.keydown = function (event) {
 
   event.preventDefault();
   if (line !== undefined && line !== null) {
-    this.codemirror.setValue(line);
+    this.inputBox.setValue(line);
     this.moveCursorToEnd();
   }
 };
@@ -92,9 +92,9 @@ mongo.Readline.prototype.submit = function (line) {
 };
 
 mongo.Readline.prototype.moveCursorToEnd = function() {
-  var lastLine = this.codemirror.lineCount() - 1;
-  var lastChar = this.codemirror.getLine(lastLine).length - 1;
-  this.codemirror.setCursor({
+  var lastLine = this.inputBox.lineCount() - 1;
+  var lastChar = this.inputBox.getLine(lastLine).length - 1;
+  this.inputBox.setCursor({
     line: lastLine,
     pos: lastChar
   });

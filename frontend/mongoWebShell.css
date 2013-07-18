@@ -2,11 +2,6 @@
   border-radius: 10px;
   height: 30em;
   padding: 8px 16px;
-}
-
-.mongo-web-shell, .mongo-web-shell * {
-  background-color: #DADADA;
-  color: #252525;
   font-size: 15px;
   font-family: monospace;
 }
@@ -16,29 +11,36 @@
   margin: 0;
 }
 
-.mws-response-list {
-  height: 100%;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  overflow-y: auto;
-  word-wrap: break-word;
-}
-
-.mws-response-list li {
-  margin: 3px 0;
-}
-
-.mws-input-li {
+.mws-input-div {
+  padding-left: 9px;
   vertical-align: top;
-  line-height: 26px;
+  line-height: 29px;
 }
 
-.mws-plain-result {
-  padding-left: 4px;
+.mws-scroll-wrapper {
+  overflow: scroll;
+  height: inherit;
 }
 
+/* Code Mirror overrides */
 .CodeMirror {
   height: auto !important;
   display: inline-block;
+}
+
+div.CodeMirror-scroll {
+  height: auto !important;
+  overflow: visible;
+}
+
+.cm-s-solarized.CodeMirror {
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  background-image: none;
+}
+
+/* Allows removal of highlighting on a line */
+.mws-cm-plain-text, .mws-cm-plain-text span {
+  color: inherit !important;
 }

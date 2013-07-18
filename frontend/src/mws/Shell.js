@@ -1,11 +1,13 @@
 /* jshint evil: true, newcap: false */
 /* global console, mongo, CodeMirror */
 mongo.Shell = function (rootElement, shellID) {
+  this.rootElement = rootElement;
   this.$rootElement = $(rootElement);
   this.$responseList = null;
   this.$inputLI = null;
-  this.codemirror = null;
+  this.inputBox = null;
 
+  this.hasShownResponse = false;
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
@@ -26,20 +28,44 @@ mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
   // We're injecting into <div class="mongo-web-shell">. The previous HTML
   // content is used to fill the shell.
-  var html =
-      '<ul class="mws-response-list">' +
-        '<li>' + this.$rootElement.html() + '</li>' +
-        '<li class="mws-input-li">' +
-          '> ' +
-        '</li>' +
-      '</ul>';
-  this.$rootElement.html(html);
-  this.$responseList = this.$rootElement.find('.mws-response-list');
-  this.$inputLI = this.$responseList.find('.mws-input-li');
-  this.codemirror = CodeMirror(this.$inputLI.get(0), {
-    matchBrackets: true,
-    readOnly: 'nocursor'
+//  var html =
+//      '<ul class="mws-response-list cm-s-solarized cm-s-dark">' +
+//        '<li>' + this.$rootElement.html() + '</li>' +
+//        '<li class="mws-input-li">' +
+//          '> ' +
+//        '</li>' +
+//      '</ul>';
+//  this.$rootElement.html(html);
+//  this.$responseList = this.$rootElement.find('.mws-response-list');
+//  this.$inputLI = this.$responseList.find('.mws-input-li');
+  this.rootElement.className += ' cm-s-solarized cm-s-dark';
+  this.$rootElement.html(
+    '<div class="mws-scroll-wrapper">' +
+      this.$rootElement.html() +
+      '<textarea class="mws-responses"/>' +
+      '<div class="mws-input-div">></div>' +
+    '</div>'
+  );
+  var responsesTextArea = this.$rootElement.find('.mws-responses').get(0);
+  this.responseBlock = CodeMirror.fromTextArea(responsesTextArea, {
+    readOnly: true,
+    lineWrapping: true,
+    theme: 'solarized dark'
   });
+  this.$responseWrapper = $(this.responseBlock.getWrapperElement());
+  this.$responseWrapper.css({display: 'none'});
+
+  var inputContainer = this.$rootElement.find('.mws-input-div').get(0);
+  this.inputBox = CodeMirror(inputContainer, {
+    matchBrackets: true,
+    lineWrapping: true,
+    readOnly: 'nocursor',
+    theme: 'solarized dark'
+  });
+  this.$inputWrapper = $(this.inputBox.getWrapperElement());
+  this.$inputWrapper.css({background: 'transparent'});
+  this.$inputDiv = this.$rootElement.find('.mws-input-div');
+  this.$scrollWrapper = this.$rootElement.find('.mws-scroll-wrapper');
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
@@ -59,14 +85,16 @@ mongo.Shell.prototype.injectHTML = function () {
 
 mongo.Shell.prototype.attachClickListener = function () {
   this.$rootElement.click(function () {
-    this.codemirror.focus();
-    this.codemirror.refresh();
+    console.log('in click listener');
+    this.inputBox.focus();
+    this.inputBox.refresh();
+//    this.$inputWrapper.css({display: ''});
   }.bind(this));
 };
 
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
   this.mwsResourceID = mwsResourceID;
-  this.readline = new mongo.Readline(this.codemirror, this.handleInput.bind(this));
+  this.readline = new mongo.Readline(this.inputBox, this.handleInput.bind(this));
   this.enableInput(true);
 };
 
@@ -75,8 +103,8 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 mongo.Shell.prototype.handleInput = function () {
-  var userInput = this.codemirror.getValue();
-  this.codemirror.setValue('');
+  var userInput = this.inputBox.getValue();
+  this.inputBox.setValue('');
   this.insertResponseLine(userInput, '> ');
 
   if (mongo.keyword.handleKeywords(this, userInput)) {
@@ -109,35 +137,59 @@ mongo.Shell.prototype.eval = function (src) {
 
 mongo.Shell.prototype.enableInput = function (bool) {
   var readOnly = bool ? false : 'nocursor';
-  this.codemirror.setOption('readOnly', readOnly);
+  this.inputBox.setOption('readOnly', readOnly);
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
+  // Todo: Make this more efficient, don't update the DOM each time, do a
+  // single large insert and then update
   for (var i = 0; i < data.length; i++) {
     this.insertResponseLine(data[i]);
   }
 };
 
 mongo.Shell.prototype.insertResponseLine = function (data, prepend) {
-  var li = document.createElement('li');
-  this.$inputLI.before(li);
+  var lastLine = this.responseBlock.lineCount() - 1;
+  var lastChar = this.responseBlock.getLine(lastLine).length;
+  var lastPos = {line: lastLine, ch: lastChar};
+
   if (prepend) {
-    li.innerHTML = prepend;
+    data = prepend + data;
   }
+  this.$responseWrapper.css({display: ''});
+  this.$inputDiv.css({marginTop: '-8px'});
+  var separator = this.hasShownResponse ? '\n' : '';
+  this.responseBlock.replaceRange(separator + data, lastPos);
+//  this.responseBlock.setValue(this.responseBlock.getValue() + separator + data);
+
   if (typeof(data) === 'string' && !prepend) {
-    // If we're printing an output and it's a string, don't highlight
-    li.innerHTML = mongo.util.toString(data);
-    li.className = 'mws-plain-result';
-  } else {
-    var cm = CodeMirror(li, {
-      readOnly: true,
-      value: mongo.util.toString(data)
-    });
-    cm.refresh();
+    var newLastLine = this.responseBlock.lineCount() - 1;
+    this.responseBlock.addLineClass(newLastLine, 'text', 'mws-cm-plain-text');
   }
 
+  this.responseBlock.refresh();
+  this.hasShownResponse = true;
+//  var li = document.createElement('li');
+//  this.$inputLI.before(li);
+//  if (prepend) {
+//    li.innerHTML = prepend;
+//  }
+//  if (typeof(data) === 'string' && !prepend) {
+//    // If we're printing an output and it's a string, don't highlight
+//    li.innerHTML = mongo.util.toString(data);
+//    li.className = 'mws-plain-result';
+//  } else {
+//    var cm = CodeMirror(li, {
+//      readOnly: true,
+//      value: mongo.util.toString(data),
+//      theme: 'solarized dark'
+//    });
+//    cm.refresh();
+//  }
+
   // Reset scroll distance so the <input> is not hidden at the bottom.
-  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
+//  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
+  this.$scrollWrapper.scrollTop(this.$scrollWrapper.get(0).scrollHeight);
 };
 
 mongo.Shell.prototype.insertError = function (err) {

@@ -35,6 +35,7 @@ module.exports = function (grunt) {
       css: {
         src: [
           LIB_DIR + 'codemirror/lib/codemirror.css',
+          LIB_DIR + 'codemirror/theme/solarized.css',
           FRONTEND_DIR + 'mongoWebShell.css'
         ],
         dest: DIST_DIR + 'mongoWebShell.css'
@@ -53,7 +54,7 @@ module.exports = function (grunt) {
           ],
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
-            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
           ],
           styles: [
             DIST_DIR + 'mongoWebShell.css'

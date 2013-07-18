@@ -56,12 +56,12 @@ describe('A Shell', function () {
     var shell = new mongo.Shell($rootElement.get(0), 0);
     expect(attachClickListener).toHaveBeenCalled();
 
-    spyOn(shell.codemirror, 'focus');
-    spyOn(shell.codemirror, 'refresh');
+    spyOn(shell.inputBox, 'focus');
+    spyOn(shell.inputBox, 'refresh');
 
     shell.$rootElement.trigger('click');
-    expect(shell.codemirror.focus).toHaveBeenCalled();
-    expect(shell.codemirror.refresh).toHaveBeenCalled();
+    expect(shell.inputBox.focus).toHaveBeenCalled();
+    expect(shell.inputBox.refresh).toHaveBeenCalled();
   });
 
   describe('has a print() function', function () {
@@ -73,14 +73,14 @@ describe('A Shell', function () {
     });
 
     it('that prints nonobjects', function () {
-      instance.codemirror.getValue = function () {return 'print("mongo")';};
+      instance.inputBox.getValue = function () {return 'print("mongo")';};
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith('mongo');
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
     });
 
     it('that prints stringified objects', function () {
-      instance.codemirror.getValue = function () {
+      instance.inputBox.getValue = function () {
         return 'print({name: "Mongo"})';
       };
       instance.handleInput();
@@ -89,7 +89,7 @@ describe('A Shell', function () {
     });
 
     it('that it uses the toString for objects for which it is a function', function () {
-      instance.codemirror.getValue = function () {
+      instance.inputBox.getValue = function () {
         return 'function A(){};' +
           'A.prototype.toString = function(){ return "mongo!" };' +
           'var a = new A();' +
@@ -100,13 +100,13 @@ describe('A Shell', function () {
     });
 
     it('that refuses to print circular structures', function () {
-      instance.codemirror.getValue = function () {return 'var a = {}; a.a = a; print(a)';};
+      instance.inputBox.getValue = function () {return 'var a = {}; a.a = a; print(a)';};
       instance.handleInput();
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });
 
     it('handles multiple arguments', function(){
-      instance.codemirror.getValue = function () {
+      instance.inputBox.getValue = function () {
         return 'print(1, null, undefined, {}, {a:1}, "abc")';
       };
       instance.handleInput();
@@ -143,7 +143,7 @@ describe('A Shell', function () {
       expect(instance.mwsResourceID).toBe(resID);
       expect(instance.enableInput).toHaveBeenCalledWith(true);
       expect(mongo.Readline).toHaveBeenCalled();
-      expect(mongo.Readline.calls[0].args[0]).toEqual(instance.codemirror);
+      expect(mongo.Readline.calls[0].args[0]).toEqual(instance.inputBox);
       mongo.Readline.calls[0].args[1]();
       expect(instance.handleInput).toHaveBeenCalled();
       expect(instance.handleInput.calls[0].object).toBe(instance);
@@ -151,7 +151,7 @@ describe('A Shell', function () {
     });
 
     it('sets the enabled state of the input', function () {
-      var cm = instance.codemirror;
+      var cm = instance.inputBox;
       cm.setOption('readOnly', true);
       instance.enableInput(true);
       expect(cm.getOption('readOnly')).toBe(false);
@@ -214,9 +214,9 @@ describe('A Shell', function () {
 
       it('clears the input value and inserts it into responses', function () {
         var expected = ';';
-        instance.codemirror.setValue(expected);
+        instance.inputBox.setValue(expected);
         instance.handleInput();
-        expect(instance.codemirror.getValue()).toBe('');
+        expect(instance.inputBox.getValue()).toBe('');
         expect(instance.insertResponseLine).toHaveBeenCalledWith(expected, '> ');
       });
 
@@ -226,7 +226,7 @@ describe('A Shell', function () {
 
         var keywordInput = 'use a keyword';
         handleKeywords.andReturn(true);
-        instance.codemirror.setValue(keywordInput);
+        instance.inputBox.setValue(keywordInput);
         instance.handleInput();
         expect(handleKeywords).toHaveBeenCalledWith(instance, keywordInput);
         expect(swapMemberAccess).not.toHaveBeenCalled();
@@ -235,7 +235,7 @@ describe('A Shell', function () {
         swapMemberAccess.reset();
         var jsInput = 'not.a = keyword;';
         handleKeywords.andReturn(false);
-        instance.codemirror.setValue(jsInput);
+        instance.inputBox.setValue(jsInput);
         instance.handleInput();
         expect(handleKeywords).toHaveBeenCalledWith(instance, jsInput);
         expect(swapMemberAccess).toHaveBeenCalledWith(jsInput);
@@ -246,7 +246,7 @@ describe('A Shell', function () {
         var ms = mongo.mutateSource;
         var kw = mongo.keyword;
         var userInput = ';';
-        instance.codemirror.setValue(userInput);
+        instance.inputBox.setValue(userInput);
         instance.handleInput();
         expect(kw.handleKeywords).toHaveBeenCalledWith(instance, userInput);
         expect(ms.swapMemberAccesses).toHaveBeenCalledWith(userInput);

@@ -223,14 +223,14 @@ describe('A Readline instance', function () {
   });
 
   it('moves the cursor the the end of the last line', function () {
-    instance.codemirror.lineCount = jasmine.createSpy().andReturn(5);
-    instance.codemirror.getLine = jasmine.createSpy().andReturn('1234567'); // length 7
-    instance.codemirror.setCursor = jasmine.createSpy();
+    instance.inputBox.lineCount = jasmine.createSpy().andReturn(5);
+    instance.inputBox.getLine = jasmine.createSpy().andReturn('1234567'); // length 7
+    instance.inputBox.setCursor = jasmine.createSpy();
 
     instance.moveCursorToEnd();
-    expect(instance.codemirror.lineCount).toHaveBeenCalledWith(); // no args
-    expect(instance.codemirror.getLine).toHaveBeenCalledWith(4);
-    expect(instance.codemirror.setCursor).toHaveBeenCalledWith({
+    expect(instance.inputBox.lineCount).toHaveBeenCalledWith(); // no args
+    expect(instance.inputBox.getLine).toHaveBeenCalledWith(4);
+    expect(instance.inputBox.setCursor).toHaveBeenCalledWith({
       line: 4,
       pos: 6
     });
