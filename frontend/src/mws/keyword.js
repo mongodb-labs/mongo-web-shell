@@ -78,9 +78,10 @@ mongo.keyword = (function () {
     mongo.keyword._resetHasBeenCalled = false;
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
     mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, function(){
+      delete mongo.init._initState[shell.mwsResourceID];
       mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
         shell.insertResponseLine('Database reset successfully');
-      });
+      }, true);
     });
   }
 

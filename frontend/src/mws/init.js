@@ -120,14 +120,14 @@ mongo.init = (function(){
       lockShells(res_id);
 
       // Load init urls
-      var initUrl = options.init_url;
+      var initUrl = options.init_url || $(shellElement).data('initialization-url');
       if (initUrl && $.inArray(initUrl, mongo.init._initState[res_id].initUrls) === -1) {
         mongo.init._initState[res_id].initUrls.push(initUrl);
         waitFor.push(loadUrl(initUrl, res_id));
       }
 
       // Load init JSON/urls
-      var jsonAttr = options.init_json;
+      var jsonAttr = options.init_json || $(shellElement).data('initialization-json');
       if (typeof jsonAttr === 'object'){
         waitFor.push(loadJSON(jsonAttr, res_id));
       } else if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
