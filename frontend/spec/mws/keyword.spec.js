@@ -144,11 +144,11 @@ describe('The keyword module', function () {
       });
 
       it('runs the initialization scripts', function(){
-        spyOn(mongo.init, 'runInitializationScripts');
+        spyOn(mongo.init, '_initShell');
 
         mongo.keyword.reset(shellSpy);
         requests[0].respond(204);
-        expect(mongo.init.runInitializationScripts).toHaveBeenCalled();
+        expect(mongo.init._initShell.callCount).toBe(mongo.shells.length);
       });
 
       it('requires confirmation to reset again immediately', function () {
