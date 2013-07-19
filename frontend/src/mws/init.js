@@ -80,20 +80,23 @@ mongo.init = (function(){
   // see note above regarding all shells having same res_id
   var unlockShells = function(res_id, waitFor){
     $.when.apply($, waitFor).then(function(){
-      if (!--mongo.init._initState[res_id].pending){
+      mongo.init._initState[res_id].pending--;
+      if (!mongo.init._initState[res_id].pending){
         $.each(mongo.shells, function(i, e){
           e.enableInput(true);
         });
       }
     }, function(){
-      $.each(mongo.shells, function(i, e){
-        e.insertResponseArray([
-          'One or more scripts failed during initialization.',
-          'Your data may not be completely loaded.  Use the "reset" command to try again.'
-        ]);
-        mongo.init._initState[res_id].pending--;
-        e.enableInput(true);
-      });
+      mongo.init._initState[res_id].pending--;
+      if (!mongo.init._initState[res_id].pending){
+        $.each(mongo.shells, function(i, e){
+          e.insertResponseArray([
+            'One or more scripts failed during initialization.',
+            'Your data may not be completely loaded.  Use the "reset" command to try again.'
+          ]);
+          e.enableInput(true);
+        });
+      }
     });
   };
 

@@ -366,14 +366,17 @@ describe('The init function', function () {
     });
 
     describe('unlocks shells with a given res_id', function(){
-      var $shell;
+      var $shell, $shell2;
       beforeEach(function(){
-        mongo.init._lockShells('iu');
+        mongo.init._initState = {};
         $shell = $('<div />').mws();
+        $shell2 = $('<div />').mws();
+        mongo.init._lockShells('iu');
       });
 
       afterEach(function(){
         $shell.remove();
+        $shell2.remove();
       });
 
       it('when no more inits are pending', function(){
@@ -409,7 +412,7 @@ describe('The init function', function () {
         });
       });
 
-      it('only if the specified promises have resolved', function(){
+      it('not until the specified promises have resolved', function(){
         var d = [$.Deferred(), $.Deferred()];
         var promises = d.map(function(d){ return d.promise(); });
         mongo.init._unlockShells('iu', promises);
@@ -425,6 +428,21 @@ describe('The init function', function () {
 
         d[1].resolve();
 
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+      });
+
+      it('even if a promise is rejected', function(){
+        var d = [$.Deferred(), $.Deferred()];
+        var promises = d.map(function(d){ return d.promise(); });
+        mongo.init._unlockShells('iu', promises);
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[0].reject();
         mongo.shells.forEach(function(shell){
           expect(shell.$input.prop('disabled')).toBe(false);
         });
