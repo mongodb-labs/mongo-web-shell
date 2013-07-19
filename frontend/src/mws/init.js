@@ -162,19 +162,8 @@ mongo.init = (function(){
     });
   };
 
-  var runInitializationScripts = function(res_id, callback){
-    // Send requests to all initialization urls for a res id, then call the
-    // callback when all are done.
-    $.each(mongo.shells, function(i, e){
-      mongo.init._initShell(e.$rootElement, res_id, {create_new: false, init_data: true});
-    });
-
-    callback();
-  };
-
   return {
     run: run,
-    runInitializationScripts: runInitializationScripts,
     _initState: {},
     _lockShells: lockShells,
     _unlockShells: unlockShells,
