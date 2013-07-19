@@ -246,34 +246,55 @@ describe('The init function', function () {
         expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
       });
 
-      it('fetches remote json', function () {
-        var localData = JSON.stringify({
-          coll: [{data: 'local'}]
-        });
-        var remoteData = JSON.stringify({
-          coll: [{data: 'remote'}]
-        });
-        $(shellElements[0]).data('initialization-json', '/my/json/url');
-        $(shellElements[1]).data('initialization-json', localData);
-        mongo.init.run();
+      describe('fetches remote json', function(){
+        it('and initializes it', function () {
+          var localData = JSON.stringify({
+            coll: [{data: 'local'}]
+          });
+          var remoteData = JSON.stringify({
+            coll: [{data: 'remote'}]
+          });
+          $(shellElements[0]).data('initialization-json', '/my/json/url');
+          $(shellElements[1]).data('initialization-json', localData);
+          mongo.init.run();
 
-        // Fetches remote json
-        expect(requests.length).toEqual(2);
-        expect(requests[0].url).toEqual('/my/json/url');
-        requests[0].respond(200, {'Content-Type': 'application/json'}, remoteData);
+          // Fetches remote json
+          expect(requests.length).toEqual(2);
+          expect(requests[0].url).toEqual('/my/json/url');
+          requests[0].respond(200, {'Content-Type': 'application/json'}, remoteData);
 
-        // Makes request to load in json
-        expect(requests.length).toEqual(3);
-        expect(requests[1].requestBody).toEqual(JSON.stringify({
-          res_id: dataObj.res_id,
-          collections: {coll: [{data: 'local'}]}
-        }));
-        requests[1].respond(204, '', '');
-        expect(requests[2].requestBody).toEqual(JSON.stringify({
-          res_id: dataObj.res_id,
-          collections: {coll: [{data: 'remote'}]}
-        }));
-        requests[2].respond(204, '', '');
+          // Makes request to load in json
+          expect(requests.length).toEqual(3);
+          expect(requests[1].requestBody).toEqual(JSON.stringify({
+            res_id: dataObj.res_id,
+            collections: {coll: [{data: 'local'}]}
+          }));
+          requests[1].respond(204, '', '');
+          expect(requests[2].requestBody).toEqual(JSON.stringify({
+            res_id: dataObj.res_id,
+            collections: {coll: [{data: 'remote'}]}
+          }));
+          requests[2].respond(204, '', '');
+        });
+
+        it('and resolves promises correctly', function(){
+          var getJSON = spyOn($, 'getJSON'), loadJSON = spyOn(mongo.init, '_loadJSON');
+          getJSON.andReturn($.Deferred().resolve().promise());
+          loadJSON.andReturn($.Deferred().resolve().promise());
+          expect(mongo.init._loadJSONUrl().state()).toEqual('resolved');
+
+          getJSON.andReturn($.Deferred().resolve().promise());
+          loadJSON.andReturn($.Deferred().reject().promise());
+          expect(mongo.init._loadJSONUrl().state()).toEqual('rejected');
+
+          getJSON.andReturn($.Deferred().reject().promise());
+          loadJSON.andReturn($.Deferred().resolve().promise());
+          expect(mongo.init._loadJSONUrl().state()).toEqual('rejected');
+
+          getJSON.andReturn($.Deferred().reject().promise());
+          loadJSON.andReturn($.Deferred().reject().promise());
+          expect(mongo.init._loadJSONUrl().state()).toEqual('rejected');
+        });
       });
 
       it('handles remote json without proper headers', function () {

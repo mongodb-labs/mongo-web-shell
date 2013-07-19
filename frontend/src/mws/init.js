@@ -49,19 +49,11 @@ mongo.init = (function(){
   };
 
   var loadJSONUrl = function(url, res_id){
-    var deferred = $.Deferred();
-
-    $.getJSON(url, function(data){
-      loadJSON(data, res_id).then(function(){
-        deferred.resolveWith($, arguments);
-      }, function(){
-        deferred.rejectWith($, arguments);
-      });
-    }).fail(function(){
-      deferred.rejectWith($, arguments);
+    return $.getJSON(url).then(function(data){
+      return mongo.init._loadJSON(data, res_id);
+    }, function(){
+      return $.Deferred().rejectWith($, arguments).promise();
     });
-
-    return deferred;
   };
 
   var lockShells = function(res_id){
@@ -187,6 +179,8 @@ mongo.init = (function(){
     _lockShells: lockShells,
     _unlockShells: unlockShells,
     _initShell: initShell,
+    _loadJSON: loadJSON,
+    _loadJSONUrl: loadJSONUrl,
     res_id: res_id
   };
 })();
