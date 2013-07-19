@@ -28,6 +28,8 @@ describe('The init function', function () {
       res_id: 'iu',
       is_new: true
     };
+    mongo.shells = [];
+    mongo.init._initState = {};
   });
 
   afterEach(function () {
@@ -71,6 +73,10 @@ describe('The init function', function () {
 
     it('constructs a new shell', function () {
       spyOn(mongo, 'Shell');
+      spyOn(window, 'setInterval');
+      mongo.Shell.prototype.enableInput = jasmine.createSpy();
+      mongo.Shell.prototype.attachInputHandler = jasmine.createSpy();
+      creationSuccess = true;
 
       mongo.init.run();
       expect(mongo.Shell.calls.length).toBe(SHELL_COUNT);
@@ -114,8 +120,7 @@ describe('The init function', function () {
       });
 
       it('sends a request to the specified location', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
-        var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -124,16 +129,15 @@ describe('The init function', function () {
         expect(requests[0].requestBody).toEqual('{"res_id":"' + dataObj.res_id + '"}');
 
         // The initialization should not proceed until the request has returned
-        expect(attachInput).not.toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[0].respond(200, '', 'ok');
-        expect(attachInput).toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
       });
 
       it('can handle multiple initialization urls', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/first/url');
-        shellElements[1].setAttribute('data-initialization-url', '/my/second/url');
-        shellElements[2].setAttribute('data-initialization-url', '/my/third/url');
-        var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
+        $(shellElements[0]).data('initialization-url', '/my/first/url');
+        $(shellElements[1]).data('initialization-url', '/my/second/url');
+        $(shellElements[2]).data('initialization-url', '/my/third/url');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -146,18 +150,18 @@ describe('The init function', function () {
         expect(requests[2].requestBody).toEqual('{"res_id":"' + dataObj.res_id + '"}');
 
         // The initialization should not proceed until all the requests have returned
-        expect(attachInput).not.toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[0].respond(200, '', 'ok');
-        expect(attachInput).not.toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[2].respond(200, '', 'ok');
-        expect(attachInput).not.toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[1].respond(200, '', 'ok');
-        expect(attachInput).toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
       });
 
       it('does not send duplicate requsets', function () {
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
-        shellElements[1].setAttribute('data-initialization-url', '/my/url/path');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
+        $(shellElements[1]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
@@ -167,7 +171,7 @@ describe('The init function', function () {
 
       it('only initializes if the resource id is new', function () {
         dataObj.is_new = false;
-        shellElements[0].setAttribute('data-initialization-url', '/my/url/path');
+        $(shellElements[0]).data('initialization-url', '/my/url/path');
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
@@ -188,32 +192,43 @@ describe('The init function', function () {
         xhr.restore();
       });
 
-      it('condenses and inserts the json data into the database', function () {
+      it('inserts the json data into the database', function () {
         var firstJson = JSON.stringify({foo: [{msg: 'hi'}]});
         var secondJson = JSON.stringify({bar: [{baz: 'garply'}]});
-        var expected = JSON.stringify({
+        var firstExpected = JSON.stringify({
           res_id: dataObj.res_id,
           collections: {
             foo: [{msg: 'hi'}],
-            bar: [{baz: 'garply'}, {baz: 'garply'}]
           }
         });
-        shellElements[0].setAttribute('data-initialization-json', firstJson);
-        shellElements[1].setAttribute('data-initialization-json', secondJson);
+        var secondExpected = JSON.stringify({
+          res_id: dataObj.res_id,
+          collections: {
+            bar: [{baz: 'garply'}]
+          }
+        });
+
+        $(shellElements[0]).data('initialization-json', firstJson);
+        $(shellElements[1]).data('initialization-json', secondJson);
         // Duplicate json should be allowed
-        shellElements[2].setAttribute('data-initialization-json', secondJson);
-        var attachInput = spyOn(mongo.Shell.prototype, 'attachInputHandler');
+        $(shellElements[2]).data('initialization-json', secondJson);
         mongo.init.run();
 
         // The call to createMWSResource is mocked and did not make a request
-        expect(requests.length).toEqual(1);
+        expect(requests.length).toEqual(3);
         expect(requests[0].url).toEqual('/init/load_json');
-        expect(requests[0].requestBody).toEqual(expected);
+        expect(requests[0].requestBody).toEqual(firstExpected);
+        expect(requests[1].url).toEqual('/init/load_json');
+        expect(requests[1].requestBody).toEqual(secondExpected);
+        expect(requests[2].url).toEqual('/init/load_json');
+        expect(requests[2].requestBody).toEqual(secondExpected);
 
         // The initialization should not proceed until the request has returned
-        expect(attachInput).not.toHaveBeenCalled();
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[0].respond(204, '', '');
-        expect(attachInput).toHaveBeenCalled();
+        requests[1].respond(204, '', '');
+        requests[2].respond(204, '', '');
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
       });
 
       it('fetches remote json', function () {
@@ -223,30 +238,27 @@ describe('The init function', function () {
         var remoteData = JSON.stringify({
           coll: [{data: 'remote'}]
         });
-        var totalData = JSON.stringify({
-          res_id: dataObj.res_id,
-          collections: {
-            coll: [{data: 'local'}, {data: 'remote'}]
-          }
-        });
-        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
-        shellElements[1].setAttribute('data-initialization-json', localData);
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
+        $(shellElements[1]).data('initialization-json', localData);
         mongo.init.run();
 
         // Fetches remote json
-        expect(requests.length).toEqual(1);
+        expect(requests.length).toEqual(2);
         expect(requests[0].url).toEqual('/my/json/url');
         requests[0].respond(200, {'Content-Type': 'application/json'}, remoteData);
 
         // Makes request to load in json
-        expect(requests.length).toEqual(2);
-        expect(requests[1].requestBody).toEqual(totalData);
-        requests[1].respond(204, '', '');
-
-        // Remote json is kept locally
-        mongo.init.runInitializationScripts(dataObj.res_id, function () {});
         expect(requests.length).toEqual(3);
-        expect(requests[2].requestBody).toEqual(totalData);
+        expect(requests[1].requestBody).toEqual(JSON.stringify({
+          res_id: dataObj.res_id,
+          collections: {coll: [{data: 'local'}]}
+        }));
+        requests[1].respond(204, '', '');
+        expect(requests[2].requestBody).toEqual(JSON.stringify({
+          res_id: dataObj.res_id,
+          collections: {coll: [{data: 'remote'}]}
+        }));
+        requests[2].respond(204, '', '');
       });
 
       it('handles remote json without proper headers', function () {
@@ -255,7 +267,7 @@ describe('The init function', function () {
           res_id: dataObj.res_id,
           collections: {coll: [{data: 'remote'}]}
         });
-        shellElements[0].setAttribute('data-initialization-json', '/my/json/url');
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
         mongo.init.run();
 
         // Fetches remote json
@@ -270,10 +282,136 @@ describe('The init function', function () {
 
       it('only initializes if the resource id is new', function () {
         dataObj.is_new = false;
-        shellElements[0].setAttribute('data-initialization-json', '{"test": "json"}');
+        $(shellElements[0]).data('initialization-json', '{"test": "json"}');
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
+      });
+    });
+
+    describe('locks shells with a given res_id', function(){
+      it('when no stored state exists', function(){
+        expect(mongo.init._initState).toEqual({});
+        mongo.init._lockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+
+      it('when a stored state exists', function(){
+        mongo.init._initState = {
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        };
+        mongo.init._lockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 2,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+    });
+
+    describe('unlocks shells with a given res_id', function(){
+      var $shell;
+      beforeEach(function(){
+        mongo.init._lockShells('iu');
+        $shell = $('<div />').mws();
+      });
+
+      afterEach(function(){
+        $shell.remove();
+      });
+
+      it('when no more inits are pending', function(){
+
+        mongo.init._unlockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 0,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+      });
+
+      it('except when one or more inits are pending', function(){
+        mongo.init._lockShells('iu');
+
+        mongo.init._unlockShells('iu');
+        expect(mongo.init._initState).toEqual({
+          iu: {
+            pending: 1,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        });
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+      });
+
+      it('only if the specified promises have resolved', function(){
+        var d = [$.Deferred(), $.Deferred()];
+        var promises = d.map(function(d){ return d.promise(); });
+        mongo.init._unlockShells('iu', promises);
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[0].resolve();
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[1].resolve();
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+      });
+
+      it('notifying the user if initialization problems occured', function(){
+        spyOn(mongo.Shell.prototype, 'insertResponseArray');
+        var d = [$.Deferred(), $.Deferred()];
+        var promises = d.map(function(d){ return d.promise(); });
+        mongo.init._unlockShells('iu', promises);
+
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(true);
+        });
+
+        d[0].reject();
+        mongo.shells.forEach(function(shell){
+          expect(shell.$input.prop('disabled')).toBe(false);
+        });
+        expect(mongo.Shell.prototype.insertResponseArray).toHaveBeenCalledWith([
+          'One or more scripts failed during initialization.',
+          'Your data may not be completely loaded.  Use the "reset" command to try again.'
+        ]);
       });
     });
   });

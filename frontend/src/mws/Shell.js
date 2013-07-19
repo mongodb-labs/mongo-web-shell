@@ -31,7 +31,7 @@ mongo.Shell.prototype.injectHTML = function () {
           '</form>' +
         '</li>' +
       '</ul>';
-  this.$rootElement.html(html);
+  this.$rootElement.html(html).data('shell', this);
   this.$responseList = this.$rootElement.find('.mws-response-list');
   this.$inputLI = this.$responseList.find('.mws-input-li');
   this.$input = this.$inputLI.find('.mws-input');
@@ -111,6 +111,18 @@ mongo.Shell.prototype.eval = function (src) {
 
 mongo.Shell.prototype.enableInput = function (bool) {
   this.$input.get(0).disabled = !bool;
+  if (bool){
+    $(this.$rootElement).unblock();
+  } else {
+    $(this.$rootElement).block({
+      message: '<img src="/spinner.gif" />',
+      css: {
+        width: null,
+        backgroundColor: 'none',
+        border: 'none'
+      }
+    });
+  }
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
