@@ -81,6 +81,11 @@ describe('The jQuery methods', function(){
       $('.mongo-web-shell').mws({width: 100});
       expect(shellElement.width()).toBe(100);
     });
+
+    it('and return the jQuery object', function(){
+      var jq = $('.mongo-web-shell');
+      expect(jq.mws()).toBe(jq);
+    });
   });
 
   describe('manipulate an existing web shell by', function(){
@@ -95,31 +100,31 @@ describe('The jQuery methods', function(){
       $shell.remove();
     });
 
-    it('locking it', function(){
+    it('locking it and returning the jQuery object', function(){
       expect(shell.$input[0].disabled).toBe(false);
-      $shell.mws('lock');
+      expect($shell.mws('lock')).toBe($shell);
       expect(shell.$input[0].disabled).toBe(true);
     });
 
-    it('unlocking it', function(){
+    it('unlocking it and returning the jQuery object', function(){
       shell.$input[0].disabled = true;
-      $shell.mws('unlock');
+      expect($shell.mws('unlock')).toBe($shell);
       expect(shell.$input[0].disabled).toBe(false);
     });
 
-    it('setting the width', function(){
-      $shell.mws('width', 100);
+    it('setting the width and returning the jQuery object', function(){
+      expect($shell.mws('width', 100)).toBe($shell);
       expect($shell.width()).toBe(100);
     });
 
-    it('setting the height', function(){
-      $shell.mws('height', 100);
+    it('setting the height and returning the jQuery object', function(){
+      expect($shell.mws('height', 100)).toBe($shell);
       expect($shell.height()).toBe(100);
     });
 
-    it('loading data from a url', function(){
+    it('loading data from a url and returning the jQuery object', function(){
       var initShell = spyOn(mongo.init, '_initShell');
-      $shell.mws('loadUrl', '/my/data/url');
+      expect($shell.mws('loadUrl', '/my/data/url')).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
         create_new: false,
         init_data: true,
@@ -127,9 +132,9 @@ describe('The jQuery methods', function(){
       });
     });
 
-    it('loading data from json', function(){
+    it('loading data from json and returning the jQuery object', function(){
       var initShell = spyOn(mongo.init, '_initShell');
-      $shell.mws('loadJSON', {coll: [{a: 1}]});
+      expect($shell.mws('loadJSON', {coll: [{a: 1}]})).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
         create_new: false,
         init_data: true,
@@ -137,9 +142,9 @@ describe('The jQuery methods', function(){
       });
     });
 
-    it('loading data from a json url', function(){
+    it('loading data from a json url and returning the jQuery object', function(){
       var initShell = spyOn(mongo.init, '_initShell');
-      $shell.mws('loadJSON', '/my/json/url');
+      expect($shell.mws('loadJSON', '/my/json/url')).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
         create_new: false,
         init_data: true,
@@ -147,27 +152,27 @@ describe('The jQuery methods', function(){
       });
     });
 
-    it('setting its input', function(){
-      $shell.mws('input', 'command');
+    it('setting its input and returning the jQuery object', function(){
+      expect($shell.mws('input', 'command')).toBe($shell);
       expect(shell.$input.val()).toEqual('command');
     });
 
-    it('submitting its input', function(){
+    it('submitting its input and returning the jQuery object', function(){
       spyOn(shell, 'handleInput');
-      $shell.mws('submit');
+      expect($shell.mws('submit')).toBe($shell);
       expect(shell.handleInput).toHaveBeenCalled();
     });
 
-    describe('sending output', function(){
+    describe('sending output and returning the jQuery object', function(){
       it('printing a single line', function(){
         spyOn(shell, 'insertResponseLine');
-        $shell.mws('output', 'response');
+        expect($shell.mws('output', 'response')).toBe($shell);
         expect(shell.insertResponseLine).toHaveBeenCalledWith('response');
       });
 
-      it('printing multiple line', function(){
+      it('printing multiple line and returning the jQuery object', function(){
         spyOn(shell, 'insertResponseArray');
-        $shell.mws('output', ['1', '2', '3']);
+        expect($shell.mws('output', ['1', '2', '3'])).toBe($shell);
         expect(shell.insertResponseArray).toHaveBeenCalledWith(['1', '2', '3']);
       });
     });
