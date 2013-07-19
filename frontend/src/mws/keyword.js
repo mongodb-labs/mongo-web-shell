@@ -81,7 +81,7 @@ mongo.keyword = (function () {
       delete mongo.init._initState[shell.mwsResourceID];
       mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
         shell.insertResponseLine('Database reset successfully');
-      }, true);
+      });
     });
   }
 

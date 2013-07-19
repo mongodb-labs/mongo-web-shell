@@ -213,7 +213,7 @@ describe('The init function', function () {
         var firstExpected = JSON.stringify({
           res_id: dataObj.res_id,
           collections: {
-            foo: [{msg: 'hi'}],
+            foo: [{msg: 'hi'}]
           }
         });
         var secondExpected = JSON.stringify({

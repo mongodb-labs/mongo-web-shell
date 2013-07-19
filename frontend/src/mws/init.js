@@ -22,15 +22,12 @@
  * CSS stylesheets, and calls any initialization urls
  */
 mongo.init = (function(){
-  var initState = {};
-  var res_id;
-
   var loadUrl = function(url, res_id){
     return $.ajax({
       type: 'POST',
       url: url,
       data: JSON.stringify({res_id: res_id}),
-      contentType: 'application/json',
+      contentType: 'application/json'
     });
   };
 
@@ -43,7 +40,7 @@ mongo.init = (function(){
           res_id: res_id,
           collections: initJson
         }),
-        contentType: 'application/json',
+        contentType: 'application/json'
       });
     }
   };
@@ -165,11 +162,11 @@ mongo.init = (function(){
     });
   };
 
-  var runInitializationScripts = function(res_id, callback, init_data){
+  var runInitializationScripts = function(res_id, callback){
     // Send requests to all initialization urls for a res id, then call the
     // callback when all are done.
     $.each(mongo.shells, function(i, e){
-      mongo.init._initShell(e.$rootElement, res_id, {create_new: false, init_data: init_data});
+      mongo.init._initShell(e.$rootElement, res_id, {create_new: false, init_data: true});
     });
 
     callback();
@@ -178,12 +175,12 @@ mongo.init = (function(){
   return {
     run: run,
     runInitializationScripts: runInitializationScripts,
-    _initState: initState,
+    _initState: {},
     _lockShells: lockShells,
     _unlockShells: unlockShells,
     _initShell: initShell,
     _loadJSON: loadJSON,
     _loadJSONUrl: loadJSONUrl,
-    res_id: res_id
+    res_id: null
   };
 })();
