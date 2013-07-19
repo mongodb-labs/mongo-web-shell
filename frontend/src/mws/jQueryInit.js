@@ -52,6 +52,15 @@ mongo.jQueryInit = function($){
         case 'submit':
           this.each(function(i, e){ $(e).data('shell').handleInput(); });
           break;
+
+        case 'output':
+          var vals = arguments[1];
+          if ($.isArray(vals)){
+            this.each(function(i, e){ $(e).data('shell').insertResponseArray(vals); });
+          } else {
+            this.each(function(i, e){ $(e).data('shell').insertResponseLine(vals); });
+          }
+          break;
         }
         break;
 

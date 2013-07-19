@@ -157,6 +157,20 @@ describe('The jQuery methods', function(){
       $shell.mws('submit');
       expect(shell.handleInput).toHaveBeenCalled();
     });
+
+    describe('sending output', function(){
+      it('printing a single line', function(){
+        spyOn(shell, 'insertResponseLine');
+        $shell.mws('output', 'response');
+        expect(shell.insertResponseLine).toHaveBeenCalledWith('response');
+      });
+
+      it('printing multiple line', function(){
+        spyOn(shell, 'insertResponseArray');
+        $shell.mws('output', ['1', '2', '3']);
+        expect(shell.insertResponseArray).toHaveBeenCalledWith(['1', '2', '3']);
+      });
+    });
   });
 
   it('have configurable defaults', function(){
