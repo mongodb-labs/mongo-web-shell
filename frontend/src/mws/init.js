@@ -113,7 +113,7 @@ mongo.init = (function(){
 
       // Load init urls
       var initUrl = options.init_url || $(shellElement).data('initialization-url');
-      if (initUrl && $.inArray(initUrl, mongo.init._initState[res_id].initUrls) === -1) {
+      if (initUrl && mongo.init._initState[res_id].initUrls.indexOf(initUrl) === -1) {
         mongo.init._initState[res_id].initUrls.push(initUrl);
         waitFor.push(loadUrl(initUrl, res_id));
       }
@@ -130,7 +130,7 @@ mongo.init = (function(){
           console.error('Unable to parse initialization json: ' + jsonAttr);
         }
       } else if (jsonAttr &&
-                 $.inArray(jsonAttr, mongo.init._initState[res_id].initJsonUrls) === -1) {
+                 mongo.init._initState[res_id].initJsonUrls.indexOf(jsonAttr) === -1) {
         // Otherwise assume it's a URL that points to JSON data
         mongo.init._initState[res_id].initJsonUrls.push(jsonAttr);
         waitFor.push(loadJSONUrl(jsonAttr, res_id));
