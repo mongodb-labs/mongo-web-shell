@@ -110,7 +110,7 @@ mongo.Shell.prototype.eval = function (src) {
 };
 
 mongo.Shell.prototype.enableInput = function (bool) {
-  this.$input.get(0).disabled = !bool;
+  this.$input.prop('disabled', !bool);
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {

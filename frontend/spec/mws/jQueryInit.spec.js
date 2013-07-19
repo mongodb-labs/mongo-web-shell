@@ -101,15 +101,15 @@ describe('The jQuery methods', function(){
     });
 
     it('locking it and returning the jQuery object', function(){
-      expect(shell.$input[0].disabled).toBe(false);
+      expect(shell.$input.prop('disabled')).toBe(false);
       expect($shell.mws('lock')).toBe($shell);
-      expect(shell.$input[0].disabled).toBe(true);
+      expect(shell.$input.prop('disabled')).toBe(true);
     });
 
     it('unlocking it and returning the jQuery object', function(){
-      shell.$input[0].disabled = true;
+      shell.$input.prop('disabled', true);
       expect($shell.mws('unlock')).toBe($shell);
-      expect(shell.$input[0].disabled).toBe(false);
+      expect(shell.$input.prop('disabled')).toBe(false);
     });
 
     it('setting the width and returning the jQuery object', function(){

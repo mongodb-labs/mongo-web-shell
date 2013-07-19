@@ -129,9 +129,9 @@ describe('The init function', function () {
         expect(requests[0].requestBody).toEqual('{"res_id":"' + dataObj.res_id + '"}');
 
         // The initialization should not proceed until the request has returned
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[0].respond(200, '', 'ok');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(false);
       });
 
       it('can handle multiple initialization urls', function () {
@@ -150,13 +150,13 @@ describe('The init function', function () {
         expect(requests[2].requestBody).toEqual('{"res_id":"' + dataObj.res_id + '"}');
 
         // The initialization should not proceed until all the requests have returned
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[0].respond(200, '', 'ok');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[2].respond(200, '', 'ok');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[1].respond(200, '', 'ok');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(false);
       });
 
       it('does not send duplicate requsets', function () {
@@ -224,13 +224,13 @@ describe('The init function', function () {
         expect(requests[2].requestBody).toEqual(secondExpected);
 
         // The initialization should not proceed until the request has returned
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[0].respond(204, '', '');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[1].respond(204, '', '');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(true);
         requests[2].respond(204, '', '');
-        expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
+        expect(mongo.shells[0].$input.prop('disabled')).toBe(false);
       });
 
       describe('fetches remote json', function(){
