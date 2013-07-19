@@ -81,11 +81,12 @@ mongo.jQueryInit = function($){
 
         if (options.height){ this.height(options.height); }
         if (options.width){ this.width(options.width); }
+        break;
 
-        return this;
       default:
         throw new TypeError('Parameter must be a string or options object');
       }
+      return this;
     }
   });
 
