@@ -46,7 +46,14 @@ mongo.init = (function(){
   };
 
   var loadJSONUrl = function(url, res_id){
+    // Try pulling from the cache first
+    var data = mongo.init._jsonCache[url];
+    if (data){
+      return mongo.init._loadJSON(data, res_id);
+    }
+
     return $.getJSON(url).then(function(data){
+      mongo.init._jsonCache[url] = data;
       return mongo.init._loadJSON(data, res_id);
     }, function(){
       return $.Deferred().rejectWith($, arguments).promise();
@@ -170,6 +177,7 @@ mongo.init = (function(){
     _initShell: initShell,
     _loadJSON: loadJSON,
     _loadJSONUrl: loadJSONUrl,
+    _jsonCache: {},
     res_id: null
   };
 })();

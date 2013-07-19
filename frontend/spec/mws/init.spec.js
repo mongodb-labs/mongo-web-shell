@@ -45,6 +45,7 @@ describe('The init function', function () {
     };
     mongo.shells = [];
     mongo.init._initState = {};
+    mongo.init._jsonCache = {};
   });
 
   afterEach(function () {
@@ -324,6 +325,21 @@ describe('The init function', function () {
         mongo.init.run();
 
         expect(requests.length).toEqual(0);
+      });
+
+      it('caches JSON url data on fetch', function(){
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
+        mongo.init.run();
+        requests[0].respond(200, {'Content-Type': 'application/json'}, '{"key":"value"}');
+        expect(mongo.init._jsonCache['/my/json/url']).toEqual({key: 'value'});
+      });
+
+      it('uses cached JSON url data if available', function(){
+        spyOn(mongo.init, '_loadJSON');
+        mongo.init._jsonCache['/my/json/url'] = {key: 'value'};
+        $(shellElements[0]).data('initialization-json', '/my/json/url');
+        mongo.init.run();
+        expect(requests.length).toBe(0);
       });
     });
 
