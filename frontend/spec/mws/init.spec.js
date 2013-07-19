@@ -241,7 +241,9 @@ describe('The init function', function () {
         // The initialization should not proceed until the request has returned
         expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[0].respond(204, '', '');
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[1].respond(204, '', '');
+        expect(mongo.shells[0].$input.get(0).disabled).toBe(true);
         requests[2].respond(204, '', '');
         expect(mongo.shells[0].$input.get(0).disabled).toBe(false);
       });
