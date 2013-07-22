@@ -19,6 +19,10 @@ def get_collection_names(res_id):
     )[0]['collections']
 
 
+def get_friendly_coll_name(collection_name):
+    return collection_name[36:]
+
+
 class UseResId:
     # Require explicit allowing of access to system.* collections
     def __init__(self, res_id, allowSystem=False):

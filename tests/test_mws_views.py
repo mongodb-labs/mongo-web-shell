@@ -596,13 +596,13 @@ class GetIndexesTestCase(DBCollectionTestCase):
         result = self.make_get_indexes_request()
         self.assertEqual(result, [
             {
-                'ns': self.db_collection.full_name,
+                'ns': 'test_collection',
                 'name': '_id_',
                 'key': {'_id': 1},
                 'v': 1
             },
             {
-                'ns': self.db_collection.full_name,
+                'ns': 'test_collection',
                 'name': 'idx',
                 'key': {'a': 1},
                 'v': 1
