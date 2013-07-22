@@ -2,7 +2,8 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 import mongows
 from mongows.mws.db import get_db
-from werkzeug.exceptions import Forbidden
+from mongows.mws.MWSServerError import MWSServerError
+import re
 
 
 def get_internal_coll_name(res_id, collection_name):
@@ -37,10 +38,13 @@ class UseResId:
 
         def __getattr__(db, name):
             # Restrict the system.* collections by default
-            if name == 'system' and not self.allowSystem:
-                raise Forbidden('Collection name may not begin with system.*')
+            isSystem = re.match('system($|\.)', name) is not None
+            if isSystem and not self.allowSystem:
+                raise MWSServerError(403,
+                                     'Collection name may not ' +
+                                     'begin with system.*')
             if not (name.startswith("oplog.$main") or name.startswith("$cmd")
-                    or name == 'system'):
+                    or isSystem):
                 name = '%s%s' % (self.res_id, name)
             return self.old_get_attr(db, name)
 

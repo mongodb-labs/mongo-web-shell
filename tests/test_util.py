@@ -11,6 +11,7 @@ from mongows.mws.db import get_db
 from mongows.mws.util import UseResId, get_collection_names
 from mongows.mws.views import CLIENTS_COLLECTION
 from tests import MongoWSTestCase
+from mongows.mws.MWSServerError import MWSServerError
 
 
 class UseResIdTestCase(MongoWSTestCase):
@@ -44,7 +45,7 @@ class UseResIdTestCase(MongoWSTestCase):
                     {'_id': 0, 'collections': 1}
                 )[0]['collections']
 
-            with UseResId(res_id):
+            with UseResId(res_id, True):
                 self.assertItemsEqual(get_collections(), [])
                 db.foo.insert({'message': 'test'})
                 self.assertItemsEqual(get_collections(), ['foo'])
@@ -64,6 +65,25 @@ class UseResIdTestCase(MongoWSTestCase):
                 db.drop_collection('bar')
                 self.assertItemsEqual(get_collections(), [])
                 self.assertNotIn(res_id + 'bar', db.collection_names())
+
+    def test_system_access(self):
+        colls = ['system', 'system.namespaces', 'system.indexes',
+                 'system.users', 'system.js', 'system.profile']
+        for c in colls:
+            with self.assertRaises(MWSServerError) as cm:
+                with UseResId('res_id'):
+                    get_db()[c]
+
+            self.assertEqual(cm.exception.error, 403)
+
+        for c in colls:
+            with UseResId('res_id', True):
+                get_db()[c]
+
+        colls = ['a', 'abc', 'systemcollection', 'systems', 'abc.system']
+        for c in colls:
+            with UseResId('res_id'):
+                get_db()[c]
 
 
 class InitializersTestCase(MongoWSTestCase):
