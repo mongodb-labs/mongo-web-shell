@@ -40,11 +40,11 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
     if (this._skip) { params.skip = this._skip; }
     if (this._limit) { params.limit = this._limit; }
     var wrappedSuccess = function (data) {
+      mongo.events.callbackTrigger(this._shell, 'cursor:execute', data.result.slice());
       this._storeQueryResult(data.result);
       if (onSuccess) {
         onSuccess();
       }
-      mongo.events.callbackTrigger(this._shell, 'cursor:execute', data.result);
     }.bind(this);
 
     mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', this._shell,
