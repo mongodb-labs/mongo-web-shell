@@ -7,6 +7,7 @@ from mongows.mws.views import ratelimit
 from flask import session
 
 from pymongo.errors import OperationFailure
+from mongows.mws.MWSServerError import MWSServerError
 
 from tests import MongoWSTestCase
 from mongows.mws.views import CLIENTS_COLLECTION
@@ -92,14 +93,20 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
             for i in range(limit):
                 self.assertEqual(ratelimit(dummy)(), ('', 204))
 
-            self.assertEqual(ratelimit(dummy)()[1], 429)
+            with self.assertRaises(MWSServerError) as cm:
+                ratelimit(dummy)()
+
+            self.assertEqual(cm.exception.error, 429)
 
     def test_ratelimit_no_session(self):
         def dummy():
             return ('', 204)
 
         with self.real_app.test_request_context():
-            self.assertEqual(ratelimit(dummy)()[1], 401)
+            with self.assertRaises(MWSServerError) as cm:
+                ratelimit(dummy)()
+
+            self.assertEqual(cm.exception.error, 401)
 
 
 class DBTestCase(MongoWSTestCase):

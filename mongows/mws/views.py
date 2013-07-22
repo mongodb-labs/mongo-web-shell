@@ -7,7 +7,7 @@ from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
 
-from werkzeug.exceptions import BadRequest
+from mongows.mws.MWSServerError import MWSServerError
 
 from pymongo.errors import OperationFailure
 from mongows.mws.db import get_db
@@ -71,11 +71,10 @@ def check_session_id(f):
     def wrapped_function(*args, **kwargs):
         session_id = session.get('session_id')
         if session_id is None:
-            error = 'There is no session_id cookie'
-            return err(401, error)
+            raise MWSServerError(401, 'There is no session_id cookie')
         if not user_has_access(kwargs['res_id'], session_id):
             error = 'Session error. User does not have access to res_id'
-            return err(403, error)
+            raise MWSServerError(403, error)
         return f(*args, **kwargs)
     return update_wrapper(wrapped_function, f)
 
@@ -85,7 +84,7 @@ def ratelimit(f):
         session_id = session.get('session_id')
         if session_id is None:
             error = 'Cannot rate limit without session_id cookie'
-            return err(401, error)
+            raise MWSServerError(401, error)
 
         config = current_app.config
         coll = get_db()[config['RATELIMIT_COLLECTION']]
@@ -96,7 +95,7 @@ def ratelimit(f):
         accesses = coll.find({'session_id': session_id,
                               'timestamp': {'$gt': expiry}})
         if accesses.count() > config['RATELIMIT_QUOTA']:
-            return err(429, 'Rate limit exceeded')
+            raise MWSServerError(429, 'Rate limit exceeded')
 
         return f(*args, **kwargs)
     return update_wrapper(wrapped_function, f)
@@ -168,18 +167,10 @@ def db_collection_insert(res_id, collection_name):
         document = request.json['document']
     else:
         error = '\'document\' argument not found in the insert request.'
-        return err(400, error)
+        raise MWSServerError(400, error)
 
     # Check quota
-    coll = get_internal_coll_name(res_id, collection_name)
-    try:
-        size = get_db().command({'collstats': coll})['size']
-    except OperationFailure as e:
-        # TODO: handle multiple res_id per session
-        if 'ns not found' in e.message:
-            size = 0
-        else:
-            return err(500, e.message)
+    size = get_collection_size(res_id, collection_name)
 
     # Handle inserting both a list of docs or a single doc
     if isinstance(document, list):
@@ -190,7 +181,7 @@ def db_collection_insert(res_id, collection_name):
         req_size = len(BSON.encode(document))
 
     if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
-        return err(403, 'Collection size exceeded')
+        raise MWSServerError(403, 'Collection size exceeded')
 
     # Insert document
     with UseResId(res_id):
@@ -229,31 +220,23 @@ def db_collection_update(res_id, collection_name):
         multi = request.json.get('multi', False)
     if query is None or update is None:
         error = 'update requires spec and document arguments'
-        return err(400, error)
+        raise MWSServerError(400, error)
 
     # Check quota
-    coll = get_internal_coll_name(res_id, collection_name)
-    db = get_db()
-    try:
-        size = db.command({'collstats': coll})['size']
-    except OperationFailure as e:
-        # TODO: handle multiple res_id per session
-        if 'ns not found' in e.message:
-            size = 0
-        else:
-            return err(500, e.message)
+    size = get_collection_size(res_id, collection_name)
 
-    # Computation of worst case size increase - update size * docs affected
-    # It would be nice if we were able to make a more conservative estimate
-    # of the space difference that an update will cause. (especially if it
-    # results in smaller documents)
-    req_size = len(BSON.encode(update)) * db[coll].find(query).count()
-
-    if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
-        return err(403, 'Collection size exceeded')
-
-    # Update
     with UseResId(res_id):
+        # Computation of worst case size increase - update size * docs affected
+        # It would be nice if we were able to make a more conservative estimate
+        # of the space difference that an update will cause. (especially if it
+        # results in smaller documents)
+        db = get_db()
+        affected = db[collection_name].find(query).count()
+        req_size = len(BSON.encode(update)) * affected
+
+        if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
+            raise MWSServerError(403, 'Collection size exceeded')
+
         db[collection_name].update(query, update, upsert, multi=multi)
         return empty_success()
 
@@ -269,7 +252,7 @@ def db_collection_aggregate(res_id, collection_name):
             result = get_db()[collection_name].aggregate(request.json)
             return to_json(result)
     except OperationFailure as e:
-        return err(400, e.message)
+        raise MWSServerError(400, e.message)
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop',
@@ -337,7 +320,7 @@ def to_json(result):
     except ValueError:
         error = 'Error in find while trying to convert the results to ' + \
                 'JSON format.'
-        return err(500, error)
+        raise MWSServerError(500, error)
 
 
 def empty_success():
@@ -348,8 +331,16 @@ def parse_get_json(request):
     try:
         request.json = loads(request.args.keys()[0])
     except ValueError:
-        raise BadRequest
+        raise MWSServerError(400, 'Error parsing JSON data',
+                             'Invalid GET parameter data')
 
 
-def err(code, message, detail=''):
-    return dumps({'error': code, 'reason': message, 'detail': detail}), code
+def get_collection_size(res_id, collection_name):
+    coll = get_internal_coll_name(res_id, collection_name)
+    try:
+        return get_db().command({'collstats': coll})['size']
+    except OperationFailure as e:
+        if 'ns not found' in e.message:
+            return 0
+        else:
+            raise MWSServerError(500, e.message)
