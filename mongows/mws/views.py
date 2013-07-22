@@ -293,7 +293,7 @@ def db_collection_ensure_index(res_id, collection_name):
     if not keys:
         return err(400, 'No key to index')
 
-    options = request.json.get('options') or {}
+    options = request.json.get('options', {})
     with UseResId(res_id, allowSystem=True):
         if collection_name == 'system':
             raise Forbidden('Collection name may not begin with system.*')
