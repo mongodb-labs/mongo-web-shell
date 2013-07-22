@@ -170,8 +170,7 @@ def db_collection_insert(res_id, collection_name):
         raise MWSServerError(400, error)
 
     # Check quota
-    db = get_db()
-    size = get_collection_size(db, res_id, collection_name)
+    size = get_collection_size(res_id, collection_name)
 
     # Handle inserting both a list of docs or a single doc
     if isinstance(document, list):
@@ -186,7 +185,7 @@ def db_collection_insert(res_id, collection_name):
 
     # Insert document
     with UseResId(res_id):
-        db[collection_name].insert(document)
+        get_db()[collection_name].insert(document)
         return empty_success()
 
 
@@ -224,14 +223,14 @@ def db_collection_update(res_id, collection_name):
         raise MWSServerError(400, error)
 
     # Check quota
-    db = get_db()
-    size = get_collection_size(db, res_id, collection_name)
+    size = get_collection_size(res_id, collection_name)
 
     with UseResId(res_id):
         # Computation of worst case size increase - update size * docs affected
         # It would be nice if we were able to make a more conservative estimate
         # of the space difference that an update will cause. (especially if it
         # results in smaller documents)
+        db = get_db()
         affected = db[collection_name].find(query).count()
         req_size = len(BSON.encode(update)) * affected
 
@@ -336,10 +335,10 @@ def parse_get_json(request):
                              'Invalid GET parameter data')
 
 
-def get_collection_size(db, res_id, collection_name):
+def get_collection_size(res_id, collection_name):
     coll = get_internal_coll_name(res_id, collection_name)
     try:
-        return db.command({'collstats': coll})['size']
+        return get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
         if 'ns not found' in e.message:
             return 0
