@@ -14,7 +14,8 @@ from mongows.mws.db import get_db
 from mongows.mws.util import (
     UseResId,
     get_collection_names,
-    get_internal_coll_name
+    get_internal_coll_name,
+    get_friendly_coll_name
 )
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
@@ -338,7 +339,14 @@ def db_collection_drop_indexes(res_id, collection_name):
 def db_collection_get_indexes(res_id, collection_name):
     db = get_db()
     coll = get_internal_coll_name(res_id, collection_name)
-    return to_json(list(db['system.indexes'].find({'ns': db[coll].full_name})))
+    result = list(db['system.indexes'].find({'ns': db[coll].full_name}))
+
+    # a bit heavier than probably needed but makes no assumptions about naming
+    trim = len(current_app.config['DB_NAME']) + 1
+    for i in range(len(result)):
+        result[i]['ns'] = get_friendly_coll_name(result[i]['ns'][trim:])
+
+    return to_json(result)
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
