@@ -97,6 +97,18 @@ describe('The events class', function(){
       $shell.trigger('mws:event');
       expect(fn.callCount).toBe(1);
     });
+
+    it('plays nicely with bind', function(){
+      var fn = jasmine.createSpy(), fnOnce = jasmine.createSpy();
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.bindOnce(shell, 'event', fnOnce);
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(1);
+      expect(fnOnce.callCount).toBe(1);
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+      expect(fnOnce.callCount).toBe(1);
+    });
   });
 
   describe('has a bindAll function that', function(){
