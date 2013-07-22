@@ -22,33 +22,35 @@
   <script type="text/javascript">
     $(window).load(function(){
       var shell = mongo.shells[0];
+      var targetCollection = null;
       $('#prompt').html('Try running an insert command<br />' +
                         'You can do this by typing db.collection.insert(...)');
 
       mongo.events.bindOnce(shell, 'db:collection:insert', function(e, data){
+        targetCollection = data.collection;
         $('#prompt').html('Great job. You called insert on ' + data.collection + ' with ' +
                           JSON.stringify($.makeArray(data.arguments)) +
                           ' as arguments<br />'+
                           'Try running a find command to make sure your ' +
                           'data was saved to the database.<br />' +
-                          'You can do this by typing db.collection.find(...)');
+                          'You can do this by typing db.' + targetCollection + '.find(...)');
 
       }).then(function(){
         return mongo.events.bindOnce(shell, 'db:collection:find', function(e, data){
           $('#prompt').html('Great job. You called find on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) + ' as arguments');
-        });
+        }, null, function(s,e,d){return d.collection === targetCollection});
       }).then(function(){
         return mongo.events.bindOnce(shell, 'cursor:execute', function(e, data){
           $('#prompt').append('<br />Find returned with ' + data.result.length + ' results<br />' +
-                              'Try cleaning up this data with db.collection.remove(...)');
-        });
+                              'Try cleaning up this data with db.' + targetCollection + '.remove(...)');
+        }, null, function(s,e,d){return d.collection === targetCollection});
       }).then(function(){
         return mongo.events.bindOnce(shell, 'db:collection:remove', function(e, data){
           $('#prompt').html('Great job. You called remove on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) +
                             ' as arguments<br />You graduate!');
-        });
+        }, null, function(s,e,d){return d.collection === targetCollection});
       });
     });
   </script>

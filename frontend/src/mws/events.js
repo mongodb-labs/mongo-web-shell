@@ -17,10 +17,13 @@ mongo.events = {
     mongo.events.trigger(shell, event, data);
   },
 
-  bind: function(shell, event, handler, data){
+  bind: function(shell, event, handler, data, filter){
     return $.Deferred(function(deferred){
       data = $.extend({shell: shell}, data);
       $(shell.$rootElement).bind('mws:' + event, data, function(event){
+        if (typeof filter === 'function' && !filter(shell, event, data)){
+          return;
+        }
         if (typeof handler === 'function'){
           handler.call(shell, event, data);
         }
@@ -29,18 +32,18 @@ mongo.events = {
     }).promise();
   },
 
-  bindOnce: function(shell, event, handler, data){
+  bindOnce: function(shell, event, handler, data, filter){
     data = $.extend({shell: shell}, data);
     var wrappedHandler = function(){
       handler.apply(shell, arguments);
       $(shell.$rootElement).unbind('mws:' + event, arguments.callee.caller);
     };
-    return mongo.events.bind(shell, event, wrappedHandler, data);
+    return mongo.events.bind(shell, event, wrappedHandler, data, filter);
   },
 
-  bindAll: function(event, handler, data){
+  bindAll: function(event, handler, data, filter){
     return mongo.shells.map(function(e){
-      return mongo.events.bind(e, event, handler, data);
+      return mongo.events.bind(e, event, handler, data, filter);
     });
   }
 };
