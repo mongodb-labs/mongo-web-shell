@@ -137,4 +137,33 @@ describe('The events class', function(){
       expect(fn.mostRecentCall.args[1]).toEqual({shell: shell2});
     });
   });
+
+  describe('has an unbind function that', function(){
+    it('unbinds all handlers', function(){
+      var fn = jasmine.createSpy();
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.bindOnce(shell, 'event', fn);
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+
+      mongo.events.bindOnce(shell, 'event', fn);
+      mongo.events.unbind(shell, 'event');
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+    });
+
+    it('unbinds the specified handler', function(){
+      var fn = jasmine.createSpy(), fn2 = jasmine.createSpy();
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.bind(shell, 'event', fn2);
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(1);
+      expect(fn2.callCount).toBe(1);
+
+      mongo.events.unbind(shell, 'event', fn2);
+      $shell.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+      expect(fn2.callCount).toBe(1);
+    });
+  });
 });

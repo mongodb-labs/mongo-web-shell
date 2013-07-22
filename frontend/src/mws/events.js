@@ -1,6 +1,9 @@
 /* global mongo, console */
 /* jshint noarg: false */
 mongo.events = (function(){
+  var id = 0;
+  var handlers = {};
+
   var trigger = function(shell, event, data){
     data = $.extend({shell: shell}, data);
     console.info('[' + shell.id + '] ' + event + ' triggered with data ', data);
@@ -20,7 +23,11 @@ mongo.events = (function(){
   var bind = function(shell, event, handler, data, filter){
     return $.Deferred(function(deferred){
       data = $.extend({shell: shell}, data);
-      $(shell.$rootElement).bind('mws:' + event, data, function(event){
+      if (typeof handler === 'function'){
+        handler.id = ++id;
+      }
+
+      handlers[id] = function(event){
         if (typeof filter === 'function' && !filter(shell, event, data)){
           return;
         }
@@ -28,7 +35,9 @@ mongo.events = (function(){
           handler.call(shell, event, data);
         }
         deferred.resolveWith(shell, [event, data]);
-      });
+      };
+
+      $(shell.$rootElement).bind('mws:' + event, data, handlers[id]);
     }).promise();
   };
 
@@ -36,7 +45,7 @@ mongo.events = (function(){
     data = $.extend({shell: shell}, data);
     var wrappedHandler = function(){
       handler.apply(shell, arguments);
-      $(shell.$rootElement).unbind('mws:' + event, arguments.callee.caller);
+      mongo.events.unbind(shell, event, arguments.callee.caller);
     };
     return mongo.events.bind(shell, event, wrappedHandler, data, filter);
   };
@@ -47,12 +56,18 @@ mongo.events = (function(){
     });
   };
 
+  var unbind = function(shell, event, handler){
+    if (handler && handler.id){ handler = handlers[handler.id]; }
+    $(shell.$rootElement).unbind('mws:' + event, handler);
+  };
+
   return {
     trigger: trigger,
     functionTrigger: functionTrigger,
     callbackTrigger: callbackTrigger,
     bind: bind,
     bindOnce: bindOnce,
-    bindAll: bindAll
+    bindAll: bindAll,
+    unbind: unbind
   };
 })();
