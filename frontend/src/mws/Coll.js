@@ -40,6 +40,8 @@ mongo.Coll.prototype.find = function (query, projection) {
 };
 
 mongo.Coll.prototype.findOne = function (query, projection) {
+  mongo.events.functionTrigger(this.shell, 'db:collection:findOne', arguments,
+                               {collection: this.name});
   var cursor = this.find(query, projection).limit(1);
   if (cursor.hasNext()) {
     return cursor.next();
