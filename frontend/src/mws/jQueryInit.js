@@ -61,6 +61,20 @@ mongo.jQueryInit = function($){
             this.each(function(i, e){ $(e).data('shell').insertResponseLine(vals); });
           }
           break;
+
+        case 'destroy':
+          this.each(function(){
+            var shell = $(this).data('shell');
+            shell.sandbox.remove();
+            shell.$rootElement.remove(); // jquery handles event and data unbinding
+            mongo.shells.splice(mongo.shells.indexOf(shell), 1);
+
+            // TODO: ignore other res_ids when canceling keepalive
+            if (!mongo.shells.length){
+              clearInterval(mongo.init.initState[shell.mwsResourceID]);
+            }
+          });
+          break;
         }
         break;
 

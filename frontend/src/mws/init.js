@@ -142,7 +142,7 @@ mongo.init = (function(){
         };
       }
 
-      setInterval(
+      mongo.init.initState[res_id].keepAlive = setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
         mongo.const.keepAliveTime
       );

@@ -56,13 +56,14 @@ describe('The init function', function () {
   });
 
   it('initializes resources on receiving a res_id', function(){
-    spyOn(window, 'setInterval');
+    spyOn(window, 'setInterval').andReturn(1234);
     creationSuccess = true;
     expect(mongo.init.initState).toEqual({});
     mongo.init.run();
     expect(mongo.init.initState.iu.pending).toBe(0);
     expect(mongo.init.initState.iu.initUrls).toEqual([]);
     expect(mongo.init.initState.iu.initJsonUrls).toEqual([]);
+    expect(mongo.init.initState.iu.keepAlive).toBe(1234);
   });
 
   describe('for each web shell div in the DOM', function () {
