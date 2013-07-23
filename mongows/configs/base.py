@@ -21,3 +21,9 @@ RATELIMIT_QUOTA = 500  # requests per expiry
 RATELIMIT_EXPIRY = 60  # expiry in seconds
 
 QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes
+
+# QUOTA_NUM_COLLECTIONS: number of collections per res_id
+# False: unlimited number of collections, no quota
+# 0: user is unable to create additional collections
+# 1+: user may have up to # collections per res_id
+QUOTA_NUM_COLLECTIONS = 8

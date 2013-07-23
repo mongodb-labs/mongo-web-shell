@@ -10,6 +10,7 @@ from mongows.initializers.util import (
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId, get_collection_names
 from mongows.mws.views import CLIENTS_COLLECTION
+from mongows.mws.MWSServerError import MWSServerError
 from tests import MongoWSTestCase
 
 
@@ -64,6 +65,57 @@ class UseResIdTestCase(MongoWSTestCase):
                 db.drop_collection('bar')
                 self.assertItemsEqual(get_collections(), [])
                 self.assertNotIn(res_id + 'bar', db.collection_names())
+
+    def test_quota_collections(self):
+        # set up environment
+        old_quota = self.real_app.config['QUOTA_NUM_COLLECTIONS']
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 2
+
+        with self.real_app.app_context():
+            res_id = 'myresid.'
+
+            # clear existing collections
+            db = get_db()
+            collections = get_collection_names(res_id)
+            with UseResId(res_id):
+                for c in collections:
+                    db.drop_collection(c)
+                db.a.insert({'a': 1})
+                db.b.insert({'a': 1})
+                with self.assertRaises(MWSServerError) as cm:
+                    db.c.insert({'a': 1})
+
+                self.assertEqual(cm.exception.error, 429)
+
+                for c in ['a', 'b']:
+                    db.drop_collection(c)
+
+        # reset environment
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = old_quota
+
+    def test_quota_collections_zero(self):
+        # set up environment
+        old_quota = self.real_app.config['QUOTA_NUM_COLLECTIONS']
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 0
+
+        with self.real_app.app_context():
+            res_id = 'myresid.'
+
+            # clear existing collections
+            db = get_db()
+            collections = get_collection_names(res_id)
+            with UseResId(res_id):
+                for c in collections:
+                    db.drop_collection(c)
+                with self.assertRaises(MWSServerError) as cm:
+                    db.a.insert({'a': 1})
+
+                self.assertEqual(cm.exception.error, 429)
+
+                db.drop_collection('a')
+
+        # reset environment
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = old_quota
 
 
 class InitializersTestCase(MongoWSTestCase):
