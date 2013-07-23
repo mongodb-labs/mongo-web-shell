@@ -78,6 +78,17 @@ describe('The events class', function(){
       $shell.trigger('mws:event');
       expect(fn.callCount).toBe(3);
     });
+
+    it('does not call the callback if the filter returns false', function(){
+      var fn = jasmine.createSpy();
+      mongo.events.bind(shell, 'event', fn, null, function(){ return false; });
+      $shell.trigger('mws:event');
+      expect(fn).not.toHaveBeenCalled();
+
+      mongo.events.bind(shell, 'event', fn, null, function(){ return true; });
+      $shell.trigger('mws:event');
+      expect(fn).toHaveBeenCalled();
+    });
   });
 
   describe('has a bindOnce function that', function(){
