@@ -141,6 +141,8 @@ mongo.Coll.prototype.aggregate = function(query){
 mongo.Coll.prototype.ensureIndex = function(keys, options){
   var url = this.urlBase + 'ensureIndex';
   var data = {keys: keys, options: options};
+  mongo.events.functionTrigger(this.shell, 'db:collection:ensureIndex', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, data, 'POST', 'dbCollectionEnsureIndex', this.shell);
 };
 
@@ -151,6 +153,8 @@ mongo.Coll.prototype.ensureIndex = function(keys, options){
  */
 mongo.Coll.prototype.reIndex = function(){
   var url = this.urlBase + 'reIndex';
+  mongo.events.functionTrigger(this.shell, 'db:collection:reIndex', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, null, 'PUT', 'dbCollectionReIndex', this.shell);
 };
 
@@ -162,6 +166,8 @@ mongo.Coll.prototype.reIndex = function(){
 mongo.Coll.prototype.dropIndex = function(name){
   var url = this.urlBase + 'dropIndex';
   var data = {name: name};
+  mongo.events.functionTrigger(this.shell, 'db:collection:dropIndex', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, data, 'DELETE', 'dbCollectionDropIndex', this.shell);
 };
 
@@ -172,6 +178,8 @@ mongo.Coll.prototype.dropIndex = function(name){
  */
 mongo.Coll.prototype.dropIndexes = function(){
   var url = this.urlBase + 'dropIndexes';
+  mongo.events.functionTrigger(this.shell, 'db:collection:dropIndexes', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDropIndexes', this.shell);
 };
 
@@ -186,6 +194,8 @@ mongo.Coll.prototype.getIndexes = function(){
   var onSuccess = function(data){
     results = data;
   }.bind(this);
+  mongo.events.functionTrigger(this.shell, 'db:collection:getIndexes', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, null, 'GET', 'dbCollectionGetIndexes', this.shell, onSuccess,
                             false);
   return results;

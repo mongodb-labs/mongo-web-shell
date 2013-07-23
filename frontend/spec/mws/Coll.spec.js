@@ -337,6 +337,13 @@ describe('The Collection class', function () {
       coll.ensureIndex({a: 1});
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.ensureIndex({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:ensureIndex', [{a: 1}],
+                               {collection: name_});
+    });
   });
 
   describe('reIndex', function(){
@@ -354,6 +361,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.reIndex();
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.reIndex();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:reIndex', [],
+                               {collection: name_});
     });
   });
 
@@ -379,6 +393,13 @@ describe('The Collection class', function () {
       coll.dropIndex('name');
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.dropIndex('name');
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:dropIndex', ['name'],
+                               {collection: name_});
+    });
   });
 
   describe('dropIndexes', function(){
@@ -396,6 +417,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.dropIndexes();
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.dropIndexes();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:dropIndexes', [],
+                               {collection: name_});
     });
   });
 
@@ -419,6 +447,13 @@ describe('The Collection class', function () {
     it('returns the indexes array', function () {
       makeRequest.andCallFake(function(a, b, c, d, e, fn){ fn(['data']); });
       expect(coll.getIndexes()).toEqual(['data']);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.getIndexes();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:getIndexes', [],
+                               {collection: name_});
     });
   });
 });
