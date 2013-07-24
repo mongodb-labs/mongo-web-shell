@@ -147,9 +147,9 @@ describe('A Cursor', function () {
         expect(makeRequest.calls[0].args[2]).toEqual('GET');
       });
 
-      it('uses the collection\'s shell', function () {
+      it('is ratelimited', function () {
         instance._executeQuery();
-        expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+        expect(makeRequest.calls[0].args[4]).toBe(true);
       });
 
       it('uses the supplied on async flag', function () {
@@ -358,7 +358,7 @@ describe('A Cursor', function () {
       expect(args[0]).toEqual('my_coll_url/count'); // Url
       expect(args[1]).toEqual({query: query}); // params
       expect(args[2]).toEqual('GET'); // GET request
-      expect(args[4]).toEqual(coll.shell); // Use the collection's shell
+      expect(args[4]).toEqual(true); // Is ratelimited
       expect(args[6]).toEqual(false); // Synchronous
     });
 

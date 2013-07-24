@@ -128,9 +128,9 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('POST');
     });
 
-    it('uses the collection\'s shell', function () {
+    it('is ratelimited', function () {
       coll.insert({});
-      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
   });
 
@@ -154,9 +154,9 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
     });
 
-    it('uses the collection\'s shell', function () {
+    it('is ratelimited', function () {
       coll.remove({}, true);
-      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
   });
 
@@ -212,9 +212,9 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('PUT');
     });
 
-    it('uses the collection\'s shell', function () {
+    it('is ratelimited', function () {
       coll.update({}, {});
-      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
   });
 
@@ -241,9 +241,9 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
     });
 
-    it('uses the collection\'s shell', function () {
+    it('is ratelimited', function () {
       coll.aggregate({});
-      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
 
     it('retuns the aggregation results', function () {
@@ -271,9 +271,9 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
     });
 
-    it('uses the collection\'s shell', function () {
+    it('is ratelimited', function () {
       coll.drop();
-      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
   });
 });

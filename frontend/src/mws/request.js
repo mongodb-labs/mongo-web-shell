@@ -39,13 +39,17 @@ mongo.request = (function () {
       });
   }
 
-  function makeRequest(url, params, type, name, shell, onSuccess, async) {
+  function makeRequest(url, params, type, name, ratelimit, onSuccess, async) {
+    if (ratelimit && new Date() - mongo.request._ratelimitLock < mongo.const.ratelimitLockDuration){
+      throw new Error('Rate limit exceeded, request not sent');
+    }
+
     if (async === undefined) {
       // Default async to true
       async = true;
     }
     console.debug(name + ' request:', url, params);
-    $.ajax({
+    var req = $.ajax({
       async: !!async,
       type: type,
       url: url,
@@ -59,16 +63,30 @@ mongo.request = (function () {
         }
       },
       error: function (jqXHR, textStatus, errorThrown) {
+        if (jqXHR.status === 429){
+          mongo.request._ratelimitLock = new Date();
+          $.each(mongo.request._pending, function(i, e){ e.abort(); });
+        }
+
         var response = $.parseJSON(jqXHR.responseText);
         var message = 'ERROR: ' + response.reason;
         if (response.detail) {
           message += '\n' + response.detail;
         }
-        shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);
-        throw {};
+        throw new Error(message);
+      },
+      complete: function(jqXHR){
+        if (jqXHR.pendingId){
+          delete mongo.request._pending[jqXHR.pendingId];
+        }
       }
     });
+
+    if (ratelimit){
+      req.pendingId = mongo.request._pendingId;
+      mongo.request._pending[mongo.request._pendingId++] = req;
+    }
   }
 
   function keepAlive(res_id) {
@@ -102,6 +120,9 @@ mongo.request = (function () {
   return {
     createMWSResource: createMWSResource,
     keepAlive: keepAlive,
-    makeRequest: makeRequest
+    makeRequest: makeRequest,
+    _pending: {},
+    _pendingId: 0,
+    _ratelimitLock: 0
   };
 }());

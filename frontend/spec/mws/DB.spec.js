@@ -74,9 +74,9 @@ describe('The DB class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
     });
 
-    it('uses the db\'s shell', function () {
+    it('is ratelimited', function () {
       db.getCollectionNames();
-      expect(makeRequest.calls[0].args[4]).toBe(db.shell);
+      expect(makeRequest.calls[0].args[4]).toBe(true);
     });
 
     it('passes the callback through', function () {

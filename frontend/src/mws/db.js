@@ -31,5 +31,5 @@ mongo.DB.prototype.__methodMissing = function (field) {
 
 mongo.DB.prototype.getCollectionNames = function (callback) {
   var url = mongo.util.getDBResURL(this.shell.mwsResourceID) + 'getCollectionNames';
-  mongo.request.makeRequest(url, undefined, 'GET', 'getCollectionNames', this.shell, callback);
+  mongo.request.makeRequest(url, undefined, 'GET', 'getCollectionNames', true, callback);
 };

@@ -64,7 +64,7 @@ mongo.Coll.prototype.findOne = function (query, projection) {
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', true);
 };
 
 /**
@@ -75,7 +75,7 @@ mongo.Coll.prototype.insert = function (doc) {
 mongo.Coll.prototype.remove = function (constraint, justOne) {
   var url = this.urlBase + 'remove';
   var params = {constraint: constraint, just_one: justOne};
-  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
+  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', true);
 };
 
 /**
@@ -102,7 +102,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   }
 
   var params = {query: query, update: update, upsert: !!upsert, multi: !!multi};
-  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', this.shell);
+  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', true);
 };
 
 /**
@@ -112,7 +112,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
-  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
+  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', true);
 };
 
 /**
@@ -127,7 +127,7 @@ mongo.Coll.prototype.aggregate = function(query){
   var onSuccess = function(data){
     results = data;
   }.bind(this);
-  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', true,
                             onSuccess, false); // Sync request, blocking
   return results;
 };

@@ -30,6 +30,7 @@ mongo.const = (function () {
     scriptName: 'mongoWebShell.js',
     shellBatchSize: 20,
     shellHistoryKey: 'mongo.history',
-    shellHistorySize: 500
+    shellHistorySize: 500,
+    ratelimitLockDuration: 10000 // duration of ratelimit lock in ms
   };
 }());
