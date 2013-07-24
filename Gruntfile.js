@@ -93,6 +93,16 @@ module.exports = function (grunt) {
         },
         noreport: true
       }
+    },
+
+    cssmin: {
+      minify: {
+        expand: true,
+        cwd: DIST_DIR,
+        src: ['*.css', '!*.min.css'],
+        dest: DIST_DIR,
+        ext: '.min.css'
+      }
     }
   });
 
@@ -103,8 +113,9 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-shell');
   grunt.loadNpmTasks('grunt-closure-compiler');
+  grunt.loadNpmTasks('grunt-contrib-cssmin');
 
-  grunt.registerTask('minify', ['closure-compiler']);
+  grunt.registerTask('minify', ['closure-compiler', 'cssmin']);
   grunt.registerTask('default', ['concat', 'minify']);
   grunt.registerTask('pep8', ['shell:pep8']);
   grunt.registerTask('unittest', ['shell:unittest']);
