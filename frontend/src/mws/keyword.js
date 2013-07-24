@@ -63,7 +63,7 @@ mongo.keyword = (function () {
     mongo.keyword._resetHasBeenCalled = false;
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
     mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, function(){
-      delete mongo.init._initState[shell.mwsResourceID];
+      delete mongo.init.initState[shell.mwsResourceID];
 
       // TODO: use appropriate res_ids when multiple res_ids are enabled
       $.each(mongo.shells, function(i, e){

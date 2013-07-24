@@ -46,15 +46,7 @@ mongo.init = (function(){
   };
 
   var lockShells = function(res_id){
-    if (!mongo.init._initState[res_id]){
-      mongo.init._initState[res_id] = {
-        pending: 1,
-        initUrls: [],
-        initJsonUrls: []
-      };
-    } else {
-      mongo.init._initState[res_id].pending++;
-    }
+    mongo.init.initState[res_id].pending++;
 
     // Lock all affected shells with same res_id
     // Note that this is currently ALL shells since we do not yet assign
@@ -69,15 +61,15 @@ mongo.init = (function(){
   // see note above regarding all shells having same res_id
   var unlockShells = function(res_id, waitFor){
     $.when.apply($, waitFor).then(function(){
-      mongo.init._initState[res_id].pending--;
-      if (!mongo.init._initState[res_id].pending){
+      mongo.init.initState[res_id].pending--;
+      if (!mongo.init.initState[res_id].pending){
         $.each(mongo.shells, function(i, e){
           e.enableInput(true);
         });
       }
     }, function(){
-      mongo.init._initState[res_id].pending--;
-      if (!mongo.init._initState[res_id].pending){
+      mongo.init.initState[res_id].pending--;
+      if (!mongo.init.initState[res_id].pending){
         $.each(mongo.shells, function(i, e){
           e.insertResponseArray([
             'One or more scripts failed during initialization.',
@@ -105,8 +97,8 @@ mongo.init = (function(){
 
       // Load init urls
       var initUrl = options.init_url || $(shellElement).data('initialization-url');
-      if (initUrl && mongo.init._initState[res_id].initUrls.indexOf(initUrl) === -1) {
-        mongo.init._initState[res_id].initUrls.push(initUrl);
+      if (initUrl && mongo.init.initState[res_id].initUrls.indexOf(initUrl) === -1) {
+        mongo.init.initState[res_id].initUrls.push(initUrl);
         waitFor.push(loadUrl(initUrl, res_id));
       }
 
@@ -122,9 +114,9 @@ mongo.init = (function(){
           console.error('Unable to parse initialization json: ' + jsonAttr);
         }
       } else if (jsonAttr &&
-                 mongo.init._initState[res_id].initJsonUrls.indexOf(jsonAttr) === -1) {
+                 mongo.init.initState[res_id].initJsonUrls.indexOf(jsonAttr) === -1) {
         // Otherwise assume it's a URL that points to JSON data
-        mongo.init._initState[res_id].initJsonUrls.push(jsonAttr);
+        mongo.init.initState[res_id].initJsonUrls.push(jsonAttr);
         waitFor.push(loadJSONUrl(jsonAttr, res_id));
       }
 
@@ -141,7 +133,14 @@ mongo.init = (function(){
 
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
-      mongo.init.res_id = data.res_id;
+      var res_id = mongo.init.res_id = data.res_id;
+      if (!mongo.init.initState[res_id]){
+        mongo.init.initState[res_id] = {
+          pending: 0,
+          initUrls: [],
+          initJsonUrls: []
+        };
+      }
 
       setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
@@ -156,7 +155,7 @@ mongo.init = (function(){
 
   return {
     run: run,
-    _initState: {},
+    initState: {},
     _lockShells: lockShells,
     _unlockShells: unlockShells,
     _initShell: initShell,

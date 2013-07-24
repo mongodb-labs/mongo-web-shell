@@ -92,6 +92,13 @@ describe('The jQuery methods', function(){
     var $shell, shell;
     beforeEach(function(){
       mongo.init.res_id = 'res_id';
+      mongo.init.initState = {
+        res_id: {
+          pending: 0,
+          initUrls: [],
+          initJsonUrls: []
+        }
+      };
       $shell = $('<div />').appendTo(document.body).mws();
       shell = $shell.data('shell');
     });

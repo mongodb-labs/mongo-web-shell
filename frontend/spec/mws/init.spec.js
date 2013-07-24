@@ -29,7 +29,7 @@ describe('The init function', function () {
       is_new: true
     };
     mongo.shells = [];
-    mongo.init._initState = {};
+    mongo.init.initState = {};
     mongo.init._jsonCache = {};
   });
 
@@ -53,6 +53,16 @@ describe('The init function', function () {
     mongo.init.run();
     expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
         expected.config.cssPath);
+  });
+
+  it('initializes resources on receiving a res_id', function(){
+    spyOn(window, 'setInterval');
+    creationSuccess = true;
+    expect(mongo.init.initState).toEqual({});
+    mongo.init.run();
+    expect(mongo.init.initState.iu.pending).toBe(0);
+    expect(mongo.init.initState.iu.initUrls).toEqual([]);
+    expect(mongo.init.initState.iu.initJsonUrls).toEqual([]);
   });
 
   describe('for each web shell div in the DOM', function () {
@@ -329,24 +339,8 @@ describe('The init function', function () {
     });
 
     describe('locks shells with a given res_id', function(){
-      it('when no stored state exists', function(){
-        expect(mongo.init._initState).toEqual({});
-        mongo.init._lockShells('iu');
-        expect(mongo.init._initState).toEqual({
-          iu: {
-            pending: 1,
-            initUrls: [],
-            initJsonUrls: []
-          }
-        });
-
-        mongo.shells.forEach(function(shell){
-          expect(shell.$input.prop('disabled')).toBe(true);
-        });
-      });
-
-      it('when a stored state exists', function(){
-        mongo.init._initState = {
+      it('and increments the pending count', function(){
+        mongo.init.initState = {
           iu: {
             pending: 1,
             initUrls: [],
@@ -354,7 +348,7 @@ describe('The init function', function () {
           }
         };
         mongo.init._lockShells('iu');
-        expect(mongo.init._initState).toEqual({
+        expect(mongo.init.initState).toEqual({
           iu: {
             pending: 2,
             initUrls: [],
@@ -371,7 +365,13 @@ describe('The init function', function () {
     describe('unlocks shells with a given res_id', function(){
       var $shell, $shell2;
       beforeEach(function(){
-        mongo.init._initState = {};
+        mongo.init.initState = {
+          iu: {
+            pending: 0,
+            initUrls: [],
+            initJsonUrls: []
+          }
+        };
         $shell = $('<div />').mws();
         $shell2 = $('<div />').mws();
         mongo.init._lockShells('iu');
@@ -385,7 +385,7 @@ describe('The init function', function () {
       it('when no more inits are pending', function(){
 
         mongo.init._unlockShells('iu');
-        expect(mongo.init._initState).toEqual({
+        expect(mongo.init.initState).toEqual({
           iu: {
             pending: 0,
             initUrls: [],
@@ -402,7 +402,7 @@ describe('The init function', function () {
         mongo.init._lockShells('iu');
 
         mongo.init._unlockShells('iu');
-        expect(mongo.init._initState).toEqual({
+        expect(mongo.init.initState).toEqual({
           iu: {
             pending: 1,
             initUrls: [],
