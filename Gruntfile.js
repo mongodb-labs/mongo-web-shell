@@ -1,4 +1,4 @@
-/* jshint node: true */
+/* jshint node: true, camelcase: false */
 var FRONTEND_DIR = 'frontend/';
 var LIB_DIR = FRONTEND_DIR + 'lib/';
 var SPEC_DIR = FRONTEND_DIR + 'spec/';
@@ -80,6 +80,19 @@ module.exports = function (grunt) {
           failOnError: true
         }
       }
+    },
+
+    'closure-compiler': {
+      frontend: {
+        js: DIST_DIR + 'mongoWebShell.js',
+        jsOutputFile: DIST_DIR + 'mongoWebShell.min.js',
+        maxBuffer: 500,
+        options: {
+          compilation_level: 'ADVANCED_OPTIMIZATIONS',
+          language_in: 'ECMASCRIPT5_STRICT'
+        },
+        noreport: true
+      }
     }
   });
 
@@ -89,12 +102,14 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('grunt-closure-compiler');
 
-  grunt.registerTask('default', ['concat']);
+  grunt.registerTask('minify', ['closure-compiler']);
+  grunt.registerTask('default', ['concat', 'minify']);
   grunt.registerTask('pep8', ['shell:pep8']);
   grunt.registerTask('unittest', ['shell:unittest']);
   grunt.registerTask(
     'test',
-    ['jshint', 'concat', 'jasmine', 'pep8', 'unittest']
+    ['jshint', 'concat', 'minify', 'jasmine', 'pep8', 'unittest']
   );
 };
