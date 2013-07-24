@@ -63,6 +63,12 @@ mongo.events = (function(){
     $(shell.$rootElement).unbind('mws:' + event, handler);
   };
 
+  var unbindAll = function(event, handler){
+    mongo.shells.forEach(function(e){
+      mongo.events.unbind(e, event, handler);
+    });
+  };
+
   return {
     trigger: trigger,
     functionTrigger: functionTrigger,
@@ -70,6 +76,7 @@ mongo.events = (function(){
     bind: bind,
     bindOnce: bindOnce,
     bindAll: bindAll,
-    unbind: unbind
+    unbind: unbind,
+    unbindAll: unbindAll
   };
 })();

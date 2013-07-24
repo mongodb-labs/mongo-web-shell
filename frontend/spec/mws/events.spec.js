@@ -177,4 +177,51 @@ describe('The events class', function(){
       expect(fn2.callCount).toBe(1);
     });
   });
+
+  describe('has an unbindAll function that', function(){
+    var $shell2, shell2, fn, fn2;
+    beforeEach(function(){
+      $shell2 = $('<div class=' + CONST.css.classes.root + '/>');
+      $('body').append($shell2);
+      shell2 = new mongo.Shell($shell2.get(0), 0);
+      mongo.shells.push(shell2);
+      fn = jasmine.createSpy(), fn2 = jasmine.createSpy();
+    });
+
+    it('unbinds all handlers on all shells', function(){
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.bindOnce(shell, 'event', fn2);
+      mongo.events.bind(shell2, 'event', fn);
+      mongo.events.bindOnce(shell2, 'event', fn2);
+      $shell.trigger('mws:event');
+      $shell2.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+      expect(fn2.callCount).toBe(2);
+
+      mongo.events.bindOnce(shell, 'event', fn);
+      mongo.events.bindOnce(shell2, 'event', fn);
+      mongo.events.unbindAll('event');
+      $shell.trigger('mws:event');
+      $shell2.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+      expect(fn2.callCount).toBe(2);
+    });
+
+    it('unbinds the specified handler on all shells', function(){
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.bindOnce(shell, 'event', fn2);
+      mongo.events.bind(shell2, 'event', fn2);
+      mongo.events.bindOnce(shell2, 'event', fn);
+      $shell.trigger('mws:event');
+      $shell2.trigger('mws:event');
+      expect(fn.callCount).toBe(2);
+      expect(fn2.callCount).toBe(2);
+
+      mongo.events.unbindAll('event', fn2);
+      $shell.trigger('mws:event');
+      $shell2.trigger('mws:event');
+      expect(fn.callCount).toBe(3);
+      expect(fn2.callCount).toBe(2);
+    });
+  });
 });
