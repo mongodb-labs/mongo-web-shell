@@ -19,16 +19,18 @@ def get_db():
         client = pymongo.MongoClient(config.hostname, config.port)
     except TypeError:
         print 'Port is not an instance of int.'
-        # TODO: Throw appropriate exception
+        raise
     except ConnectionFailure:
         print 'Connection to the database could not be made.'
-        # TODO: Propogate the exception
+        raise
     except AutoReconnect:
         print 'Auto-reconnection performed.'
-        # TODO: Propogate the exception
+        raise
+    except:
+        print 'An unexpected error occurred.'
+        raise
     else:
         db = client[db_name]
         if config.username:
             db.authenticate(config.username, config.password)
         return db
-    return None
