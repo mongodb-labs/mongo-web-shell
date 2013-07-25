@@ -6,10 +6,10 @@ from tests import MongoWSTestCase
 
 
 class InitializersTestCase(MongoWSTestCase):
-    def create_test_script(self):
+    def create_test_script(self, **kwargs):
         # Create module test_script in scripts
         test_script = types.ModuleType('test_script')
-        run_mock = mock.MagicMock()
+        run_mock = mock.MagicMock(**kwargs)
         test_script.__dict__.update({'run': run_mock})
         sys.modules['mongows.initializers.scripts.test_script'] = test_script
         return run_mock
@@ -21,7 +21,7 @@ class InitializersTestCase(MongoWSTestCase):
                              content_type='application/json')
 
     def test_imports_and_runs_the_specified_file(self):
-        run_mock = self.create_test_script()
+        run_mock = self.create_test_script(return_value=('ok', 200))
 
         response = self.make_init_request('test_script', {'res_id': 'foo'})
 
@@ -42,7 +42,29 @@ class InitializersTestCase(MongoWSTestCase):
             'res_id': 'my_res_id',
             'extra_data': {'my': 'data'}
         }
-        run_mock = self.create_test_script()
+
+        run_mock = self.create_test_script(return_value=('', 204))
 
         self.make_init_request('test_script', data)
         run_mock.assert_called_once_with('my_res_id', data)
+
+    def test_custom_return_value(self):
+        run_mock = self.create_test_script(return_value=('{"key":"val"}', 200))
+
+        response = self.make_init_request('test_script', {'res_id': 'foo'})
+
+        run_mock.assert_called_once_with('foo')
+        self.assertEqual(response.data, '{"key":"val"}')
+        self.assertEqual(response.status_code, 200)
+        del sys.modules['mongows.initializers.scripts.test_script']
+
+    def test_exception_catching(self):
+        run_mock = self.create_test_script(side_effect=IOError('error!'))
+
+        response = self.make_init_request('test_script', {'res_id': 'foo'})
+
+        run_mock.assert_called_once_with('foo')
+        error = '{"reason": "IOError", "detail": "error!", "error": 500}'
+        self.assertEqual(response.data, error)
+        self.assertEqual(response.status_code, 500)
+        del sys.modules['mongows.initializers.scripts.test_script']
