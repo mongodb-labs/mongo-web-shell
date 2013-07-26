@@ -39,8 +39,7 @@ module.exports = function (grunt) {
           specs: SPEC_DIR + '**/*.spec.js',
           helpers: [
             SPEC_DIR + 'disableConsole.js',
-            SPEC_DIR + 'globals.js',
-            SPEC_DIR + 'phantomJSWorkarounds.js'
+            SPEC_DIR + 'globals.js'
           ],
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
