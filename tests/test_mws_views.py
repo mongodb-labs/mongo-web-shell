@@ -546,9 +546,8 @@ class DropDBUnitTestCase(DBTestCase):
     def test_drop_db(self):
         testdoc = {'name': 'Mongo'}
         colls = ['a', 'b', 'c']
-        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
-                                           {'$addToSet':
-                                           {'collections': {'$each': colls}}})
+        update = {'$addToSet': {'collections': {'$each': colls}}}
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id}, update)
         colls = [get_internal_coll_name(self.res_id, c) for c in colls]
         for c in colls:
             self.db[c].insert(testdoc)
