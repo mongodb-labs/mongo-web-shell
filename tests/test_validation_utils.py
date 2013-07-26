@@ -117,7 +117,7 @@ class CollectionContainsAnyUnitTest(ValidationUtilsTestCase):
                                                                [{'a': 1}]))
         self.assertTrue(self.validator.collection_contains_any('coll',
                                                                [{'a': 1},
-                                                               {'b': 2}]))
+                                                                {'b': 2}]))
 
     def test_contains_any_id(self):
         for i in range(3):
