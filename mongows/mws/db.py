@@ -17,26 +17,14 @@ def get_db(MWSExceptions=False):
     config = urlparse(current_app.config['MONGOHQ_URL'])
     db_name = config.path.rpartition('/')[2]
     try:
-        try:
-            client = pymongo.MongoClient(config.hostname, config.port)
-        except TypeError:
-            print 'Port is not an instance of int.'
-            raise
-        except ConnectionFailure:
-            print 'Connection to the database could not be made.'
-            raise
-        except AutoReconnect:
-            print 'Auto-reconnection performed.'
-            raise
-        except:
-            print 'An unexpected error occurred.'
-            raise
-        else:
-            db = client[db_name]
-            if config.username:
-                db.authenticate(config.username, config.password)
-            return db
+        client = pymongo.MongoClient(config.hostname, config.port)
+        db = client[db_name]
+        if config.username:
+            db.authenticate(config.username, config.password)
+        return db
     except Exception as e:
         if MWSExceptions:
-            raise MWSServerError(500, str(e))
+            debug = current_app.config['DEBUG']
+            msg = str(e) if debug else 'An unexpected error occurred.'
+            raise MWSServerError(500, msg)
         raise
