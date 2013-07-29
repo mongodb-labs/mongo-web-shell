@@ -558,6 +558,15 @@ class EnsureIndexTestCase(DBCollectionTestCase):
             'v': 1
         })
 
+    def test_system_collection(self):
+        self.make_ensure_index_request({'key': 1}, expected_status=204)
+        self.make_request_url = '/mws/%s/db/%s/%%s' % \
+                                (self.res_id, 'system')
+        self.make_ensure_index_request({'key': 1}, expected_status=403)
+        self.make_request_url = '/mws/%s/db/%s/%%s' % \
+                                (self.res_id, 'system.indexes')
+        self.make_ensure_index_request({'key': 1}, expected_status=403)
+
 
 class ReIndexTestCase(DBCollectionTestCase):
     @mock.patch('pymongo.collection.Collection.reindex')

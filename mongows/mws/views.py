@@ -31,6 +31,7 @@ from mongows.mws.util import (
     get_internal_coll_name,
     get_friendly_coll_name
 )
+import re
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
@@ -309,7 +310,7 @@ def db_collection_ensure_index(res_id, collection_name):
 
     options = request.json.get('options', {})
     with UseResId(res_id, allowSystem=True):
-        if collection_name == 'system':
+        if re.match('system($|\.)', collection_name) is not None:
             raise MWSServerError(403, 'Collection name may not ' +
                                       'begin with system.*')
         get_db()[collection_name].ensure_index(keys.items(), **options)
