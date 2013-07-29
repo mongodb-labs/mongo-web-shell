@@ -32,17 +32,20 @@ mongo.init = (function(){
   };
 
   var loadJSON = function(initJson, res_id){
-    if (Object.keys(initJson).length > 0) {
-      return $.ajax({
-        type: 'POST',
-        url: '/init/load_json',
-        data: JSON.stringify({
-          res_id: res_id,
-          collections: initJson
-        }),
-        contentType: 'application/json'
-      });
+    if (!Object.keys(initJson).length) {
+      // no data, save a round-trip
+      return $.Deferred().resolve().promise();
     }
+
+    return $.ajax({
+      type: 'POST',
+      url: '/init/load_json',
+      data: JSON.stringify({
+        res_id: res_id,
+        collections: initJson
+      }),
+      contentType: 'application/json'
+    });
   };
 
   var loadJSONUrl = function(url, res_id){
