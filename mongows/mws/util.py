@@ -16,6 +16,8 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 import mongows
 from mongows.mws.db import get_db
+from flask import current_app
+from mongows.mws.MWSServerError import MWSServerError
 
 
 def get_internal_coll_name(res_id, collection_name):
@@ -88,6 +90,18 @@ class UseResId:
     def insert_client_collection(self, name):
         if name.startswith(self.res_id):
             name = name[self.id_length:]
+
+        limit = current_app.config.get('QUOTA_NUM_COLLECTIONS')
+
+        if limit is not None:
+            data = self.client_collection.find_one(
+                {'res_id': self.res_id},
+                {'collections': 1}
+            )
+
+            if len(set(data['collections']).union(name)) > limit:
+                raise MWSServerError(429, 'Max number of collections exceeded')
+
         self.client_collection.update(
             {'res_id': self.res_id},
             {'$addToSet': {'collections': name}},
