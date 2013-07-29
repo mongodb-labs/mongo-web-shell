@@ -310,7 +310,8 @@ def db_collection_ensure_index(res_id, collection_name):
     options = request.json.get('options', {})
     with UseResId(res_id, allowSystem=True):
         if collection_name == 'system':
-            raise Forbidden('Collection name may not begin with system.*')
+            raise MWSServerError(403, 'Collection name may not ' +
+                                      'begin with system.*')
         get_db()[collection_name].ensure_index(keys.items(), **options)
     return empty_success()
 
