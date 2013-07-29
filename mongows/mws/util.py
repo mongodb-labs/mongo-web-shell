@@ -77,9 +77,9 @@ class UseResId:
         if name.startswith(self.res_id):
             name = name[self.id_length:]
 
-        limit = current_app.config.get('QUOTA_NUM_COLLECTIONS', False)
+        limit = current_app.config.get('QUOTA_NUM_COLLECTIONS')
 
-        if limit is not False:
+        if limit is not None:
             data = self.client_collection.find_one(
                 {'res_id': self.res_id},
                 {'collections': 1}
