@@ -88,8 +88,8 @@ module.exports = function (grunt) {
         jsOutputFile: DIST_DIR + 'mongoWebShell.min.js',
         maxBuffer: 500,
         options: {
-          compilation_level: 'ADVANCED_OPTIMIZATIONS',
-          language_in: 'ECMASCRIPT5_STRICT'
+          compilation_level: 'SIMPLE_OPTIMIZATIONS',
+          language_in: 'ECMASCRIPT5'
         },
         noreport: true
       }
