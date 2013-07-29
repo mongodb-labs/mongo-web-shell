@@ -358,7 +358,8 @@ def db_collection_get_indexes(res_id, collection_name):
     # a bit heavier than probably needed but makes no assumptions about naming
     trim = len(current_app.config['DB_NAME']) + 1
     for i in range(len(result)):
-        result[i]['ns'] = get_friendly_coll_name(result[i]['ns'][trim:])
+        coll_name = result[i]['ns'][trim:]
+        result[i]['ns'] = 'test.' + get_friendly_coll_name(coll_name)
 
     return to_json(result)
 
