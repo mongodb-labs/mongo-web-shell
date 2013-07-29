@@ -1,13 +1,32 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* global mongo, console */
 /* jshint noarg: false */
 mongo.events = (function(){
-  var id = 0;
-  var handlers = {};
-
   var trigger = function(shell, event, data){
-    data = $.extend({shell: shell}, data);
+    data = $.extend({shell: shell, event: event}, data);
     console.info('[' + shell.id + '] ' + event + ' triggered with data ', data);
-    $(shell.$rootElement).trigger('mws:' + event, data);
+
+    var handlers = shell.$rootElement.data('mws.events');
+    handlers = handlers && handlers[event];
+    if (handlers){
+      $.each(handlers, function(id, f){
+        f(data);
+      });
+    }
   };
 
   var functionTrigger = function(shell, event, args, data){
@@ -22,34 +41,36 @@ mongo.events = (function(){
 
   var bind = function(shell, event, handler, data, filter){
     return $.Deferred(function(deferred){
-      data = $.extend({shell: shell}, data);
+      if (!shell.$rootElement.data('mws.events')){
+        shell.$rootElement.data('mws.events', {});
+      }
 
-      var wrap = function(event){
-        if (typeof filter === 'function' && !filter(shell, event, data)){
+      if (!shell.$rootElement.data('mws.events')[event]){
+        shell.$rootElement.data('mws.events')[event] = {};
+      }
+
+      var wrap = function(d){
+        var passedData = $.extend({}, data, d);
+        if (typeof filter === 'function' && !filter.call(shell, passedData)){
           return;
         }
         if (typeof handler === 'function'){
-          handler.call(shell, event, data);
+          handler.call(shell, passedData);
         }
-        deferred.resolveWith(shell, [event, data]);
+        deferred.resolveWith(shell, [passedData]);
       };
 
-      if (typeof handler === 'function' && !handler.id){
-        handler.id = ++id;
-        handlers[handler.id] = wrap;
+      if (typeof handler === 'function'){
+        if (!handler.id){ handler.id = ++mongo.events._id; }
+        shell.$rootElement.data('mws.events')[event][handler.id] = wrap;
       }
-
-      $(shell.$rootElement).bind('mws:' + event, data, wrap);
     }).promise();
   };
 
   var bindOnce = function(shell, event, handler, data, filter){
-    data = $.extend({shell: shell}, data);
-    var wrappedHandler = function(){
-      handler.apply(shell, arguments);
-      mongo.events.unbind(shell, event, arguments.callee.caller);
-    };
-    return mongo.events.bind(shell, event, wrappedHandler, data, filter);
+    return mongo.events.bind(shell, event, handler, data, filter).done(function(){
+      mongo.events.unbind(shell, event, handler);
+    });
   };
 
   var bindAll = function(event, handler, data, filter){
@@ -59,8 +80,15 @@ mongo.events = (function(){
   };
 
   var unbind = function(shell, event, handler){
-    if (handler && handler.id){ handler = handlers[handler.id]; }
-    $(shell.$rootElement).unbind('mws:' + event, handler);
+    if (handler){
+      if (!handler.id){
+        return; // handler was never bound to function
+      }
+      delete shell.$rootElement.data('mws.events')[event][handler.id];
+    } else {
+      // unbind all handlers
+      delete shell.$rootElement.data('mws.events')[event];
+    }
   };
 
   var unbindAll = function(event, handler){
@@ -77,6 +105,7 @@ mongo.events = (function(){
     bindOnce: bindOnce,
     bindAll: bindAll,
     unbind: unbind,
-    unbindAll: unbindAll
+    unbindAll: unbindAll,
+    _id: 0
   };
 })();

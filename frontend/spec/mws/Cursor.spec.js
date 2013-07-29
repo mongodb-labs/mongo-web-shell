@@ -30,7 +30,8 @@ describe('A Cursor', function () {
       shell: {
         getShellBatchSize: getShellBatchSizeSpy,
         insertResponseLine: insertResponseLineSpy,
-        lastUsedCursor: null
+        lastUsedCursor: null,
+        $rootElement: $()
       },
       urlBase: 'coll_url_base/'
     };
@@ -180,7 +181,7 @@ describe('A Cursor', function () {
       it('fires the callback event', function(){
         var ct = spyOn(mongo.events, 'callbackTrigger');
         instance._executeQuery();
-        expect(ct).toHaveBeenCalledWith(coll.shell, 'cursor:execute', [
+        expect(ct).toHaveBeenCalledWith(coll.shell, 'cursor.execute', [
           'test', 'results', 'here'
         ]);
       });

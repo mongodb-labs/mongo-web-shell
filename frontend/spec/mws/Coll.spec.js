@@ -27,7 +27,8 @@ describe('The Collection class', function () {
     db_ = {
       shell: {
         mwsResourceID: 'test res id',
-        insertResponseLine: function () {}
+        insertResponseLine: function () {},
+        $rootElement: $()
       }
     };
     coll = new mongo.Coll(db_, name_);
@@ -111,7 +112,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.findOne({a: 1}, {b: 1});
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:findOne', [{a: 1}, {b: 1}],
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.findOne', [{a: 1}, {b: 1}],
                                {collection: name_});
     });
   });
@@ -143,7 +144,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.insert({a: 1});
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:insert', [{a: 1}],
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.insert', [{a: 1}],
                                {collection: name_});
     });
   });
@@ -176,7 +177,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.remove({a: 1});
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:remove', [{a: 1}],
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.remove', [{a: 1}],
                                {collection: name_});
     });
   });
@@ -241,7 +242,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.update({a: 1}, {b: 5}, true, false);
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:update', [
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.update', [
         {a: 1}, {b: 5}, true, false
       ], {collection: name_});
     });
@@ -290,7 +291,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.aggregate({});
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:aggregate', [{}],
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.aggregate', [{}],
                                {collection: name_});
     });
   });
@@ -315,7 +316,7 @@ describe('The Collection class', function () {
     it('fires the appropriate event', function(){
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.drop();
-      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:drop', [],
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.drop', [],
                                {collection: name_});
     });
   });

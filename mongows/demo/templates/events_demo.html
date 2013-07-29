@@ -1,3 +1,20 @@
+<!-----------------------------------------------------------------------------
+    Copyright 2013 10gen Inc.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+------------------------------------------------------------------------------>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,7 +43,7 @@
       $('#prompt').html('Try running an insert command<br />' +
                         'You can do this by typing db.collection.insert(...)');
 
-      mongo.events.bindOnce(shell, 'db:collection:insert', function(e, data){
+      mongo.events.bindOnce(shell, 'db.collection.insert', function(data){
         targetCollection = data.collection;
         $('#prompt').html('Great job. You called insert on ' + data.collection + ' with ' +
                           JSON.stringify($.makeArray(data.arguments)) +
@@ -36,21 +53,21 @@
                           'You can do this by typing db.' + targetCollection + '.find(...)');
 
       }).then(function(){
-        return mongo.events.bindOnce(shell, 'db:collection:find', function(e, data){
+        return mongo.events.bindOnce(shell, 'db.collection.find', function(data){
           $('#prompt').html('Great job. You called find on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) + ' as arguments');
-        }, null, function(s,e,d){return d.collection === targetCollection});
+        }, null, function(d){return d.collection === targetCollection});
       }).then(function(){
-        return mongo.events.bindOnce(shell, 'cursor:execute', function(e, data){
+        return mongo.events.bindOnce(shell, 'cursor.execute', function(data){
           $('#prompt').append('<br />Find returned with ' + data.result.length + ' results<br />' +
                               'Try cleaning up this data with db.' + targetCollection + '.remove(...)');
-        }, null, function(s,e,d){return d.collection === targetCollection});
+        }, null, function(d){return d.result.length > 0});
       }).then(function(){
-        return mongo.events.bindOnce(shell, 'db:collection:remove', function(e, data){
+        return mongo.events.bindOnce(shell, 'db.collection.remove', function(data){
           $('#prompt').html('Great job. You called remove on ' + data.collection + ' with ' +
                             JSON.stringify($.makeArray(data.arguments)) +
                             ' as arguments<br />You graduate!');
-        }, null, function(s,e,d){return d.collection === targetCollection});
+        }, null, function(d){return d.collection === targetCollection});
       });
     });
   </script>

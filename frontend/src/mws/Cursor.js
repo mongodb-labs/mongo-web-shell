@@ -55,7 +55,7 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
     if (this._skip) { params.skip = this._skip; }
     if (this._limit) { params.limit = this._limit; }
     var wrappedSuccess = function (data) {
-      mongo.events.callbackTrigger(this._shell, 'cursor:execute', data.result.slice());
+      mongo.events.callbackTrigger(this._shell, 'cursor.execute', data.result.slice());
       this._storeQueryResult(data.result);
       if (onSuccess) {
         onSuccess();

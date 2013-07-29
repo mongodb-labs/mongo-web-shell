@@ -49,13 +49,13 @@ mongo.Coll.prototype.toString = function () {
  * server.
  */
 mongo.Coll.prototype.find = function (query, projection) {
-  mongo.events.functionTrigger(this.shell, 'db:collection:find', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.find', arguments,
                                {collection: this.name});
   return new mongo.Cursor(this, query, projection);
 };
 
 mongo.Coll.prototype.findOne = function (query, projection) {
-  mongo.events.functionTrigger(this.shell, 'db:collection:findOne', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.findOne', arguments,
                                {collection: this.name});
   var cursor = this.find(query, projection).limit(1);
   if (cursor.hasNext()) {
@@ -68,7 +68,7 @@ mongo.Coll.prototype.findOne = function (query, projection) {
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
-  mongo.events.functionTrigger(this.shell, 'db:collection:insert', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
                                {collection: this.name});
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
 };
@@ -81,7 +81,7 @@ mongo.Coll.prototype.insert = function (doc) {
 mongo.Coll.prototype.remove = function (constraint, justOne) {
   var url = this.urlBase + 'remove';
   var params = {constraint: constraint, just_one: justOne};
-  mongo.events.functionTrigger(this.shell, 'db:collection:remove', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments,
                                {collection: this.name});
   mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
 };
@@ -97,7 +97,7 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
  */
 mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   var url = this.urlBase + 'update';
-  mongo.events.functionTrigger(this.shell, 'db:collection:update', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.update', arguments,
                                {collection: this.name});
 
   // handle options document for 2.2+
@@ -123,7 +123,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
-  mongo.events.functionTrigger(this.shell, 'db:collection:drop', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments,
                                {collection: this.name});
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
 };
@@ -141,7 +141,7 @@ mongo.Coll.prototype.aggregate = function(query){
     results = data;
   }.bind(this);
 
-  mongo.events.functionTrigger(this.shell, 'db:collection:aggregate', arguments,
+  mongo.events.functionTrigger(this.shell, 'db.collection.aggregate', arguments,
                                {collection: this.name});
   mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
                             onSuccess, false); // Sync request, blocking
