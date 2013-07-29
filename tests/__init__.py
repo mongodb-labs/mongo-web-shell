@@ -4,6 +4,7 @@ from mongows import create_app
 
 app = create_app()
 app.testing = True
+app.config['QUOTA_NUM_COLLECTIONS'] = None
 
 
 class MongoWSTestCase(TestCase):
