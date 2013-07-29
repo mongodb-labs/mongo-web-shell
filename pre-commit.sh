@@ -1,5 +1,11 @@
 #!/bin/bash
 
+git status | egrep '# (Untracked files|Changes not staged for commit):'
+if [[ $? -eq 0 ]]; then
+    echo 'Please stage your changes or stash them before you commit.'
+    exit 1
+fi
+
 . ./venv/bin/activate
 
 echo 'Checking for licenses'
@@ -11,10 +17,8 @@ if [[ -n $missing ]]; then
 fi
 
 echo "Running tests..."
-git stash -u --keep-index > /dev/null
 grunt_out=`grunt test 2>&1`
 exit_code=$?
-git stash pop > /dev/null
 if [ $exit_code != 0 ]; then
     echo "$grunt_out"
     exit 1
