@@ -37,5 +37,5 @@ find . -type f ! -path './frontend/lib/*' \
                ! -path './node_modules/*' \
                ! -path './venv/*' \
                ! -path './.git/*' \
-               ! -path './frontend/dist/mongoWebShell.js' \
+               ! -path './frontend/dist/*' \
 	| while read file; do applyLicense "$file" $1; done
