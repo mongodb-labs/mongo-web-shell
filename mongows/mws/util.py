@@ -1,7 +1,22 @@
+#    Copyright 2013 10gen Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
 from pymongo.collection import Collection
 from pymongo.database import Database
 import mongows
 from mongows.mws.db import get_db
+from flask import current_app
 from mongows.mws.MWSServerError import MWSServerError
 import re
 
@@ -89,6 +104,18 @@ class UseResId:
     def insert_client_collection(self, name):
         if name.startswith(self.res_id):
             name = name[self.id_length:]
+
+        limit = current_app.config.get('QUOTA_NUM_COLLECTIONS')
+
+        if limit is not None:
+            data = self.client_collection.find_one(
+                {'res_id': self.res_id},
+                {'collections': 1}
+            )
+
+            if len(set(data['collections']).union(name)) > limit:
+                raise MWSServerError(429, 'Max number of collections exceeded')
+
         self.client_collection.update(
             {'res_id': self.res_id},
             {'$addToSet': {'collections': name}},

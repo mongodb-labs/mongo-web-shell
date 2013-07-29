@@ -1,3 +1,17 @@
+#    Copyright 2013 10gen Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
 from bson.json_util import loads, dumps
 import datetime
 import mock
@@ -671,9 +685,8 @@ class DropDBUnitTestCase(DBTestCase):
     def test_drop_db(self):
         testdoc = {'name': 'Mongo'}
         colls = ['a', 'b', 'c']
-        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id},
-                                           {'$addToSet':
-                                           {'collections': {'$each': colls}}})
+        update = {'$addToSet': {'collections': {'$each': colls}}}
+        self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id}, update)
         colls = [get_internal_coll_name(self.res_id, c) for c in colls]
         for c in colls:
             self.db[c].insert(testdoc)
