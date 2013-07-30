@@ -77,7 +77,7 @@ mongo.keyword = (function () {
     }
     mongo.keyword._resetHasBeenCalled = false;
     var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
-    mongo.request.makeRequest(url, null, 'DELETE', 'reset', true, function(){
+    mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, true, function(){
       mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
         shell.insertResponseLine('Database reset successfully');
       });

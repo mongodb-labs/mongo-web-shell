@@ -155,7 +155,8 @@ describe('The keyword module', function () {
         mongo.keyword.reset(shellSpy);
         expect(makeRequest.calls[0].args[0]).toEqual('/test_url/test_res_id/db');
         expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
-        expect(makeRequest.calls[0].args[4]).toBe(true);
+        expect(makeRequest.calls[0].args[4]).toBe(shellSpy);
+        expect(makeRequest.calls[0].args[5]).toBe(true);
       });
 
       it('runs the initialization scripts', function(){

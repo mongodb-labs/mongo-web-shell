@@ -61,7 +61,8 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
       }
     }.bind(this);
 
-    mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', true, wrappedSuccess, async);
+    mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', this._shell, true,
+                              wrappedSuccess, async);
     this._executed = true;
   } else if (onSuccess) {
     onSuccess();
@@ -181,7 +182,7 @@ mongo.Cursor.prototype.count = function (useSkipLimit) {
   var updateCount = function (data) {
     count = data.count;
   };
-  mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', true,
+  mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell, true,
                             updateCount, false); // Sync request, blocking
   return count;
 };

@@ -74,15 +74,20 @@ describe('The DB class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
     });
 
+    it('uses the db\'s shell', function () {
+      db.getCollectionNames();
+      expect(makeRequest.calls[0].args[4]).toBe(db.shell);
+    });
+
     it('is ratelimited', function () {
       db.getCollectionNames();
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
 
     it('passes the callback through', function () {
       var callback = function () {return 'my callback';};
       db.getCollectionNames(callback);
-      expect(makeRequest.calls[0].args[5]).toBe(callback);
+      expect(makeRequest.calls[0].args[6]).toBe(callback);
     });
   });
 });

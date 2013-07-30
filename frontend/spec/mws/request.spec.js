@@ -74,11 +74,11 @@ describe('The request module', function () {
     it('calls onSuccess appropriately', function () {
       var onSuccess = jasmine.createSpy();
 
-      mongo.request.makeRequest(url_, data_, method_, name_, false, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, onSuccess);
       requests[0].respond(500, '', 'INTERNAL SERVER ERROR');
       expect(onSuccess).not.toHaveBeenCalled();
 
-      mongo.request.makeRequest(url_, data_, method_, name_, false, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, onSuccess);
       expect(onSuccess).not.toHaveBeenCalled();
       var originalData = {msg: 'Success'};
       var responseBody = JSON.stringify(originalData);
@@ -87,51 +87,44 @@ describe('The request module', function () {
     });
 
     it('writes failure reasons to the shell', function () {
-      var ajax = spyOn($, 'ajax');
+      var shell = {insertResponseLine: jasmine.createSpy()};
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      requests[0].respond(200, '', JSON.stringify({foo: 'bar'}));
+      expect(shell.insertResponseLine).not.toHaveBeenCalled();
 
-      expect(function(){
-        ajax.andCallFake(function(opt){ opt.success(); });
-        mongo.request.makeRequest(url_, data_, method_, name_, false);
-      }).not.toThrow();
+      // Error, no details
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      var errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: ''});
+      requests[1].respond(400, '', errResponse);
+      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason');
 
-      expect(function(){
-        // Error, no details
-        ajax.andCallFake(function(opt){
-          opt.error({
-            status: 400,
-            responseText: JSON.stringify({error: 400, reason: 'My Reason', detail: ''})
-          });
-        });
+      // Error with details
+      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: 'Some details'});
+      requests[2].respond(400, '', errResponse);
+      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason\nSome details');
 
-        mongo.request.makeRequest(url_, data_, method_, name_, false);
-      }).toThrow(new Error('ERROR: My Reason'));
-
-      /*expect(function(){
-        // Error with details
-        mongo.request.makeRequest(url_, data_, method_, name_, false);
-        errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: 'Some details'});
-        requests[2].respond(400, '', errResponse);
-      }).toThrow(new Error('ERROR: My Reason\nSome details'));*/
+      expect(shell.insertResponseLine.calls.length).toEqual(2);
     });
 
     it('is asynchronous by default', function () {
-      mongo.request.makeRequest(url_, data_, method_, name_);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null);
       expect(requests[0].async).toBe(true);
 
-      mongo.request.makeRequest(url_, data_, method_, name_, false, null, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, null, true);
       expect(requests[1].async).toBe(true);
 
-      mongo.request.makeRequest(url_, data_, method_, name_, false, null, false);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, null, false);
       expect(requests[2].async).toBe(false);
     });
 
     it('keeps track of rate limited functions', function(){
       spyOn($, 'ajax').andReturn('jqXHR');
-      mongo.request.makeRequest(url_, data_, method_, name_);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
       expect(mongo.request._pending).toEqual({});
-      mongo.request.makeRequest(url_, data_, method_, name_, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect(mongo.request._pending).toEqual({0: 'jqXHR'});
-      mongo.request.makeRequest(url_, data_, method_, name_, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect(mongo.request._pending).toEqual({0: 'jqXHR', 1: 'jqXHR'});
     });
 
@@ -147,7 +140,7 @@ describe('The request module', function () {
       expect(mongo.request._ratelimitLock).toBe(0);
       mongo.request._pending = [fakeRequest, fakeRequest, fakeRequest];
 
-      mongo.request.makeRequest(url_, data_, method_, name_, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect(fakeRequest.abort.callCount).toBe(3);
       expect(mongo.request._ratelimitLock).toEqual(new Date());
 
@@ -158,17 +151,18 @@ describe('The request module', function () {
       spyOn($, 'ajax').andReturn('jqXHR');
 
       expect(mongo.request._ratelimitLock).toBe(0);
-      mongo.request.makeRequest(url_, data_, method_, name_, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect($.ajax).toHaveBeenCalled();
 
       $.ajax.reset();
 
       mongo.request._ratelimitLock = new Date();
-      expect(mongo.request.makeRequest.bind(window, url_, data_, method_, name_, true)).toThrow();
+      var fn = mongo.request.makeRequest.bind(window, url_, data_, method_, name_, shell_, true);
+      expect(fn).toThrow();
       expect($.ajax).not.toHaveBeenCalled();
 
       mongo.request._ratelimitLock = new Date() - mongo.const.ratelimitLockDuration;
-      mongo.request.makeRequest(url_, data_, method_, name_, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect($.ajax).toHaveBeenCalled();
     });
   });

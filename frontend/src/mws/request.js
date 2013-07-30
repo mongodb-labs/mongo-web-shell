@@ -39,7 +39,7 @@ mongo.request = (function () {
       });
   }
 
-  function makeRequest(url, params, type, name, ratelimit, onSuccess, async) {
+  function makeRequest(url, params, type, name, shell, ratelimit, onSuccess, async) {
     if (ratelimit && new Date() - mongo.request._ratelimitLock < mongo.const.ratelimitLockDuration){
       throw new Error('Rate limit exceeded, request not sent');
     }
@@ -73,6 +73,8 @@ mongo.request = (function () {
         if (response.detail) {
           message += '\n' + response.detail;
         }
+
+        shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);
         throw new Error(message);
       },

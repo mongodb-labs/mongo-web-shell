@@ -128,9 +128,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('POST');
     });
 
+    it('uses the collection\'s shell', function () {
+      coll.insert({});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
     it('is ratelimited', function () {
       coll.insert({});
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 
@@ -154,9 +159,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
     });
 
+    it('uses the collection\'s shell', function () {
+      coll.remove({}, true);
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
     it('is ratelimited', function () {
       coll.remove({}, true);
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 
@@ -212,9 +222,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('PUT');
     });
 
+    it('uses the collection\'s shell', function () {
+      coll.update({}, {});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
     it('is ratelimited', function () {
       coll.update({}, {});
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 
@@ -241,9 +256,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
     });
 
+    it('uses the collection\'s shell', function () {
+      coll.aggregate({});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
     it('is ratelimited', function () {
       coll.aggregate({});
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
 
     it('retuns the aggregation results', function () {
@@ -252,7 +272,7 @@ describe('The Collection class', function () {
         results: ['a', 'b', 'c']
       };
       makeRequest.andCallFake(function () {
-        arguments[5](results);
+        arguments[6](results);
       });
       var actual = coll.aggregate({});
       expect(actual).toEqual(results);
@@ -271,9 +291,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
     });
 
+    it('uses the collection\'s shell', function () {
+      coll.drop();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
     it('is ratelimited', function () {
       coll.drop();
-      expect(makeRequest.calls[0].args[4]).toBe(true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 });
