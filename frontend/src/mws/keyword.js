@@ -83,7 +83,7 @@ mongo.keyword = (function () {
       // TODO: use appropriate res_ids when multiple res_ids are enabled
       $.each(mongo.shells, function(i, e){
         mongo.init._initShell(e.$rootElement, mongo.init.res_id,
-                              {create_new: false, init_data: true});
+                              {createNew: false, initData: true});
       });
 
       shell.insertResponseLine('Database reset successfully');

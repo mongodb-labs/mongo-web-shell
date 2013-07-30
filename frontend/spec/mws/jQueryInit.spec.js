@@ -56,7 +56,7 @@ describe('The jQuery methods', function(){
         shellElement.data('initialization-url', '/init/url');
         var e = $('.mongo-web-shell').mws();
         expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
-          init_url: '/init/url'
+          initUrl: '/init/url'
         }));
       });
 
@@ -64,7 +64,7 @@ describe('The jQuery methods', function(){
         shellElement.data('initialization-json', '/init/json/url');
         var e = $('.mongo-web-shell').mws();
         expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
-          init_json: '/init/json/url'
+          initJSON: '/init/json/url'
         }));
       });
 
@@ -72,17 +72,17 @@ describe('The jQuery methods', function(){
         shellElement.data('initialization-json', '{a:1}');
         var e = $('.mongo-web-shell').mws();
         expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, {
-          init_json: '{a:1}'
+          initJSON: '{a:1}'
         }));
       });
     });
 
     it('with custom parameters', function(){
       var opt = {
-        create_new: false,
-        init_data: false,
-        init_url: '/init/url',
-        init_json: '/init/json/url'
+        createNew: false,
+        initData: false,
+        initUrl: '/init/url',
+        initJSON: '/init/json/url'
       }, e = $('.mongo-web-shell').mws(opt);
       expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, opt));
     });
@@ -141,9 +141,9 @@ describe('The jQuery methods', function(){
       var initShell = spyOn(mongo.init, '_initShell');
       expect($shell.mws('loadUrl', '/my/data/url')).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
-        create_new: false,
-        init_data: true,
-        init_url: '/my/data/url'
+        createNew: false,
+        initData: true,
+        initUrl: '/my/data/url'
       });
     });
 
@@ -151,9 +151,9 @@ describe('The jQuery methods', function(){
       var initShell = spyOn(mongo.init, '_initShell');
       expect($shell.mws('loadJSON', {coll: [{a: 1}]})).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
-        create_new: false,
-        init_data: true,
-        init_json: {coll: [{a: 1}]}
+        createNew: false,
+        initData: true,
+        initJSON: {coll: [{a: 1}]}
       });
     });
 
@@ -161,9 +161,9 @@ describe('The jQuery methods', function(){
       var initShell = spyOn(mongo.init, '_initShell');
       expect($shell.mws('loadJSON', '/my/json/url')).toBe($shell);
       expect(initShell).toHaveBeenCalledWith($shell[0], 'res_id', {
-        create_new: false,
-        init_data: true,
-        init_json: '/my/json/url'
+        createNew: false,
+        initData: true,
+        initJSON: '/my/json/url'
       });
     });
 
@@ -195,11 +195,11 @@ describe('The jQuery methods', function(){
 
   it('have configurable defaults', function(){
     var opt = {
-      init_data: false,
-      init_url: '/init/url',
-      init_json: '/init/json/url'
+      initData: false,
+      initUrl: '/init/url',
+      initJSON: '/init/json/url'
     };
     $.mws.setDefaults(opt);
-    expect($.mws.defaults).toEqual($.extend({create_new: true}, opt));
+    expect($.mws.defaults).toEqual($.extend({createNew: true}, opt));
   });
 });

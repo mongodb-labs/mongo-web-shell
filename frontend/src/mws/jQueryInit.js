@@ -42,18 +42,18 @@ mongo.jQueryInit = function($){
         case 'loadUrl':
           // loads data from url into first selected shell
           mongo.init._initShell(this[0], mongo.init.res_id, {
-            create_new: false,
-            init_data: true,
-            init_url: arguments[1]
+            createNew: false,
+            initData: true,
+            initUrl: arguments[1]
           });
           break;
 
         case 'loadJSON':
           // loads data from json into first selected shell
           mongo.init._initShell(this[0], mongo.init.res_id, {
-            create_new: false,
-            init_data: true,
-            init_json: arguments[1]
+            createNew: false,
+            initData: true,
+            initJSON: arguments[1]
           });
           break;
 
@@ -85,8 +85,8 @@ mongo.jQueryInit = function($){
           // determine the initialization options for the current shell
           // preferring undefined over null prevents null properties from overwriting defaults
           var opt = $.extend({}, $.mws.defaults, {
-            init_url: $(e).data('initialization-url') || undefined,
-            init_json: $(e).data('initialization-json') || undefined
+            initUrl: $(e).data('initialization-url') || undefined,
+            initJSON: $(e).data('initialization-json') || undefined
           }, options);
 
           mongo.init._initShell(e, mongo.init.res_id, opt);
@@ -107,10 +107,10 @@ mongo.jQueryInit = function($){
 
   $.mws = {
     defaults: {
-      create_new: true,
-      init_data: true,
-      init_url: undefined,
-      init_json: undefined,
+      createNew: true,
+      initData: true,
+      initUrl: undefined,
+      initJSON: undefined,
       height: undefined,
       width: undefined
     },

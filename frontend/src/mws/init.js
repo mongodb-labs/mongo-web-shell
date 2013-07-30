@@ -106,28 +106,28 @@ mongo.init = (function(){
   };
 
   var initShell = function(shellElement, res_id, options){
-    var create_new = options.create_new, init_data = options.init_data;
+    var createNew = options.createNew, initData = options.initData;
     var waitFor = [];
 
-    if (create_new){
+    if (createNew){
       var shell = new mongo.Shell(shellElement, mongo.shells.length);
       shell.attachInputHandler(res_id);
       mongo.shells.push(shell);
     }
 
-    if (init_data){
+    if (initData){
       // lock shells for init
       lockShells(res_id);
 
       // Load init urls
-      var initUrl = options.init_url || $(shellElement).data('initialization-url');
+      var initUrl = options.initUrl || $(shellElement).data('initialization-url');
       if (initUrl && mongo.init._initState[res_id].initUrls.indexOf(initUrl) === -1) {
         mongo.init._initState[res_id].initUrls.push(initUrl);
         waitFor.push(loadUrl(initUrl, res_id));
       }
 
       // Load init JSON/urls
-      var jsonAttr = options.init_json || $(shellElement).data('initialization-json');
+      var jsonAttr = options.initJSON || $(shellElement).data('initialization-json');
       if (typeof jsonAttr === 'object'){
         waitFor.push(loadJSON(jsonAttr, res_id));
       } else if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
@@ -166,7 +166,7 @@ mongo.init = (function(){
 
       // For now, assume a single resource id for all shells
       // Initialize all shells and process initialization urls
-      $(mongo.const.rootElementSelector).mws({create_new: true, init_data: data.is_new});
+      $(mongo.const.rootElementSelector).mws({createNew: true, initData: data.is_new});
     });
   };
 
