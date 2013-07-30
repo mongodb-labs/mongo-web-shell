@@ -58,8 +58,6 @@ mongo.init = (function(){
     return $.getJSON(url).then(function(data){
       mongo.init._jsonCache[url] = data;
       return mongo.init._loadJSON(data, res_id);
-    }, function(){
-      return $.Deferred().rejectWith($, arguments).promise();
     });
   };
 
