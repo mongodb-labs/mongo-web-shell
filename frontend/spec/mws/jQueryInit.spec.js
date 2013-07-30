@@ -87,6 +87,18 @@ describe('The jQuery methods', function(){
       expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', $.extend(expectedOptions, opt));
     });
 
+    it('and save data parameters for re-initialization', function(){
+      $('.mongo-web-shell').mws({
+        createNew: false,
+        initData: false,
+        initUrl: '/init/url',
+        initJSON: '/init/json/url'
+      });
+
+      expect(shellElement.data('initialization-url')).toEqual('/init/url');
+      expect(shellElement.data('initialization-json')).toEqual('/init/json/url');
+    });
+
     it('with a specified height', function(){
       $('.mongo-web-shell').mws({height: 100});
       expect(shellElement.height()).toBe(100);

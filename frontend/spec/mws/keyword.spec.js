@@ -159,11 +159,16 @@ describe('The keyword module', function () {
       });
 
       it('runs the initialization scripts', function(){
+        /* jshint camelcase: false */
         spyOn(mongo.init, '_initShell');
 
         mongo.keyword.reset(shellSpy);
         requests[0].respond(204);
         expect(mongo.init._initShell.callCount).toBe(mongo.shells.length);
+        mongo.shells.forEach(function(e){
+          expect(mongo.init._initShell).toHaveBeenCalledWith(e.$rootElement, mongo.init.res_id,
+                                                             {createNew: false, initData: true});
+        });
       });
 
       it('requires confirmation to reset again immediately', function () {

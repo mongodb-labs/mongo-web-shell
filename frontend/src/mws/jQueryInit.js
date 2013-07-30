@@ -81,18 +81,23 @@ mongo.jQueryInit = function($){
 
       case 'object':
       case 'undefined': // accept no parameters as call to default constructor
+        options = $.extend({}, $.mws.defaults, options);
         this.addClass('mongo-web-shell').each(function(i, e){
-          // determine the initialization options for the current shell
-          // preferring undefined over null prevents null properties from overwriting defaults
-          var opt = $.extend({}, $.mws.defaults, {
-            initUrl: $(e).data('initialization-url') || undefined,
-            initJSON: $(e).data('initialization-json') || undefined
-          }, options);
+          var opt = $.extend({}, options); // copy options
+          if (opt.initUrl){
+            $(e).data('initialization-url', options.initUrl);
+          } else {
+            opt.initUrl = $(e).data('initialization-url');
+          }
+
+          if (opt.initJSON){
+            $(e).data('initialization-json', options.initJSON);
+          } else {
+            opt.initJSON = $(e).data('initialization-json');
+          }
 
           mongo.init._initShell(e, mongo.init.res_id, opt);
         });
-
-        options = $.extend({}, $.mws.defaults, options);
 
         if (options.height){ this.height(options.height); }
         if (options.width){ this.width(options.width); }
