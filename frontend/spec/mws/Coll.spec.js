@@ -13,24 +13,23 @@
  *    limitations under the License.
  */
 
-/* global describe, it, beforeEach, mongo, spyOn, expect, jasmine */
+/* global describe, it, beforeEach, mongo, spyOn, expect */
 /* jshint camelcase: false */
 describe('The Collection class', function () {
   var name_, db_, coll, makeRequest;
+  var pause, resume;
 
   beforeEach(function () {
     spyOn(mongo.util, 'getDBCollectionResURL').andReturn('test_db_url');
-    spyOn(mongo.request, 'makeRequest');
-    makeRequest = mongo.request.makeRequest;
+    makeRequest = spyOn(mongo.request, 'makeRequest');
 
     name_ = 'test collection';
     db_ = {
-      shell: {
-        mwsResourceID: 'test res id',
-        insertResponseLine: function () {}
-      }
+      shell: new mongo.Shell($('<div></div>'), 0)
     };
     coll = new mongo.Coll(db_, name_);
+    pause = spyOn(coll.shell.evaluator, 'pause').andCallThrough();
+    resume = spyOn(coll.shell.evaluator, 'resume');
   });
 
   it('has a nice string representation', function () {
@@ -79,13 +78,13 @@ describe('The Collection class', function () {
   describe('findOne', function () {
     var cursor;
     beforeEach(function () {
-      cursor = {
-        next: jasmine.createSpy(),
-        hasNext: jasmine.createSpy().andReturn(true),
-        limit: jasmine.createSpy()
-      };
-      cursor.limit.andReturn(cursor);
-      spyOn(coll, 'find').andReturn(cursor);
+      cursor = null;
+      var OriginalCursor = mongo.Cursor;
+      spyOn(mongo, 'Cursor').andCallFake(function (coll, query, projection) {
+        cursor = new OriginalCursor(coll, query, projection);
+        spyOn(cursor, 'limit').andCallThrough();
+        return cursor;
+      });
     });
 
     it('runs a query limiting to a single result', function () {
@@ -93,19 +92,29 @@ describe('The Collection class', function () {
       var projection = {_id: 0, rank: 1};
       coll.findOne(query, projection);
 
-      expect(coll.find).toHaveBeenCalledWith(query, projection);
+      expect(mongo.Cursor).toHaveBeenCalledWith(coll, query, projection);
       expect(cursor.limit).toHaveBeenCalledWith(1);
     });
 
-    it('returns the found value', function () {
-      var value = 'my value';
-      cursor.next.andReturn(value);
-      expect(coll.findOne()).toEqual(value);
+    it('pauses evaluation', function () {
+      coll.findOne();
+      expect(pause).toHaveBeenCalled();
     });
 
-    it('returns null if there are no values', function () {
-      cursor.hasNext.andReturn(false);
-      expect(coll.findOne()).toBeNull();
+    it('resumes evaluation with the found value', function () {
+      coll.findOne();
+      expect(resume).not.toHaveBeenCalled();
+      // Call success callback with data
+      makeRequest.mostRecentCall.args[5]({result: ['my value']});
+      expect(resume.mostRecentCall.args[1]).toEqual('my value');
+    });
+
+    it('resumes evaluation with null if there are no values', function () {
+      coll.findOne();
+      expect(resume).not.toHaveBeenCalled();
+      // Call success callback with empty array
+      makeRequest.mostRecentCall.args[5]({result: []});
+      expect(resume.mostRecentCall.args[1]).toEqual(null);
     });
   });
 
@@ -246,7 +255,12 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
 
-    it('retuns the aggregation results', function () {
+    it('pauses evaluation', function () {
+      coll.aggregate({});
+      expect(pause).toHaveBeenCalled();
+    });
+
+    it('resumes evaluation with the aggregation results', function () {
       var results = {
         status: 'ok',
         results: ['a', 'b', 'c']
@@ -254,8 +268,8 @@ describe('The Collection class', function () {
       makeRequest.andCallFake(function () {
         arguments[5](results);
       });
-      var actual = coll.aggregate({});
-      expect(actual).toEqual(results);
+      coll.aggregate({});
+      expect(resume.mostRecentCall.args[1]).toEqual(results);
     });
   });
 

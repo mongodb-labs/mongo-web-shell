@@ -13,3 +13,6 @@
 [submodule "frontend/lib/es5-shim"]
 	path = frontend/lib/es5-shim
 	url = git://github.com/kriskowal/es5-shim
+[submodule "frontend/lib/suspend.js"]
+	path = frontend/lib/suspend.js
+	url = git@github.com:FuegoFro/suspend.js.git

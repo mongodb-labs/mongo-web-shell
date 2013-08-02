@@ -54,11 +54,16 @@ mongo.Coll.prototype.find = function (query, projection) {
 
 mongo.Coll.prototype.findOne = function (query, projection) {
   var cursor = this.find(query, projection).limit(1);
-  if (cursor.hasNext()) {
-    return cursor.next();
-  } else {
-    return null;
-  }
+  var context = this.shell.evaluator.pause();
+  cursor.hasNext(function (hasNext) {
+    if (hasNext) {
+      cursor.next(function (next) {
+        this.shell.evaluator.resume(context, next);
+      }.bind(this));
+    } else {
+      this.shell.evaluator.resume(context, null);
+    }
+  }.bind(this));
 };
 
 mongo.Coll.prototype.insert = function (doc) {
@@ -122,12 +127,10 @@ mongo.Coll.prototype.drop = function () {
  */
 mongo.Coll.prototype.aggregate = function(query){
   query = query || [];
-  var results = {};
   var url = this.urlBase + 'aggregate';
+  var context = this.shell.evaluator.pause();
   var onSuccess = function(data){
-    results = data;
+    this.shell.evaluator.resume(context, data);
   }.bind(this);
-  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
-                            onSuccess, false); // Sync request, blocking
-  return results;
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, onSuccess);
 };

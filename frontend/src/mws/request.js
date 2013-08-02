@@ -44,6 +44,7 @@ mongo.request = (function () {
       // Default async to true
       async = true;
     }
+    var context = shell.evaluator.pause();
     console.debug(name + ' request:', url, params);
     $.ajax({
       async: !!async,
@@ -54,6 +55,7 @@ mongo.request = (function () {
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {
         console.info(name + ' success');
+        shell.evaluator.resume(context);
         if (onSuccess) {
           onSuccess(data);
         }
@@ -66,7 +68,7 @@ mongo.request = (function () {
         }
         shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);
-        throw {};
+        shell.evaluator.resume(context, new Error(message), true);
       }
     });
   }
