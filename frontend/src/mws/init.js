@@ -22,155 +22,161 @@
  * CSS stylesheets, and calls any initialization urls
  */
 mongo.init = (function(){
-  // This file is getting pretty bogged down in callbacks. I spent the better
-  // part of a day thinking about how to clean it up and make it more
-  // maintainable and extensible, but this was the best I could come up with.
-  //  - Danny
-  var initializationUrls = {};
+  var loadUrl = function(url, res_id){
+    return $.ajax({
+      type: 'POST',
+      url: url,
+      data: JSON.stringify({res_id: res_id}),
+      contentType: 'application/json'
+    });
+  };
 
-  function uniqueArray(original) {
-    // Taken from http://stackoverflow.com/a/1961068
-    var seen = {}, unique = [];
-    for (var i = 0, l = original.length; i < l; ++i) {
-      if (seen.hasOwnProperty(original[i])) {
-        continue;
-      }
-      unique.push(original[i]);
-      seen[original[i]] = 1;
-    }
-    return unique;
-  }
-
-  function condenseJsonArray(jsonArray) {
-    // Each JSON should be a top level object in which the keys are collection
-    // names which map to an array of documents which are to be inserted into
-    // the specified collection.
-    var condensedJson = {};
-    $.each(jsonArray, function (i, jsonData) {
-      $.each(jsonData, function (collection, documents) {
-        if (!$.isArray(documents)) {
-          console.error('Json format is incorrect, top level collection ' +
-            'name ' + collection + 'does not map to an array: ' + jsonData);
-        } else {
-          var oldJson = condensedJson[collection] || [];
-          condensedJson[collection] = oldJson.concat(documents);
-        }
+  var loadJSON = function(initJson, res_id){
+    if (Object.keys(initJson).length > 0) {
+      return $.ajax({
+        type: 'POST',
+        url: '/init/load_json',
+        data: JSON.stringify({
+          res_id: res_id,
+          collections: initJson
+        }),
+        contentType: 'application/json'
       });
-    });
-    return condensedJson;
-  }
+    }
+  };
 
-  function ensureAllRequests(ajaxOptions, callback) {
-    var requests = $.map(ajaxOptions, function (options) {
-      return $.ajax(options);
+  var loadJSONUrl = function(url, res_id){
+    // Try pulling from the cache first
+    var data = mongo.init._jsonCache[url];
+    if (data){
+      return mongo.init._loadJSON(data, res_id);
+    }
+
+    return $.getJSON(url).then(function(data){
+      mongo.init._jsonCache[url] = data;
+      return mongo.init._loadJSON(data, res_id);
+    }, function(){
+      return $.Deferred().rejectWith($, arguments).promise();
     });
-    // When expects each promise to be passed in as an argument, but we have
-    // an array, so we need to use apply.
-    $.when.apply($, requests).then(function () {
-      callback();
+  };
+
+  var lockShells = function(res_id){
+    mongo.init.initState[res_id].pending++;
+
+    // Lock all affected shells with same res_id
+    // Note that this is currently ALL shells since we do not yet assign
+    // unique res_ids and all shells share the same res_id
+    $.each(mongo.shells, function(i, e){
+      e.enableInput(false);
     });
-  }
+  };
+
+  // unlock shells when all init steps for all shells with res_id are complete
+  // can optionally wait for one or more deferred objects to resolve
+  // see note above regarding all shells having same res_id
+  var unlockShells = function(res_id, waitFor){
+    $.when.apply($, waitFor).then(function(){
+      mongo.init.initState[res_id].pending--;
+      if (!mongo.init.initState[res_id].pending){
+        $.each(mongo.shells, function(i, e){
+          e.enableInput(true);
+        });
+      }
+    }, function(){
+      mongo.init.initState[res_id].pending--;
+      if (!mongo.init.initState[res_id].pending){
+        $.each(mongo.shells, function(i, e){
+          e.insertResponseArray([
+            'One or more scripts failed during initialization.',
+            'Your data may not be completely loaded.  Use the "reset" command to try again.'
+          ]);
+          e.enableInput(true);
+        });
+      }
+    });
+  };
+
+  var initShell = function(shellElement, res_id, options){
+    var create_new = options.create_new, init_data = options.init_data;
+    var waitFor = [];
+
+    if (create_new){
+      var shell = new mongo.Shell(shellElement, mongo.shells.length);
+      shell.attachInputHandler(res_id);
+      mongo.shells.push(shell);
+    }
+
+    if (init_data){
+      // lock shells for init
+      lockShells(res_id);
+
+      // Load init urls
+      var initUrl = options.init_url || $(shellElement).data('initialization-url');
+      if (initUrl && mongo.init.initState[res_id].initUrls.indexOf(initUrl) === -1) {
+        mongo.init.initState[res_id].initUrls.push(initUrl);
+        waitFor.push(loadUrl(initUrl, res_id));
+      }
+
+      // Load init JSON/urls
+      var jsonAttr = options.init_json || $(shellElement).data('initialization-json');
+      if (typeof jsonAttr === 'object'){
+        waitFor.push(loadJSON(jsonAttr, res_id));
+      } else if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
+        // If it looks like a JSON object, assume it is supposed to be and try to parse it
+        try {
+          waitFor.push(loadJSON(JSON.parse(jsonAttr), res_id));
+        } catch (e) {
+          console.error('Unable to parse initialization json: ' + jsonAttr);
+        }
+      } else if (jsonAttr &&
+                 mongo.init.initState[res_id].initJsonUrls.indexOf(jsonAttr) === -1) {
+        // Otherwise assume it's a URL that points to JSON data
+        mongo.init.initState[res_id].initJsonUrls.push(jsonAttr);
+        waitFor.push(loadJSONUrl(jsonAttr, res_id));
+      }
+
+      unlockShells(res_id, waitFor);
+    }
+  };
 
   var run = function () {
+    mongo.jQueryInit(jQuery);
     mongo.util.enableConsoleProtection();
     var config = mongo.config = mongo.dom.retrieveConfig();
     mongo.dom.injectStylesheet(config.cssPath);
 
-    var initUrls = [];
-    var initJson = [];
-    var initJsonUrls = [];
-    // For now, assume a single resource id for all shells
-    // Initialize all shells and grab any initialization urls
-    $(mongo.const.rootElementSelector).each(function (index, shellElement) {
-      var initUrl = shellElement.getAttribute('data-initialization-url');
-      if (initUrl) {
-        initUrls.push(initUrl);
-      }
-      var jsonAttr = shellElement.getAttribute('data-initialization-json');
-      if (jsonAttr && jsonAttr[0] === '{' && jsonAttr[jsonAttr.length - 1] === '}') {
-        // If it looks like a JSON object, assume it is supposed to be and try to parse it
-        try {
-          initJson.push(JSON.parse(jsonAttr));
-        } catch (e) {
-          console.error('Unable to parse initialization json: ' + jsonAttr);
-        }
-      } else if (jsonAttr) {
-        // Otherwise assume it's a URL that points to JSON data
-        initJsonUrls.push(jsonAttr);
-      }
-      mongo.shells[index] = new mongo.Shell(shellElement, index);
-    });
 
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
-      setInterval(
+      var res_id = mongo.init.res_id = data.res_id;
+      if (!mongo.init.initState[res_id]){
+        mongo.init.initState[res_id] = {
+          pending: 0,
+          initUrls: [],
+          initJsonUrls: []
+        };
+      }
+
+      mongo.init.initState[res_id].keepAlive = setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
         mongo.const.keepAliveTime
       );
 
-      // Need to make sure that urls are unique and converted to $.ajax options
-      initUrls = $.map(uniqueArray(initUrls), function (url) {
-        return {
-          type: 'POST',
-          url: url,
-          data: JSON.stringify({res_id: data.res_id}),
-          contentType: 'application/json'
-        };
-      });
-      initJsonUrls = $.map(uniqueArray(initJsonUrls), function (url) {
-        return {
-          type: 'GET',
-          url: url,
-          success: function (data) {
-            if (typeof (data) === 'string') {
-              data = JSON.parse(data);
-            }
-            initJson.push(data);
-          }
-        };
-      });
-
-      // Get all of the remote JSON literals
-      ensureAllRequests(initJsonUrls, function () {
-        // Condense JSON to a single object
-        initJson = condenseJsonArray(initJson);
-
-        // Add local JSON literal to initialization requests
-        if (Object.keys(initJson).length > 0) {
-          initUrls.push({
-            type: 'POST',
-            url: '/init/load_json',
-            data: JSON.stringify({
-              res_id: data.res_id,
-              collections: initJson
-            }),
-            contentType: 'application/json'
-          });
-        }
-        initializationUrls[data.res_id] = initUrls;
-
-        var finishSetup = function () {
-          $.each(mongo.shells, function (i, shell) {
-            shell.attachInputHandler(data.res_id);
-          });
-        };
-        if (data.is_new) {
-          mongo.init.runInitializationScripts(data.res_id, finishSetup);
-        } else {
-          finishSetup();
-        }
-      });
+      // For now, assume a single resource id for all shells
+      // Initialize all shells and process initialization urls
+      $(mongo.const.rootElementSelector).mws({create_new: true, init_data: data.is_new});
     });
-  };
-
-  var runInitializationScripts = function(res_id, callback){
-    // Send requests to all initialization urls for a res id, then call the
-    // callback when all are done.
-    ensureAllRequests(initializationUrls[res_id], callback);
   };
 
   return {
     run: run,
-    runInitializationScripts: runInitializationScripts
+    initState: {},
+    _lockShells: lockShells,
+    _unlockShells: unlockShells,
+    _initShell: initShell,
+    _loadJSON: loadJSON,
+    _loadJSONUrl: loadJSONUrl,
+    _jsonCache: {},
+    res_id: null
   };
 })();
