@@ -1,3 +1,17 @@
+#    Copyright 2013 10gen Inc.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+
 import StringIO
 from bson.json_util import dumps
 import mock
@@ -10,6 +24,7 @@ from mongows.initializers.util import (
 from mongows.mws.db import get_db
 from mongows.mws.util import UseResId, get_collection_names
 from mongows.mws.views import CLIENTS_COLLECTION
+from mongows.mws.MWSServerError import MWSServerError
 from tests import MongoWSTestCase
 from mongows.mws.MWSServerError import MWSServerError
 
@@ -84,6 +99,47 @@ class UseResIdTestCase(MongoWSTestCase):
         for c in colls:
             with UseResId('res_id'):
                 get_db()[c]
+
+
+class QuotaCollectionsTestCase(UseResIdTestCase):
+    def setUp(self):
+        super(QuotaCollectionsTestCase, self).setUp()
+        self.old_quota = self.real_app.config['QUOTA_NUM_COLLECTIONS']
+        self.res_id = 'myresid.'
+        with self.real_app.app_context():
+            self.db = get_db()
+            collections = get_collection_names(self.res_id)
+            with UseResId(self.res_id):
+                for c in collections:
+                    self.db.drop_collection(c)
+
+    def tearDown(self):
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = self.old_quota
+
+    def test_quota_collections(self):
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 2
+
+        with self.real_app.app_context(), UseResId(self.res_id):
+            self.db.a.insert({'a': 1})
+            self.db.b.insert({'a': 1})
+            with self.assertRaises(MWSServerError) as cm:
+                self.db.c.insert({'a': 1})
+
+            self.assertEqual(cm.exception.error, 429)
+
+            for c in ['a', 'b']:
+                self.db.drop_collection(c)
+
+    def test_quota_collections_zero(self):
+        self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 0
+
+        with self.real_app.app_context(), UseResId(self.res_id):
+            with self.assertRaises(MWSServerError) as cm:
+                self.db.a.insert({'a': 1})
+
+            self.assertEqual(cm.exception.error, 429)
+
+            self.db.drop_collection('a')
 
 
 class InitializersTestCase(MongoWSTestCase):
