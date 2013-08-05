@@ -182,6 +182,14 @@ describe('A Cursor', function () {
         expect(callbackSpy).toHaveBeenCalled();
       });
 
+      it('fires the callback event', function(){
+        var ct = spyOn(mongo.events, 'callbackTrigger');
+        instance._executeQuery();
+        expect(ct).toHaveBeenCalledWith(coll.shell, 'cursor.execute', [
+          'test', 'results', 'here'
+        ]);
+      });
+
       it('does not warn the user and returns false', function () {
         var actual = instance._warnIfExecuted('methodName');
         expect(actual).toBe(false);

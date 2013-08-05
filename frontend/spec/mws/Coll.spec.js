@@ -107,6 +107,13 @@ describe('The Collection class', function () {
       cursor.hasNext.andReturn(false);
       expect(coll.findOne()).toBeNull();
     });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.findOne({a: 1}, {b: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.findOne', [{a: 1}, {b: 1}],
+                               {collection: name_});
+    });
   });
 
   describe('insert', function () {
@@ -131,6 +138,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.insert({});
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.insert({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.insert', [{a: 1}],
+                               {collection: name_});
     });
 
     it('is ratelimited', function () {
@@ -162,6 +176,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.remove({}, true);
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.remove({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.remove', [{a: 1}],
+                               {collection: name_});
     });
 
     it('is ratelimited', function () {
@@ -227,6 +248,14 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
 
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.update({a: 1}, {b: 5}, true, false);
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.update', [
+        {a: 1}, {b: 5}, true, false
+      ], {collection: name_});
+    });
+
     it('is ratelimited', function () {
       coll.update({}, {});
       expect(makeRequest.calls[0].args[5]).toBe(true);
@@ -277,6 +306,13 @@ describe('The Collection class', function () {
       var actual = coll.aggregate({});
       expect(actual).toEqual(results);
     });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.aggregate({});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.aggregate', [{}],
+                               {collection: name_});
+    });
   });
 
   describe('drop', function () {
@@ -294,6 +330,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.drop();
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.drop();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.drop', [],
+                               {collection: name_});
     });
 
     it('is ratelimited', function () {
