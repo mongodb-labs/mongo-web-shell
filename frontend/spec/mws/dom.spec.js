@@ -26,7 +26,7 @@ describe('The dom module', function () {
 
     var expected = {cssPath: 'css', mwsHost: 'host'};
     expected.baseUrl = expected.mwsHost + defaults.baseUrlPostfix;
-    var $script = $('script[src*=\'' + CONST.scriptName + '\']');
+    var $script = $('script[src*=\'' + mongo.const.scriptName + '\']');
     var key;
     for (key in dataAttrKeys) {
       if (dataAttrKeys.hasOwnProperty(key)) {

@@ -49,7 +49,7 @@ module.exports = function (grunt) {
 
     jasmine: {
       dist: {
-        src: DIST_DIR + '**/*.js',
+        src: DIST_DIR + '**/!(*.min).js',
         options: {
           specs: SPEC_DIR + '**/*.spec.js',
           helpers: [
@@ -58,7 +58,21 @@ module.exports = function (grunt) {
           ],
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
-            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
+          ]
+        }
+      },
+      minified: {
+        src: DIST_DIR + '**/*.min.js',
+        options: {
+          specs: SPEC_DIR + '**/*.spec.js',
+          helpers: [
+            SPEC_DIR + 'disableConsole.js',
+            SPEC_DIR + 'globals.js'
+          ],
+          vendor: [
+            LIB_DIR + 'sinon/sinon.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
           ]
         }
       }
