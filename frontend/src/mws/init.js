@@ -109,7 +109,7 @@ mongo.init = (function(){
     var createNew = options.createNew, initData = options.initData;
     var waitFor = [];
 
-    if (createNew){
+    if (createNew && $(shellElement).data('shell') === undefined){
       var shell = new mongo.Shell(shellElement, mongo.shells.length);
       shell.attachInputHandler(res_id);
       mongo.shells.push(shell);

@@ -101,6 +101,24 @@ describe('The init function', function () {
       });
     });
 
+    it('does not construct the same shell twice', function(){
+      var proto = mongo.Shell.prototype;
+      spyOn(mongo, 'Shell').andCallThrough();
+
+      // reattach the prototype chain for call through methods
+      mongo.Shell.prototype.constructor.prototype = proto;
+
+      spyOn(window, 'setInterval');
+      mongo.Shell.enableInput = jasmine.createSpy();
+      mongo.Shell.attachInputHandler = jasmine.createSpy();
+      creationSuccess = true;
+
+      mongo.init.run();
+      expect(mongo.Shell.callCount).toBe(SHELL_COUNT);
+      mongo.init._initShell(shellElements[0], dataObj.res_id, {createNew: true, initData: true});
+      expect(mongo.Shell.callCount).toBe(SHELL_COUNT);
+    });
+
     it('attaches and enables input handlers on mws resource creation', function () {
       var attachInputHandler = spyOn(mongo.Shell.prototype, 'attachInputHandler');
       var keepAlive = spyOn(mongo.request, 'keepAlive');
