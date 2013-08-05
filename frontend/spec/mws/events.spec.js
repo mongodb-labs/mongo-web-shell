@@ -71,6 +71,13 @@ describe('The events class', function(){
       shell.events = {};
     });
 
+    it('can bind and unbind immediately', function () {
+      mongo.events.bind(shell, 'event', fn);
+      mongo.events.unbind(shell, 'event', fn);
+      mongo.events.trigger(shell, 'event');
+      expect(fn).not.toHaveBeenCalled();
+    });
+
     it('wraps and inserts the event handlers into the shell\'s event queue', function(){
       mongo.events.bind(shell, 'event', fn);
       mongo.events.bind(shell, 'event', fn2);
