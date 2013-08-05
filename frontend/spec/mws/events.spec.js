@@ -32,17 +32,17 @@ describe('The events class', function(){
 
   describe('can trigger events with', function(){
     beforeEach(function(){
-      $shell.data('mws.events', {event: {1: fn, 2: fn2}});
+      shell.events = {event: {1: fn, 2: fn2}};
     });
 
     afterEach(function(){
-      $shell.removeData('mws.events');
+      $shell.events = {};
     });
 
     it('a trigger function that adds the current shell to the event data ' +
        'and calls attached handlers on the shell', function(){
-      mongo.events.trigger({$rootElement: $shell}, 'event', {extra: 123});
-      var expected = {shell: {$rootElement: $shell}, event: 'event', extra: 123};
+      mongo.events.trigger(shell, 'event', {extra: 123});
+      var expected = {shell: shell, event: 'event', extra: 123};
       expect(fn).toHaveBeenCalledWith(expected);
       expect(fn2).toHaveBeenCalledWith(expected);
     });
@@ -50,15 +50,15 @@ describe('The events class', function(){
     it('a functionTrigger function that adds the arguments ' +
        'to the event data and calls through to trigger', function(){
       var fn = spyOn(mongo.events, 'trigger');
-      mongo.events.functionTrigger({$rootElement: $shell}, 'event', [1, 2, 3], {});
-      expect(fn).toHaveBeenCalledWith({$rootElement: $shell}, 'event', {arguments: [1, 2, 3]});
+      mongo.events.functionTrigger(shell, 'event', [1, 2, 3], {});
+      expect(fn).toHaveBeenCalledWith(shell, 'event', {arguments: [1, 2, 3]});
     });
 
     it('a callbackTrigger function that adds the result ' +
        'to the event data and calls through to trigger', function(){
       var fn = spyOn(mongo.events, 'trigger');
-      mongo.events.callbackTrigger({$rootElement: $shell}, 'event', [1, 2, 3], {});
-      expect(fn).toHaveBeenCalledWith({$rootElement: $shell}, 'event', {result: [1, 2, 3]});
+      mongo.events.callbackTrigger(shell, 'event', [1, 2, 3], {});
+      expect(fn).toHaveBeenCalledWith(shell, 'event', {result: [1, 2, 3]});
     });
   });
 
@@ -68,7 +68,7 @@ describe('The events class', function(){
     });
 
     afterEach(function(){
-      $shell.removeData('mws.events');
+      shell.events = {};
     });
 
     it('wraps and inserts the event handlers into the shell\'s event queue', function(){
@@ -76,10 +76,10 @@ describe('The events class', function(){
       mongo.events.bind(shell, 'event', fn2);
       expect(fn).not.toHaveBeenCalled();
       expect(fn2).not.toHaveBeenCalled();
-      $shell.data('mws.events').event[1]();
+      shell.events.event[1]();
       expect(fn).toHaveBeenCalled();
       expect(fn2).not.toHaveBeenCalled();
-      $shell.data('mws.events').event[2]();
+      shell.events.event[2]();
       expect(fn2).toHaveBeenCalled();
     });
 

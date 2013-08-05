@@ -27,8 +27,7 @@ describe('The Collection class', function () {
     db_ = {
       shell: {
         mwsResourceID: 'test res id',
-        insertResponseLine: function () {},
-        $rootElement: $()
+        insertResponseLine: function () {}
       }
     };
     coll = new mongo.Coll(db_, name_);

@@ -30,8 +30,7 @@ describe('A Cursor', function () {
       shell: {
         getShellBatchSize: getShellBatchSizeSpy,
         insertResponseLine: insertResponseLineSpy,
-        lastUsedCursor: null,
-        $rootElement: $()
+        lastUsedCursor: null
       },
       urlBase: 'coll_url_base/'
     };

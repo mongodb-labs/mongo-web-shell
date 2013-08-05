@@ -20,7 +20,7 @@ mongo.events = (function(){
     data = $.extend({shell: shell, event: event}, data);
     console.info('[' + shell.id + '] ' + event + ' triggered with data ', data);
 
-    var handlers = shell.$rootElement.data('mws.events');
+    var handlers = shell.events;
     handlers = handlers && handlers[event];
     if (handlers){
       $.each(handlers, function(id, f){
@@ -41,12 +41,12 @@ mongo.events = (function(){
 
   var bind = function(shell, event, handler, data, filter){
     return $.Deferred(function(deferred){
-      if (!shell.$rootElement.data('mws.events')){
-        shell.$rootElement.data('mws.events', {});
+      if (!shell.events){
+        shell.events = {};
       }
 
-      if (!shell.$rootElement.data('mws.events')[event]){
-        shell.$rootElement.data('mws.events')[event] = {};
+      if (!shell.events[event]){
+        shell.events[event] = {};
       }
 
       var wrap = function(d){
@@ -62,7 +62,7 @@ mongo.events = (function(){
 
       if (typeof handler === 'function'){
         if (!handler.id){ handler.id = ++mongo.events._id; }
-        shell.$rootElement.data('mws.events')[event][handler.id] = wrap;
+        shell.events[event][handler.id] = wrap;
       }
     }).promise();
   };
@@ -84,10 +84,10 @@ mongo.events = (function(){
       if (!handler.id){
         return; // handler was never bound to function
       }
-      delete shell.$rootElement.data('mws.events')[event][handler.id];
+      delete shell.events[event][handler.id];
     } else {
       // unbind all handlers
-      delete shell.$rootElement.data('mws.events')[event];
+      delete shell.events[event];
     }
   };
 
