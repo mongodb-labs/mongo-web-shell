@@ -165,11 +165,11 @@ describe('A Shell', function () {
 
     it('sets the enabled state of the input', function () {
       var $input = $rootElement.find('input');
-      $input.get(0).disabled = true;
+      $input.prop('disabled', true);
       instance.enableInput(true);
-      expect($input.get(0).disabled).toBe(false);
+      expect($input.prop('disabled')).toBe(false);
       instance.enableInput(false);
-      expect($input.get(0).disabled).toBe(true);
+      expect($input.prop('disabled')).toBe(true);
     });
 
     it('inserts an array of lines into the shell', function () {
