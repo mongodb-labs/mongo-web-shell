@@ -17,7 +17,7 @@
 mongo.Readline = function ($input) {
   this.$input = $input;
   if (localStorage){
-    this.history = localStorage[mongo.const.shellHistoryKey];
+    this.history = localStorage[mongo.config.shellHistoryKey];
   }
   this.history = this.history ? JSON.parse(this.history) : []; // Newest entries at Array.length
   this.historyIndex = this.history.length;
@@ -28,7 +28,7 @@ mongo.Readline = function ($input) {
 };
 
 mongo.Readline.prototype.keydown = function (event) {
-  var key = mongo.const.keycodes;
+  var key = mongo.config.keycodes;
   var line;
   switch (event.keyCode) {
   case key.up:
@@ -98,13 +98,13 @@ mongo.Readline.prototype.submit = function (line) {
   this.history.push(line);
 
   if (localStorage){
-    var history = localStorage[mongo.const.shellHistoryKey];
+    var history = localStorage[mongo.config.shellHistoryKey];
     history = history ? JSON.parse(history) : [];
     history.push(line);
-    if (history.length > mongo.const.shellHistorySize){
+    if (history.length > mongo.config.shellHistorySize){
       history.shift();
     }
-    localStorage[mongo.const.shellHistoryKey] = JSON.stringify(history);
+    localStorage[mongo.config.shellHistoryKey] = JSON.stringify(history);
   }
 
   this.historyIndex = this.history.length;
