@@ -308,7 +308,11 @@ def db_collection_ensure_index(res_id, collection_name):
     if not keys:
         return err(400, 'No key to index')
 
+    whitelist = ['name', 'unique', 'dropDups', 'background', 'bucketSize',
+                 'min', 'max', 'expireAfterSeconds', 'sparse', 'weights',
+                 'default_language', 'language_override']
     options = request.json.get('options', {})
+    options = {prop: options[prop] for prop in whitelist if prop in options}
     with UseResId(res_id, allowSystem=True):
         if re.match('system($|\.)', collection_name) is not None:
             raise MWSServerError(403, 'Collection name may not ' +
