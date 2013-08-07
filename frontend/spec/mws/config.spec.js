@@ -48,8 +48,4 @@ describe('The const module', function () {
     expect(mongo.config.baseUrl).toBeDefined();
     expect(mongo.config.baseUrl.indexOf(mongo.config.mwsHost) > -1).toBe(true);
   });
-
-  it('stores the css path', function(){
-    expect(mongo.config.cssPath).toBeDefined();
-  });
 });

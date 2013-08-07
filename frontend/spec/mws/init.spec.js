@@ -18,18 +18,9 @@
 /* global spyOn */
 describe('The init function', function () {
   var creationSuccess, dataObj;
-  var mwsHost = 'host';
-  var expected = {
-    config: {
-      cssPath: 'mongoWebShell.css',
-      mwsHost: mwsHost,
-      baseUrl: mwsHost + CONST.domConfig.baseUrlPostfix
-    }
-  };
 
   beforeEach(function () {
     jasmine.Clock.useMock();
-    spyOn(mongo.dom, 'injectStylesheet');
     spyOn(mongo.request, 'createMWSResource').andCallFake(function (
         shell, onSuccess) {
       if (creationSuccess) {
@@ -51,11 +42,6 @@ describe('The init function', function () {
   it('enables console protection', function () {
     mongo.init.run();
     expect(mongo.util.enableConsoleProtection).toHaveBeenCalled();
-  });
-
-  it('injects the web shell stylesheet', function () {
-    mongo.init.run();
-    expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(expected.config.cssPath);
   });
 
   describe('for each web shell div in the DOM', function () {

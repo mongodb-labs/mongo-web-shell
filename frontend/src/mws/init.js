@@ -73,7 +73,6 @@ mongo.init = (function(){
 
   var run = function () {
     mongo.util.enableConsoleProtection();
-    mongo.dom.injectStylesheet(mongo.config.cssPath);
 
     var initUrls = [];
     var initJson = [];

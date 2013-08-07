@@ -33,7 +33,6 @@ mongo.config = (function () {
     shellHistoryKey: 'mongo.history',
     shellHistorySize: 500,
     mwsHost: mwsHost,
-    baseUrl: mwsHost + '/mws/',
-    cssPath: 'mongoWebShell.css'
+    baseUrl: mwsHost + '/mws/'
   };
 }());
