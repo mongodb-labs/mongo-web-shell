@@ -58,6 +58,6 @@ mongo.mutateSource = (function () {
   }
 
   return {
-    swapMemberAccesses: swapMemberAccesses,
+    swapMemberAccesses: swapMemberAccesses
   };
 }());
