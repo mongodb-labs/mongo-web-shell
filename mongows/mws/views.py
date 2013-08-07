@@ -120,7 +120,7 @@ def ratelimit(f):
     return update_wrapper(wrapped_function, f)
 
 
-@mws.route('/', methods=['POST'])
+@mws.route('/', methods=['POST', 'OPTIONS'])
 @crossdomain()
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
@@ -145,7 +145,7 @@ def create_mws_resource():
     return to_json({'res_id': res_id, 'is_new': is_new})
 
 
-@mws.route('/<res_id>/keep-alive', methods=['POST'])
+@mws.route('/<res_id>/keep-alive', methods=['POST', 'OPTIONS'])
 @crossdomain()
 @check_session_id
 def keep_mws_alive(res_id):
@@ -155,7 +155,7 @@ def keep_mws_alive(res_id):
     return empty_success()
 
 
-@mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
+@mws.route('/<res_id>/db/<collection_name>/find', methods=['GET', 'OPTIONS'])
 @crossdomain()
 @check_session_id
 @ratelimit
@@ -285,7 +285,7 @@ def db_collection_drop(res_id, collection_name):
     return empty_success()
 
 
-@mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
+@mws.route('/<res_id>/db/<collection_name>/count', methods=['GET', 'OPTIONS'])
 @crossdomain()
 @check_session_id
 @ratelimit
