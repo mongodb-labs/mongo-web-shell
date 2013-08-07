@@ -34,7 +34,6 @@ from mongows.mws.util import (
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
 CLIENTS_COLLECTION = 'clients'
-REQUEST_ORIGIN = '*'  # TODO: Get this value from app config.
 
 
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
@@ -46,7 +45,7 @@ def crossdomain(origin=None, methods=None, headers=None,
         methods = ', '.join(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, basestring):
         headers = ', '.join(x.upper() for x in headers)
-    if not isinstance(origin, basestring):
+    if origin is not None and not isinstance(origin, basestring):
         origin = ', '.join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
@@ -60,6 +59,8 @@ def crossdomain(origin=None, methods=None, headers=None,
 
     def decorator(f):
         def wrapped_function(*args, **kwargs):
+            cors_origin = origin or current_app.config.get('CORS_ORIGIN', '')
+
             if automatic_options and request.method == 'OPTIONS':
                 resp = current_app.make_default_options_response()
             else:
@@ -69,11 +70,15 @@ def crossdomain(origin=None, methods=None, headers=None,
 
             h = resp.headers
 
-            h['Access-Control-Allow-Origin'] = origin
+            h['Access-Control-Allow-Origin'] = cors_origin
             h['Access-Control-Allow-Methods'] = get_methods()
             h['Access-Control-Max-Age'] = str(max_age)
+            h['Access-Control-Allow-Credentials'] = 'true'
             if headers is not None:
                 h['Access-Control-Allow-Headers'] = headers
+            else:
+                reqh = request.headers.get('Access-Control-Request-Headers')
+                h['Access-Control-Allow-Headers'] = reqh
             return resp
 
         f.provide_automatic_options = False
@@ -116,7 +121,7 @@ def ratelimit(f):
 
 
 @mws.route('/', methods=['POST'])
-@crossdomain(origin=REQUEST_ORIGIN)
+@crossdomain()
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
     session['session_id'] = session_id
@@ -141,7 +146,7 @@ def create_mws_resource():
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST'])
-@crossdomain(origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 def keep_mws_alive(res_id):
     clients = get_db()[CLIENTS_COLLECTION]
@@ -151,7 +156,7 @@ def keep_mws_alive(res_id):
 
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
-@crossdomain(origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_find(res_id, collection_name):
@@ -172,7 +177,7 @@ def db_collection_find(res_id, collection_name):
 
 @mws.route('/<res_id>/db/<collection_name>/insert',
            methods=['POST', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_insert(res_id, collection_name):
@@ -205,7 +210,7 @@ def db_collection_insert(res_id, collection_name):
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_remove(res_id, collection_name):
@@ -222,7 +227,7 @@ def db_collection_remove(res_id, collection_name):
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_update(res_id, collection_name):
@@ -257,7 +262,7 @@ def db_collection_update(res_id, collection_name):
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
            methods=['GET', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 def db_collection_aggregate(res_id, collection_name):
     parse_get_json(request)
@@ -271,7 +276,7 @@ def db_collection_aggregate(res_id, collection_name):
 
 @mws.route('/<res_id>/db/<collection_name>/drop',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_drop(res_id, collection_name):
@@ -281,7 +286,7 @@ def db_collection_drop(res_id, collection_name):
 
 
 @mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_count(res_id, collection_name):
@@ -299,7 +304,7 @@ def db_collection_count(res_id, collection_name):
 
 @mws.route('/<res_id>/db/getCollectionNames',
            methods=['GET', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 def db_get_collection_names(res_id):
     return to_json({'result': get_collection_names(res_id)})
@@ -307,7 +312,7 @@ def db_get_collection_names(res_id):
 
 @mws.route('/<res_id>/db',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
+@crossdomain()
 @check_session_id
 def db_drop(res_id):
     DB = get_db()
