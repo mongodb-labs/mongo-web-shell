@@ -1,19 +1,18 @@
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
-/* global spyOn, xit, CodeMirror */
+/* global spyOn, xit */
 /* jshint evil: true, nonew: false */
 describe('A Shell', function () {
   var instance, $rootElement;
-  var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    $rootElement = $('<div class=' + CONST.css.classes.root + '/>');
+    $rootElement = $('<div class=' + CONST.rootClass + '/>');
     $('body').append($rootElement);
     instance = new mongo.Shell($rootElement.get(0), 0);
     mongo.shells = [instance];
   });
 
   afterEach(function () {
-    $('.' + CONST.css.classes.root).remove();
+    $('.' + CONST.rootClass).remove();
     $('iframe').remove();
   });
 
@@ -24,29 +23,13 @@ describe('A Shell', function () {
   });
 
   it('injects its HTML into the DOM', function () {
-    spyOn(window, 'CodeMirror').andCallThrough();
+    var inputChildren = instance.$rootElement.find('.mws-input').children();
+    expect(inputChildren.length).toEqual(1);
+    expect(inputChildren[0]).toEqual(instance.inputBox.getWrapperElement());
 
-    function expectInternalLength(len) {
-      CONST.css.classes.internal.forEach(function (cssClass) {
-        var $element = $('.' + cssClass);
-        expect($element.length).toBe(len);
-      });
-    }
-
-    // Remove all existing shells from the page
-    $('.' + CONST.css.classes.root).remove();
-    expectInternalLength(0);
-    for (var i = 0; i < SHELL_COUNT; i++) {
-      var $div = $('<div class=' + CONST.css.classes.root + '/>');
-      $('body').append($div);
-      var shell = new mongo.Shell($div, i);
-      var inputLI = shell.$inputLI.get(0);
-      expect(CodeMirror.mostRecentCall.args[0]).toBe(inputLI);
-      var codeMirrorOptions = CodeMirror.mostRecentCall.args[1];
-      expect(codeMirrorOptions.matchBrackets).toBe(true);
-      expect(codeMirrorOptions.readOnly).toEqual('nocursor');
-      expectInternalLength(i + 1);
-    }
+    var responseChildren = instance.$responseWrapper.children();
+    expect(responseChildren.length).toEqual(1);
+    expect(responseChildren[0]).toEqual(instance.responseBlock.getWrapperElement());
   });
 
   it('attaches the click listener', function () {
@@ -160,26 +143,31 @@ describe('A Shell', function () {
     });
 
     it('inserts an array of lines into the shell', function () {
-      var responseList = $rootElement.find('.' +
-          CONST.css.classes.responseList).get(0);
+      instance.insertResponseLine('line');
       var array = [];
       do  {
         array.push('line');
-        var numResponses = responseList.children.length;
+        var numResponses = instance.responseBlock.lineCount();
         instance.insertResponseArray(array);
-        expect(responseList.children.length).toBe(numResponses + array.length);
-        expectContentEntirelyScrolled(responseList);
+        expect(instance.responseBlock.lineCount()).toBe(numResponses + array.length);
+        expectContentEntirelyScrolled(instance.$scrollWrapper);
       } while (array.length < 5);
     });
 
     it('inserts a line into the shell', function () {
-      var responseList = $rootElement.find('.' +
-          CONST.css.classes.responseList).get(0);
+      // The first insert shouldn't add a new line, because we go from being on
+      // an empty first line to populating the first line. Therefore the line
+      // count should stay the same (as long as the inserted data doesn't have
+      // a newline in it).
+      expect(instance.responseBlock.lineCount()).toEqual(1);
+      instance.insertResponseLine('line');
+      expect(instance.responseBlock.lineCount()).toEqual(1);
+
       for (var i = 0; i < 4; i++) {
-        var numResponses = responseList.children.length;
+        var numResponses = instance.responseBlock.lineCount();
         instance.insertResponseLine('line');
-        expect(responseList.children.length).toBe(numResponses + 1);
-        expectContentEntirelyScrolled(responseList);
+        expect(instance.responseBlock.lineCount()).toBe(numResponses + 1);
+        expectContentEntirelyScrolled(instance.$scrollWrapper);
       }
     });
 
@@ -189,7 +177,8 @@ describe('A Shell', function () {
      * https://developer.mozilla.org/en-US/docs/DOM/scrollHeight
      * #Determine_if_an_element_has_been_totally_scrolled
      */
-    function expectContentEntirelyScrolled(element) {
+    function expectContentEntirelyScrolled($element) {
+      var element = $element.get(0);
       expect(element.scrollHeight - element.scrollTop).toBe(
           element.clientHeight);
     }
@@ -321,54 +310,45 @@ describe('A Shell', function () {
   });
 
   describe('inserting a line', function () {
-    var expected, toString, refresh;
+    var expected, toString, refresh, replaceRange;
     beforeEach(function () {
       expected = 'myString';
       toString = spyOn(mongo.util, 'toString').andReturn(expected);
-      refresh = jasmine.createSpy('refresh');
-      spyOn(window, 'CodeMirror').andReturn({refresh: refresh});
-      instance.$inputLI = {
-        before: jasmine.createSpy('$inputLI')
-      };
-      instance.$responseList = {
-        0: {scrollHeight: 0},
-        scrollTop: jasmine.createSpy()
-      };
+      replaceRange = spyOn(instance.responseBlock, 'replaceRange');
+      refresh = spyOn(instance.responseBlock, 'refresh');
     });
 
     it('stringifies and highlights objects', function () {
+      // Does not insert newline before first line
       instance.insertResponseLine(123);
       expect(toString).toHaveBeenCalledWith(123);
-      expect(instance.$inputLI.before).toHaveBeenCalled();
-      var li = instance.$inputLI.before.calls[0].args[0];
-      expect(CodeMirror).toHaveBeenCalledWith(li, {readOnly: true, value: expected});
+      expect(replaceRange).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0]).toEqual(expected);
       expect(refresh).toHaveBeenCalled();
+      refresh.reset();
+
+      // Inserts newlines before all subsequent lines
+      instance.insertResponseLine(123);
+      expect(refresh).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0]).toEqual('\n' + expected);
     });
 
     it('highlights string commands', function () {
       instance.insertResponseLine('an input string', '> ');
-      expect(toString).toHaveBeenCalledWith('an input string');
-      expect(instance.$inputLI.before).toHaveBeenCalled();
-      var li = instance.$inputLI.before.calls[0].args[0];
-      expect(CodeMirror).toHaveBeenCalledWith(li, {readOnly: true, value: expected});
-      expect(refresh).toHaveBeenCalled();
+      var lastLine = instance.responseBlock.lineCount() - 1;
+      expect(instance.responseBlock.lineInfo(lastLine).textClass).toBeUndefined();
     });
 
     it('does not highlights response strings', function () {
       instance.insertResponseLine('an input string');
-      expect(toString).toHaveBeenCalledWith('an input string');
-      expect(instance.$inputLI.before).toHaveBeenCalled();
-      var li = instance.$inputLI.before.calls[0].args[0];
-      expect(li.innerHTML).toEqual(expected);
-      expect(li.className).toEqual('mws-plain-result');
-      expect(CodeMirror).not.toHaveBeenCalled();
+      var lastLine = instance.responseBlock.lineCount() - 1;
+      expect(instance.responseBlock.lineInfo(lastLine).textClass).toEqual('mws-cm-plain-text');
     });
 
     it('prepends the given string', function () {
       instance.insertResponseLine({my: 'obj'}, '==> ');
-      expect(instance.$inputLI.before).toHaveBeenCalled();
-      var li = instance.$inputLI.before.calls[0].args[0];
-      expect(li.innerHTML.indexOf('==&gt; ')).toBe(0);
+      expect(replaceRange).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0].indexOf('==> ')).toBe(0);
     });
   });
 

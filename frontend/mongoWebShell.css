@@ -11,25 +11,60 @@
   margin: 0;
 }
 
-.mws-input-div {
-  padding-left: 9px;
-  vertical-align: top;
+.mws-responses {
+  margin-left: -8px;
+}
+
+.mws-input-wrapper {
+  /*vertical-align: top;*/
   line-height: 29px;
+  position: relative;
+}
+
+.mws-input {
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 10px;
+}
+
+.mws-prompt {
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 1px;
 }
 
 .mws-scroll-wrapper {
-  overflow: scroll;
+  overflow-y: auto;
   height: inherit;
 }
 
-/* Code Mirror overrides */
-.CodeMirror {
-  height: auto !important;
-  display: inline-block;
+/* Try to make the scrollbar less ugly, at least on IE and WebKit */
+.mongo-web-shell ::-webkit-scrollbar {
+    width: 7px;
 }
 
-div.CodeMirror-scroll {
-  height: auto !important;
+.mongo-web-shell ::-webkit-scrollbar-track {
+  visibility: hidden;  /* doesn't seem to work */
+  background: transparent;
+}
+
+.mongo-web-shell ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgba(0,0,0,0.5);
+}
+
+.mongo-web-shell ::-webkit-scrollbar:window-inactive {
+    visibility: hidden;
+}
+
+/* Code Mirror overrides */
+.mongo-web-shell .CodeMirror {
+  height: auto;
+}
+
+div.CodeMirror-vscrollbar {
   overflow: visible;
 }
 

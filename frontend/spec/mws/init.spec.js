@@ -55,14 +55,14 @@ describe('The init function', function () {
     beforeEach(function () {
       shellElements = [];
       for (var i = 0; i < SHELL_COUNT; i++) {
-        var element = $('<div class=' + CONST.css.classes.root + '/>');
+        var element = $('<div class=' + CONST.rootClass + '/>');
         $('body').append(element);
         shellElements.push(element.get(0));
       }
     });
 
     afterEach(function () {
-      $('.' + CONST.css.classes.root).remove();
+      $('.' + CONST.rootClass).remove();
     });
 
     it('constructs a new shell', function () {

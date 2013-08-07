@@ -1,11 +1,7 @@
 /* jshint evil: true, newcap: false */
 /* global console, mongo, CodeMirror */
 mongo.Shell = function (rootElement, shellID) {
-  this.rootElement = rootElement;
   this.$rootElement = $(rootElement);
-  this.$responseList = null;
-  this.$inputLI = null;
-  this.inputBox = null;
 
   this.hasShownResponse = false;
   this.id = shellID;
@@ -26,45 +22,38 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // We're injecting into <div class="mongo-web-shell">. The previous HTML
-  // content is used to fill the shell.
-//  var html =
-//      '<ul class="mws-response-list cm-s-solarized cm-s-dark">' +
-//        '<li>' + this.$rootElement.html() + '</li>' +
-//        '<li class="mws-input-li">' +
-//          '> ' +
-//        '</li>' +
-//      '</ul>';
-//  this.$rootElement.html(html);
-//  this.$responseList = this.$rootElement.find('.mws-response-list');
-//  this.$inputLI = this.$responseList.find('.mws-input-li');
-  this.rootElement.className += ' cm-s-solarized cm-s-dark';
+  this.$rootElement.addClass('cm-s-solarized').addClass('cm-s-dark');
   this.$rootElement.html(
-    '<div class="mws-scroll-wrapper">' +
+    '<div class="mws-scroll-wrapper cm-s-solarized cm-s-dark">' +
+      // We're injecting into <div class="mongo-web-shell">. The previous HTML
+      // content is used to fill the shell.
       this.$rootElement.html() +
-      '<textarea class="mws-responses"/>' +
-      '<div class="mws-input-div">></div>' +
+      '<div class="mws-responses"/>' +
+      '<div class="mws-input-wrapper">' +
+        '<div class="mws-prompt">&gt;</div>' +
+        '<div class="mws-input"></div>' +
+      '</div>' +
     '</div>'
   );
-  var responsesTextArea = this.$rootElement.find('.mws-responses').get(0);
-  this.responseBlock = CodeMirror.fromTextArea(responsesTextArea, {
+  this.$responseWrapper = this.$rootElement.find('.mws-responses');
+  this.responseBlock = CodeMirror(this.$responseWrapper.get(0), {
     readOnly: true,
     lineWrapping: true,
     theme: 'solarized dark'
   });
-  this.$responseWrapper = $(this.responseBlock.getWrapperElement());
+  // We want the response box to be hidden until there is a response to show
+  // (it gets shown in insertResponseLine).
   this.$responseWrapper.css({display: 'none'});
 
-  var inputContainer = this.$rootElement.find('.mws-input-div').get(0);
-  this.inputBox = CodeMirror(inputContainer, {
+  this.inputBox = CodeMirror(this.$rootElement.find('.mws-input').get(0), {
     matchBrackets: true,
     lineWrapping: true,
     readOnly: 'nocursor',
     theme: 'solarized dark'
   });
-  this.$inputWrapper = $(this.inputBox.getWrapperElement());
-  this.$inputWrapper.css({background: 'transparent'});
-  this.$inputDiv = this.$rootElement.find('.mws-input-div');
+  $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
+
+  this.$inputWrapper = this.$rootElement.find('.mws-input-wrapper');
   this.$scrollWrapper = this.$rootElement.find('.mws-scroll-wrapper');
 
   // Todo: We should whitelist what is available in this namespace
@@ -85,10 +74,9 @@ mongo.Shell.prototype.injectHTML = function () {
 
 mongo.Shell.prototype.attachClickListener = function () {
   this.$rootElement.click(function () {
-    console.log('in click listener');
     this.inputBox.focus();
     this.inputBox.refresh();
-//    this.$inputWrapper.css({display: ''});
+    this.responseBlock.setSelection({line: 0, ch: 0});
   }.bind(this));
 };
 
@@ -141,54 +129,45 @@ mongo.Shell.prototype.enableInput = function (bool) {
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
-  // Todo: Make this more efficient, don't update the DOM each time, do a
-  // single large insert and then update
   for (var i = 0; i < data.length; i++) {
-    this.insertResponseLine(data[i]);
+    this.insertResponseLine(data[i], null, true);
   }
+  this.responseBlock.refresh();
 };
 
-mongo.Shell.prototype.insertResponseLine = function (data, prepend) {
+mongo.Shell.prototype.insertResponseLine = function (data, prepend, noRefresh) {
   var lastLine = this.responseBlock.lineCount() - 1;
   var lastChar = this.responseBlock.getLine(lastLine).length;
   var lastPos = {line: lastLine, ch: lastChar};
+  var isString = typeof(data) === 'string';
+  var separator = this.hasShownResponse ? '\n' : '';
 
+  data = mongo.util.toString(data);
   if (prepend) {
     data = prepend + data;
+    var padding = Array(prepend.length + 1).join(' ');
+    data = data.replace(/\n/g, '\n' + padding);
   }
-  this.$responseWrapper.css({display: ''});
-  this.$inputDiv.css({marginTop: '-8px'});
-  var separator = this.hasShownResponse ? '\n' : '';
   this.responseBlock.replaceRange(separator + data, lastPos);
-//  this.responseBlock.setValue(this.responseBlock.getValue() + separator + data);
 
-  if (typeof(data) === 'string' && !prepend) {
-    var newLastLine = this.responseBlock.lineCount() - 1;
-    this.responseBlock.addLineClass(newLastLine, 'text', 'mws-cm-plain-text');
+  if (isString && !prepend) {
+    var newLines = data.match(/\n/g);
+    var insertedLines = newLines ? newLines.length + 1 : 1;
+    var totalLines = this.responseBlock.lineCount();
+    var startInsertedResponse = totalLines - insertedLines;
+    for (var i = startInsertedResponse; i < totalLines; i++) {
+      this.responseBlock.addLineClass(i, 'text', 'mws-cm-plain-text');
+    }
+  }
+  if (!noRefresh) {
+    this.responseBlock.refresh();
   }
 
-  this.responseBlock.refresh();
   this.hasShownResponse = true;
-//  var li = document.createElement('li');
-//  this.$inputLI.before(li);
-//  if (prepend) {
-//    li.innerHTML = prepend;
-//  }
-//  if (typeof(data) === 'string' && !prepend) {
-//    // If we're printing an output and it's a string, don't highlight
-//    li.innerHTML = mongo.util.toString(data);
-//    li.className = 'mws-plain-result';
-//  } else {
-//    var cm = CodeMirror(li, {
-//      readOnly: true,
-//      value: mongo.util.toString(data),
-//      theme: 'solarized dark'
-//    });
-//    cm.refresh();
-//  }
+  this.$responseWrapper.css({display: ''});
+  this.$inputWrapper.css({marginTop: '-8px'});
 
-  // Reset scroll distance so the <input> is not hidden at the bottom.
-//  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
+  // Reset scroll distance so the input is not hidden at the bottom.
   this.$scrollWrapper.scrollTop(this.$scrollWrapper.get(0).scrollHeight);
 };
 
