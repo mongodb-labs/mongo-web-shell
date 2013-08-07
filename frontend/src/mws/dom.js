@@ -21,7 +21,7 @@ mongo.dom = (function () {
   var MWS_HOST = '';
 
   function retrieveConfig() {
-    var $curScript = $('script[src*=\'' + mongo.const.scriptName + '\']');
+    var $curScript = $('script[src*=\'' + mongo.config.scriptName + '\']');
     var mwsHost = $curScript.data('mws-host') || MWS_HOST;
     return {
       cssPath: $curScript.data('css-path') || CSS_PATH,

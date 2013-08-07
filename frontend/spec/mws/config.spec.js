@@ -16,7 +16,7 @@
 /* global describe, expect, it, mongo */
 describe('The const module', function () {
   it('stores keycode constants', function () {
-    var key = mongo.const.keycodes;
+    var key = mongo.config.keycodes;
     expect(key.enter).toBe(13);
     expect(key.left).toBe(37);
     expect(key.up).toBe(38);
@@ -25,18 +25,31 @@ describe('The const module', function () {
   });
 
   it('stores the keep alive timeout', function () {
-    expect(mongo.const.keepAliveTime).toBeDefined();
+    expect(mongo.config.keepAliveTime).toBeDefined();
   });
 
   it('stores the root element CSS selector', function () {
-    expect(mongo.const.rootElementSelector).toBeDefined();
+    expect(mongo.config.rootElementSelector).toBeDefined();
   });
 
   it('stores the script name', function () {
-    expect(mongo.const.scriptName).toBeDefined();
+    expect(mongo.config.scriptName).toBeDefined();
   });
 
   it('stores the shell batch size', function () {
-    expect(mongo.const.shellBatchSize).toBeDefined();
+    expect(mongo.config.shellBatchSize).toBeDefined();
+  });
+
+  it('gets and stores the MWS host', function () {
+    expect(mongo.config.mwsHost).toEqual('http://mwshost.example.com');
+  });
+
+  it('generates and stores the baseUrl', function(){
+    expect(mongo.config.baseUrl).toBeDefined();
+    expect(mongo.config.baseUrl.indexOf(mongo.config.mwsHost) > -1).toBe(true);
+  });
+
+  it('stores the css path', function(){
+    expect(mongo.config.cssPath).toBeDefined();
   });
 });

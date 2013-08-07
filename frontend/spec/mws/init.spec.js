@@ -21,7 +21,7 @@ describe('The init function', function () {
   var mwsHost = 'host';
   var expected = {
     config: {
-      cssPath: 'css',
+      cssPath: 'mongoWebShell.css',
       mwsHost: mwsHost,
       baseUrl: mwsHost + CONST.domConfig.baseUrlPostfix
     }
@@ -30,7 +30,6 @@ describe('The init function', function () {
   beforeEach(function () {
     jasmine.Clock.useMock();
     spyOn(mongo.dom, 'injectStylesheet');
-    spyOn(mongo.dom, 'retrieveConfig').andReturn(expected.config);
     spyOn(mongo.request, 'createMWSResource').andCallFake(function (
         shell, onSuccess) {
       if (creationSuccess) {
@@ -46,25 +45,17 @@ describe('The init function', function () {
   });
 
   afterEach(function () {
-    mongo.config = null;
     mongo.shells = [];
   });
 
   it('enables console protection', function () {
     mongo.init.run();
-    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
-  });
-
-  it('retrieves and sets the script configuration', function () {
-    mongo.init.run();
-    expect(mongo.dom.retrieveConfig).toHaveBeenCalled();
-    expect(mongo.config).toEqual(expected.config);
+    expect(mongo.util.enableConsoleProtection).toHaveBeenCalled();
   });
 
   it('injects the web shell stylesheet', function () {
     mongo.init.run();
-    expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(
-        expected.config.cssPath);
+    expect(mongo.dom.injectStylesheet).toHaveBeenCalledWith(expected.config.cssPath);
   });
 
   describe('for each web shell div in the DOM', function () {
@@ -101,14 +92,14 @@ describe('The init function', function () {
       // Unsuccessful creation.
       mongo.init.run();
       expect(attachInputHandler).not.toHaveBeenCalled();
-      jasmine.Clock.tick(mongo.const.keepAliveTime);
+      jasmine.Clock.tick(mongo.config.keepAliveTime);
       expect(keepAlive).not.toHaveBeenCalled();
 
       creationSuccess = true;
       mongo.init.run();
       expect(attachInputHandler.calls.length).toBe(SHELL_COUNT);
       expect(attachInputHandler).toHaveBeenCalledWith(dataObj.res_id);
-      jasmine.Clock.tick(mongo.const.keepAliveTime - 1);
+      jasmine.Clock.tick(mongo.config.keepAliveTime - 1);
       expect(keepAlive).not.toHaveBeenCalled();
       jasmine.Clock.tick(1);
       expect(keepAlive).toHaveBeenCalled();

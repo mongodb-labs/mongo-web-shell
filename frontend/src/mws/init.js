@@ -73,15 +73,14 @@ mongo.init = (function(){
 
   var run = function () {
     mongo.util.enableConsoleProtection();
-    var config = mongo.config = mongo.dom.retrieveConfig();
-    mongo.dom.injectStylesheet(config.cssPath);
+    mongo.dom.injectStylesheet(mongo.config.cssPath);
 
     var initUrls = [];
     var initJson = [];
     var initJsonUrls = [];
     // For now, assume a single resource id for all shells
     // Initialize all shells and grab any initialization urls
-    $(mongo.const.rootElementSelector).each(function (index, shellElement) {
+    $(mongo.config.rootElementSelector).each(function (index, shellElement) {
       var initUrl = shellElement.getAttribute('data-initialization-url');
       if (initUrl) {
         initUrls.push(initUrl);
@@ -105,7 +104,7 @@ mongo.init = (function(){
     mongo.request.createMWSResource(mongo.shells, function (data) {
       setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
-        mongo.const.keepAliveTime
+        mongo.config.keepAliveTime
       );
 
       // Need to make sure that urls are unique and converted to $.ajax options
