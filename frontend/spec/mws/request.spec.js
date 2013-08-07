@@ -50,6 +50,7 @@ describe('The request module', function () {
       mongo.request._pending = {};
       mongo.request._pendingId = 0;
       mongo.request._ratelimitLock = 0;
+      mongo.config.ratelimitLockDuration = 10000;
     });
 
     it('uses the given url and HTTP method', function () {
@@ -161,7 +162,7 @@ describe('The request module', function () {
       expect(fn).toThrow();
       expect($.ajax).not.toHaveBeenCalled();
 
-      mongo.request._ratelimitLock = new Date() - mongo.const.ratelimitLockDuration;
+      mongo.request._ratelimitLock = new Date() - mongo.config.ratelimitLockDuration;
       mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
       expect($.ajax).toHaveBeenCalled();
     });

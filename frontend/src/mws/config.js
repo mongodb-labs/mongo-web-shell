@@ -14,7 +14,8 @@
  */
 
 /* global mongo */
-mongo.const = (function () {
+mongo.config = (function () {
+  var mwsHost = window.MWS_HOST || '';
   var KEYCODES = {
     enter: 13,
     left: 37,
@@ -31,6 +32,8 @@ mongo.const = (function () {
     shellBatchSize: 20,
     shellHistoryKey: 'mongo.history',
     shellHistorySize: 500,
+    mwsHost: mwsHost,
+    baseUrl: mwsHost + '/mws/',
     ratelimitLockDuration: 10000 // duration of ratelimit lock in ms
   };
 }());

@@ -16,6 +16,8 @@
 /* jshint camelcase: false, unused: false */
 /* global console, mongo, noty */
 mongo.request = (function () {
+  $.ajaxSetup({ xhrFields: {withCredentials: true}});
+
   /*
    * Creates an MWS resource for a set of shells on the remote server. Calls
    * onSuccess if the data received is valid. Otherwise, prints an error to the
@@ -40,7 +42,8 @@ mongo.request = (function () {
   }
 
   function makeRequest(url, params, type, name, shell, ratelimit, onSuccess, async) {
-    if (ratelimit && new Date() - mongo.request._ratelimitLock < mongo.const.ratelimitLockDuration){
+    var delta = new Date() - mongo.request._ratelimitLock;
+    if (ratelimit && delta < mongo.config.ratelimitLockDuration){
       throw new Error('Rate limit exceeded, request not sent');
     }
 
