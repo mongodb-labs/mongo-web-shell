@@ -29,6 +29,7 @@ NO_FRONTEND = False
 NO_VALIDATION = False
 NO_INIT = False
 PORT = 5000
+CORS_ORIGIN = ''
 
 RATELIMIT_COLLECTION = 'ratelimit'
 RATELIMIT_QUOTA = 500  # requests per expiry
