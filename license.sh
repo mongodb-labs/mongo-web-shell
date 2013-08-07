@@ -38,4 +38,6 @@ find . -type f ! -path './frontend/lib/*' \
                ! -path './venv/*' \
                ! -path './.git/*' \
                ! -path './frontend/dist/*' \
+               ! -path './.grunt/*' \
+               ! -path './_SpecRunner.html' \
 	| while read file; do applyLicense "$file" $1; done
