@@ -25,7 +25,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
-  this.shellBatchSize = mongo.const.shellBatchSize;
+  this.shellBatchSize = mongo.config.shellBatchSize;
   this.db = new mongo.DB(this, 'test');
 
   this.injectHTML();
