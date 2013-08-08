@@ -13,7 +13,7 @@
  *    limitations under the License.
  */
 
-/* jshint node: true */
+/* jshint node: true, camelcase: false */
 var FRONTEND_DIR = 'frontend/';
 var LIB_DIR = FRONTEND_DIR + 'lib/';
 var SPEC_DIR = FRONTEND_DIR + 'spec/';
@@ -49,7 +49,7 @@ module.exports = function (grunt) {
 
     jasmine: {
       dist: {
-        src: DIST_DIR + '**/*.js',
+        src: DIST_DIR + '**/!(*.min).js',
         options: {
           specs: SPEC_DIR + '**/*.spec.js',
           helpers: [
@@ -58,7 +58,21 @@ module.exports = function (grunt) {
           ],
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
-            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
+          ]
+        }
+      },
+      minified: {
+        src: DIST_DIR + '**/*.min.js',
+        options: {
+          specs: SPEC_DIR + '**/*.spec.js',
+          helpers: [
+            SPEC_DIR + 'disableConsole.js',
+            SPEC_DIR + 'globals.js'
+          ],
+          vendor: [
+            LIB_DIR + 'sinon/sinon.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
           ]
         }
       }
@@ -95,6 +109,29 @@ module.exports = function (grunt) {
           failOnError: true
         }
       }
+    },
+
+    'closure-compiler': {
+      frontend: {
+        js: DIST_DIR + 'mongoWebShell.js',
+        jsOutputFile: DIST_DIR + 'mongoWebShell.min.js',
+        maxBuffer: 500,
+        options: {
+          compilation_level: 'SIMPLE_OPTIMIZATIONS',
+          language_in: 'ECMASCRIPT5'
+        },
+        noreport: true
+      }
+    },
+
+    cssmin: {
+      minify: {
+        expand: true,
+        cwd: DIST_DIR,
+        src: ['*.css', '!*.min.css'],
+        dest: DIST_DIR,
+        ext: '.min.css'
+      }
     }
   });
 
@@ -104,12 +141,15 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('grunt-closure-compiler');
+  grunt.loadNpmTasks('grunt-contrib-cssmin');
 
-  grunt.registerTask('default', ['concat']);
+  grunt.registerTask('minify', ['closure-compiler', 'cssmin']);
+  grunt.registerTask('default', ['concat', 'minify']);
   grunt.registerTask('pep8', ['shell:pep8']);
   grunt.registerTask('unittest', ['shell:unittest']);
   grunt.registerTask(
     'test',
-    ['jshint', 'concat', 'jasmine', 'pep8', 'unittest']
+    ['jshint', 'concat', 'minify', 'jasmine', 'pep8', 'unittest']
   );
 };
