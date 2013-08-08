@@ -1,3 +1,18 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* jshint evil: true, newcap: false */
 /* global console, mongo, CodeMirror */
 mongo.Shell = function (rootElement, shellID) {
@@ -8,12 +23,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
-  // Todo: Should we put this somewhere else?
-  this.vars = {
-    DBQuery: {
-      shellBatchSize: mongo.const.shellBatchSize
-    }
-  };
+  this.shellBatchSize = mongo.config.shellBatchSize;
   this.db = new mongo.DB(this, 'test');
 
   this.injectHTML();
@@ -58,18 +68,21 @@ mongo.Shell.prototype.injectHTML = function () {
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
-  this.$sandbox = $('<iframe width="0" height="0"></iframe>')
+  this.sandbox = $('<iframe width="0" height="0"></iframe>')
     .css({visibility : 'hidden'})
-    .appendTo('body');
-  this.$sandbox = this.$sandbox.get(0);
+    .appendTo('body')
+    .get(0);
+  this.context = this.sandbox.contentWindow;
 
-  this.$sandbox.contentWindow.print = function(){
+  this.context.print = function(){
     this.insertResponseLine($.makeArray(arguments).map(function(e){
       return mongo.util.toString(e);
     }).join(' '));
   }.bind(this);
-  this.$sandbox.contentWindow.__get = mongo.util.__get;
-  this.$sandbox.contentWindow.db = this.db;
+  this.context.__get = mongo.util.__get;
+  this.context.db = this.db;
+
+  this.context.tojson = mongo.jsonUtils.tojson;
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
@@ -112,7 +125,7 @@ mongo.Shell.prototype.handleInput = function () {
  * throw any exceptions eval throws.
  */
 mongo.Shell.prototype.eval = function (src) {
-  var out = this.$sandbox.contentWindow.eval(src);
+  var out = this.context.eval(src);
   // TODO: Since the result is returned asynchronously, multiple JS
   // statements entered on one line in the shell may have their results
   // printed out of order. Fix this.
@@ -172,7 +185,7 @@ mongo.Shell.prototype.insertResponseLine = function (data, prepend, noRefresh) {
 };
 
 mongo.Shell.prototype.insertError = function (err) {
-  if (err instanceof Error || err instanceof this.$sandbox.contentWindow.Error) {
+  if (err instanceof Error || err instanceof this.context.Error) {
     err = err.toString();
   } else if (err.message) {
     err = 'ERROR: ' + err.message;
@@ -187,7 +200,7 @@ mongo.Shell.prototype.insertError = function (err) {
  * otherwise throws an error.
  */
 mongo.Shell.prototype.getShellBatchSize = function () {
-  var size = this.vars.DBQuery.shellBatchSize;
+  var size = this.shellBatchSize;
   if (!mongo.util.isNumeric(size)) {
     this.insertResponseLine('ERROR: Please set ' +
       'DBQuery.shellBatchSize to a valid numerical value.');

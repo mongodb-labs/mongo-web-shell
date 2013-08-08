@@ -13,3 +13,6 @@
 [submodule "frontend/lib/codemirror"]
 	path = frontend/lib/codemirror
 	url = https://github.com/marijnh/CodeMirror.git
+[submodule "frontend/lib/es5-shim"]
+	path = frontend/lib/es5-shim
+	url = git://github.com/kriskowal/es5-shim

@@ -1,10 +1,25 @@
-/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn */
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+/* global afterEach, beforeEach, describe, expect, it, jasmine, mongo, spyOn, sinon */
 describe('The keyword module', function () {
   var mk = mongo.keyword;
   var shellSpy;
 
   beforeEach(function () {
-    shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine']);
+    shellSpy = jasmine.createSpyObj('Shell', ['insertResponseLine', 'insertResponseArray']);
   });
 
   afterEach(function () {
@@ -96,4 +111,81 @@ describe('The keyword module', function () {
     mk.use(shellSpy);
     expect(shellSpy.insertResponseLine).toHaveBeenCalledWith(message);
   });
+
+  describe('the reset keyword', function(){
+    beforeEach(function(){
+      shellSpy.readline = jasmine.createSpyObj('Readline', ['getLastCommand']);
+      shellSpy.readline.getLastCommand.andReturn('not reset');
+      mongo.keyword._resetHasBeenCalled = false;
+    });
+
+    it('requires confirmation on first run', function(){
+      spyOn(mongo.request, 'makeRequest');
+      shellSpy.readline.getLastCommand.andReturn('reset');
+      mongo.keyword.reset(shellSpy);
+      expect(mongo.request.makeRequest).not.toHaveBeenCalled();
+    });
+
+    it('confirms before reset', function(){
+      spyOn(mongo.request, 'makeRequest');
+      shellSpy.readline.getLastCommand.andReturn('not reset');
+      mongo.keyword.reset(shellSpy);
+      expect(mongo.request.makeRequest).not.toHaveBeenCalled();
+    });
+
+    describe('assuming the reset is confirmed', function(){
+      var xhr, requests = [];
+
+      beforeEach(function(){
+        xhr = sinon.useFakeXMLHttpRequest();
+        xhr.onCreate = function (xhr) { requests.push(xhr); };
+
+        shellSpy.readline.getLastCommand.andReturn('reset');
+        mongo.config = {baseUrl: '/test_url/'};
+        shellSpy.mwsResourceID = 'test_res_id';
+        mongo.keyword.reset(shellSpy);
+      });
+
+      afterEach(function () {
+        xhr.restore();
+      });
+
+      it('drops the database', function(){
+        var makeRequest = spyOn(mongo.request, 'makeRequest');
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls[0].args[0]).toEqual('/test_url/test_res_id/db');
+        expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+        expect(makeRequest.calls[0].args[4]).toBe(shellSpy);
+      });
+
+      it('runs the initialization scripts', function(){
+        spyOn(mongo.init, 'runInitializationScripts');
+
+        mongo.keyword.reset(shellSpy);
+        requests[0].respond(204);
+        expect(mongo.init.runInitializationScripts).toHaveBeenCalled();
+      });
+
+      it('requires confirmation to reset again immediately', function () {
+        var makeRequest = spyOn(mongo.request, 'makeRequest');
+        // Already confirmed, should be called
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(1);
+
+        // Re-resetting, should re-confirm
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(1);
+        mongo.keyword.reset(shellSpy);
+        expect(makeRequest.calls.length).toEqual(2);
+      });
+    });
+  });
+
+  describe('the help keyword', function(){
+    it('prints out the help message', function(){
+      mongo.keyword.help(shellSpy);
+      expect(shellSpy.insertResponseArray).toHaveBeenCalled();
+    });
+  });
+
 });

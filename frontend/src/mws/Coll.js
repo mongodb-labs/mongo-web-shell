@@ -1,3 +1,18 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* jshint camelcase: false */
 /* global mongo, console */
 mongo.Coll = function (db, name) {
@@ -34,18 +49,27 @@ mongo.Coll.prototype.toString = function () {
  * server.
  */
 mongo.Coll.prototype.find = function (query, projection) {
-  var url = this.urlBase + 'find';
-  var params = {query: query, projection: projection};
-  var doFind = function (onSuccess, async) {
-    mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', this.shell,
-      onSuccess, async);
-  }.bind(this);
-  return new mongo.Cursor(this.shell, doFind);
+  mongo.events.functionTrigger(this.shell, 'db.collection.find', arguments,
+                               {collection: this.name});
+  return new mongo.Cursor(this, query, projection);
+};
+
+mongo.Coll.prototype.findOne = function (query, projection) {
+  mongo.events.functionTrigger(this.shell, 'db.collection.findOne', arguments,
+                               {collection: this.name});
+  var cursor = this.find(query, projection).limit(1);
+  if (cursor.hasNext()) {
+    return cursor.next();
+  } else {
+    return null;
+  }
 };
 
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
+  mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
 };
 
@@ -57,6 +81,8 @@ mongo.Coll.prototype.insert = function (doc) {
 mongo.Coll.prototype.remove = function (constraint, justOne) {
   var url = this.urlBase + 'remove';
   var params = {constraint: constraint, just_one: justOne};
+  mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
 };
 
@@ -71,6 +97,9 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
  */
 mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   var url = this.urlBase + 'update';
+  mongo.events.functionTrigger(this.shell, 'db.collection.update', arguments,
+                               {collection: this.name});
+
   // handle options document for 2.2+
   if (typeof upsert === 'object'){
     if (multi !== undefined){
@@ -94,5 +123,27 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
+  mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments,
+                               {collection: this.name});
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
+};
+
+/**
+ * Makes an aggregation request to the mongod instance on the backing server.
+ * On success, the result of the aggregation is returned, otherwise a failure
+ * message is printed and an error is thrown.
+ */
+mongo.Coll.prototype.aggregate = function(query){
+  query = query || [];
+  var results = {};
+  var url = this.urlBase + 'aggregate';
+  var onSuccess = function(data){
+    results = data;
+  }.bind(this);
+
+  mongo.events.functionTrigger(this.shell, 'db.collection.aggregate', arguments,
+                               {collection: this.name});
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
+                            onSuccess, false); // Sync request, blocking
+  return results;
 };

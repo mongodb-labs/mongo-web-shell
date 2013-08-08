@@ -1,3 +1,18 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* jshint loopfunc: true */
 /* global afterEach, beforeEach, describe, expect, it, jasmine, mongo */
 var console; // Stubbed later.
@@ -85,50 +100,6 @@ describe('The util module', function () {
     });
   });
 
-  it('merges the key-values pairs in two objects together', function () {
-    var mergeObj = mongo.util.mergeObjects;
-
-    expect(mergeObj()).toEqual({});
-    var obj1 = {key: 'val'};
-    expect(mergeObj(obj1)).toEqual({key: 'val'});
-    var obj2 = {iu: 'jjang'};
-    expect(mergeObj(obj1, obj2)).toEqual({key: 'val', iu: 'jjang'});
-    var obj3 = {gd: 'top'};
-    var mergedObj = {key: 'val', iu: 'jjang', gd: 'top'};
-    expect(mergeObj(obj1, obj2, obj3)).toEqual(mergedObj);
-
-    var collideObj1 = {key: 'value', iu: 'jjang'};
-    var collideObj2 = {key: 'values', gd: 'top'};
-    expect(mergeObj(obj1, collideObj1, collideObj2)).toEqual(mergedObj);
-
-    var proto = new KeyValProto();
-    expect(mergeObj(proto)).toEqual({});
-    proto.iu = 'jjang';
-    expect(mergeObj(proto)).toEqual({iu: 'jjang'});
-    expect(mergeObj(proto, {key: 'value'})).toEqual({iu: 'jjang',
-        key: 'value'});
-  });
-
-  it('adds the own properties of one object to another', function() {
-    var aop = mongo.util._addOwnProperties;
-
-    var obj = {};
-    aop(obj, {});
-    expect(obj).toEqual({});
-    aop(obj, {key: 'val'});
-    expect(obj).toEqual({key: 'val'});
-    aop(obj, {iu: 'jjang', gd: 'top'});
-    expect(obj).toEqual({key: 'val', iu: 'jjang', gd: 'top'});
-
-    var proto = new KeyValProto();
-    obj = {iu: 'jjang'};
-    aop(obj, proto);
-    expect(obj).toEqual({iu: 'jjang'});
-    proto.gd = 'top';
-    aop(obj, proto);
-    expect(obj).toEqual({iu: 'jjang', gd: 'top'});
-  });
-
   it('creates a resource URL from the given parameters', function () {
     var configStore = mongo.config;
     var gru = mongo.util.getDBCollectionResURL;
@@ -142,69 +113,8 @@ describe('The util module', function () {
     mongo.config = configStore;
   });
 
-  it('prunes the given keys from the given object if undefined or null',
-      function () {
-    function Parent() {
-      this.a = 'a';
-      this.b = null;
-    }
-    function Child(y, z) {
-      this.y = y;
-      this.z = z;
-    }
-    Child.prototype = Parent;
-
-    var keysToDelete = ['b', 'z'];
-    var actual = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', b: undefined, y: undefined, z: null}, // 1
-      {a: 'a'}, // 2
-      {}, // 3
-      new Parent(), // 4
-      new Child('y', 'z'), // 5
-      new Child('y') // 6
-    ];
-    var expected = [
-      {b: 'b', z: 'z'}, // 0
-      {a: 'a', y: undefined}, // 1
-      {a: 'a'}, // 2
-      {} // 3
-    ];
-    var tmp = new Parent();
-    delete tmp.b;
-    expected.push(tmp);  // 4
-    expected.push(new Child('y', 'z')); // 5
-    tmp = new Child('y');
-    delete tmp.z;
-    expected.push(tmp); // 6
-
-    actual.forEach(function (obj, i) {
-      mongo.util.pruneKeys(obj, keysToDelete);
-      expect(obj).toEqual(expected[i]);
-    });
-    actual = {a: 'a', b: 'b'};
-    mongo.util.pruneKeys(actual, []);
-    expect(actual).toEqual({a: 'a', b: 'b'});
-  });
-
-  it('stringifies the keys of the given object', function () {
-    var js = JSON.stringify;
-    var actual =  [
-      {str: 'a', number: 0, obj: {key: 'val'}},
-      {}
-    ];
-    var expected = [
-      {str: js('a'), number: js(0), obj: JSON.stringify({key: 'val'})},
-      {}
-    ];
-    actual.forEach(function (obj, i) {
-      mongo.util.stringifyKeys(obj);
-      expect(obj).toEqual(expected[i]);
-    });
-  });
-
-  describe('provides an interface for stringifying objects', function(){
-    it('that prints nonobjects', function(){
+  describe('provides an interface for stringifying objects that', function(){
+    it('prints nonobjects', function(){
       [
         ['mongo', 'mongo'],
         [123, '123'],
@@ -215,100 +125,94 @@ describe('The util module', function () {
       });
     });
 
-    it('that prints stringified objects', function(){
+    it('prints stringified objects', function(){
       [
-        [{}, '{}'],
-        [{name: 'mongo'}, '{"name":"mongo"}'],
-        [{parent: {nested: {key: 'val'}}}, '{"parent":{"nested":{"key":"val"}}}']
+        [{}, '{ }'],
+        [{name: 'mongo'}, '{ "name" : "mongo" }'],
+        [{parent: {nested: {key: 'val'}}}, '{ "parent" : { "nested" : { "key" : "val" } } }']
       ].forEach(function(e){
         expect(mongo.util.toString(e[0])).toEqual(e[1]);
       });
     });
 
-    it('that it uses the toString for objects for which it is a function', function(){
+    it('it uses the toString for objects for which it is a function', function(){
       function A(){}
       A.prototype.toString = function(){ return 'hello!'; };
       var a = new A();
       expect(mongo.util.toString(a)).toEqual('hello!');
     });
 
-    it('that refuses to print circular structures', function(){
+    it('refuses to print circular structures', function(){
       var a = {};
       a.a = a;
       expect(mongo.util.toString(a)).toMatch(/^ERROR: /);
     });
 
-    it('that works on null and undefined values', function () {
+    it('works on null and undefined values', function () {
       expect(mongo.util.toString(null)).toEqual('null');
       expect(mongo.util.toString(undefined)).toEqual('undefined');
     });
-  });
-
-  it('can tell whether or not arrays are equal', function () {
-    var a = [1, 2, 3];
-    var b = [1, 2, 3];
-    var c = [1, 3, 2];
-    var d = [1, [2, 3]];
-    var e = [1, [2, 3]];
-    var f = [1, [3, 2]];
-    var g = [[1, 2], 3];
-
-    expect(mongo.util.arrayEqual(null, null)).toBe(true);
-    expect(mongo.util.arrayEqual(undefined, undefined)).toBe(true);
-    expect(mongo.util.arrayEqual(a, a)).toBe(true);
-
-    expect(mongo.util.arrayEqual(a, null)).toBe(false);
-    expect(mongo.util.arrayEqual(null, a)).toBe(false);
-
-    expect(mongo.util.arrayEqual(a, b)).toBe(true);
-    expect(mongo.util.arrayEqual(b, a)).toBe(true);
-
-    expect(mongo.util.arrayEqual(a, c)).toBe(false);
-    expect(mongo.util.arrayEqual(c, a)).toBe(false);
-
-    expect(mongo.util.arrayEqual(a, d)).toBe(false);
-    expect(mongo.util.arrayEqual(d, a)).toBe(false);
-
-    // Performing shallow comparison, d and e should be different
-    expect(mongo.util.arrayEqual(d, e)).toBe(false);
-    expect(mongo.util.arrayEqual(e, d)).toBe(false);
-
-    expect(mongo.util.arrayEqual(d, f)).toBe(false);
-    expect(mongo.util.arrayEqual(f, d)).toBe(false);
-
-    expect(mongo.util.arrayEqual(d, g)).toBe(false);
-    expect(mongo.util.arrayEqual(g, d)).toBe(false);
-  });
-
-  describe('formatting query results', function () {
-    it('stringifies normal objects', function () {
-      var str = mongo.util.stringifyQueryResult({a: 1, foo: {bar: 'baz'}});
-      var exp = '{"a": 1, "foo": {"bar": "baz"}}';
-      expect(str).toEqual(exp);
-    });
 
     it('puts the _id field first', function () {
-      var str = mongo.util.stringifyQueryResult({a: 1, _id: 'foo'});
-      var exp = '{"_id": "foo", "a": 1}';
+      var str = mongo.util.toString({a: 1, _id: 'foo'});
+      var exp = '{ "_id" : "foo", "a" : 1 }';
       expect(str).toEqual(exp);
     });
 
     it('prints object ids properly', function () {
-      var str = mongo.util.stringifyQueryResult({
-        _id: {$oid: 'abcdef010123456789abcdef'},
-        a: {b: {$oid: '0123456789abcdef01234567'}},
-        b: {$oid: '0123456789abcdef0123456'}, // Too short
-        c: {$oid: 12345678901234567890123}, // Not a string
-        d: {$oid: 'abcdef010123456789abcdef', foo: 'bar'} // Extra keys
+      var original = [
+        {_id: {$oid: 'abcdef010123456789abcdef'}},
+        {a: {b: {$oid: '0123456789abcdef01234567'}}},
+        {b: {$oid: '0123456789abcdef0123456'}}, // Too short
+        {c: {$oid: 12345678901234567890123}}, // Not a string
+        {d: {$oid: 'abcdef010123456789abcdef', foo: 'bar'}} // Extra keys
+      ];
+      var results = $.map(original, mongo.util.toString);
+
+      var exp = [
+        '{ "_id" : ObjectId("abcdef010123456789abcdef") }',
+        '{ "a" : { "b" : ObjectId("0123456789abcdef01234567") } }',
+        '{ "b" : { "$oid" : "0123456789abcdef0123456" } }',
+        '{ "c" : { "$oid" : 1.2345678901234568e+22 } }',
+        '{ "d" : { "$oid" : "abcdef010123456789abcdef", "foo" : "bar" } }'
+      ];
+      for (var i = 0; i < results.length; i++) {
+        expect(results[i]).toEqual(exp[i]);
+      }
+    });
+
+    it('prints nonobjects', function(){
+      [
+        ['mongo', 'mongo'],
+        [123, '123'],
+        [false, 'false'],
+        [true, 'true']
+      ].forEach(function(e){
+        expect(mongo.util.toString(e[0])).toEqual(e[1]);
       });
-      var exp = '{' +
-        '"_id": ObjectId("abcdef010123456789abcdef"), ' +
-        '"a": {"b": ObjectId("0123456789abcdef01234567")}, ' +
-        '"b": {"$oid": "0123456789abcdef0123456"}, ' +
-        '"c": {"$oid": 1.2345678901234568e+22}, ' +
-        '"d": {"$oid": "abcdef010123456789abcdef", "foo": "bar"}' +
+    });
+
+    it('works on null and undefined values', function () {
+      expect(mongo.util.toString(null)).toEqual('null');
+      expect(mongo.util.toString(undefined)).toEqual('undefined');
+    });
+
+    it('prints arrays', function(){
+      var result = mongo.util.toString([1, 2, 'red', 'blue']);
+      expect(result).toEqual('[ 1, 2, "red", "blue" ]');
+    });
+
+    it('pretty prints long outputs', function () {
+      // More than 80 char output string
+      var original = {
+        'this is a very long key': 'this is a very long value',
+        'this is also a very long key': 'this is also a very long value'
+      };
+      var expected = '{\n' +
+        '\t"this is a very long key" : "this is a very long value",\n' +
+        '\t"this is also a very long key" : "this is also a very long value"\n' +
       '}';
-      expect(str).toEqual(exp);
+      expect(mongo.util.toString(original)).toEqual(expected);
     });
   });
 

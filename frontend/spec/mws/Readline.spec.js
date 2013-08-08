@@ -1,12 +1,30 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine, localStorage:true */
 describe('A Readline instance', function () {
   var codemirror, submitFunc, instance;
 
   beforeEach(function () {
-    mongo.const.shellHistoryKey = 'temporary_key';
-    delete localStorage[mongo.const.shellHistoryKey];
+    mongo.config.shellHistoryKey = 'temporary_key';
+    delete localStorage[mongo.config.shellHistoryKey];
+    var value = 'test value';
     codemirror = {
-      on: jasmine.createSpy('codemirror.on')
+      on: jasmine.createSpy('codemirror.on'),
+      getValue: function () {return value;},
+      setValue: function (newValue) {value = newValue;}
     };
     submitFunc = jasmine.createSpy('submit function');
     instance = new mongo.Readline(codemirror, submitFunc);
@@ -15,7 +33,7 @@ describe('A Readline instance', function () {
   afterEach(function () {
     codemirror = null;
     instance = null;
-    delete localStorage[mongo.const.shellHistoryKey];
+    delete localStorage[mongo.config.shellHistoryKey];
   });
 
   it('registers a keydown handler', function () {
@@ -37,8 +55,8 @@ describe('A Readline instance', function () {
     var constStore;
 
     beforeEach(function () {
-      constStore = mongo.const;
-      mongo.const = {keycodes: KEYCODES};
+      constStore = mongo.config;
+      mongo.config = {keycodes: KEYCODES};
       codemirror.getValue = function () {return BEFORE;};
       codemirror.setValue = jasmine.createSpy('setValue');
       EVENT = {
@@ -47,7 +65,7 @@ describe('A Readline instance', function () {
     });
 
     afterEach(function () {
-      mongo.const = constStore;
+      mongo.config = constStore;
     });
 
     it('prevents the default action for known key codes', function () {
@@ -209,6 +227,13 @@ describe('A Readline instance', function () {
         expect(actual).toBe(expectedHistory[0]);
       }
     });
+
+    it('remembers the command first being written', function () {
+      instance.historyIndex = instance.history.length;
+      instance.inputBox.setValue('my partial command');
+      instance.getOlderHistoryEntry();
+      expect(instance.getNewerHistoryEntry()).toEqual('my partial command');
+    });
   });
 
   it('submits input lines', function () {
@@ -239,7 +264,7 @@ describe('A Readline instance', function () {
   describe('saving local command history', function(){
     it('loads on init', function(){
       expect(instance.history).toEqual([]);
-      localStorage[mongo.const.shellHistoryKey] = '["1","2","3"]';
+      localStorage[mongo.config.shellHistoryKey] = '["1","2","3"]';
       instance = new mongo.Readline(codemirror, submitFunc);
       expect(instance.history).toEqual(['1', '2', '3']);
     });
@@ -247,17 +272,17 @@ describe('A Readline instance', function () {
     it('saves on input', function(){
       expect(instance.history).toEqual([]);
       instance.submit('command');
-      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["command"]');
+      expect(localStorage[mongo.config.shellHistoryKey]).toEqual('["command"]');
     });
 
     it('limits history size', function(){
-      var size = mongo.const.shellHistorySize = 5;
+      var size = mongo.config.shellHistorySize = 5;
       for (var i = 0; i < size; i++){
         instance.submit(i.toString());
       }
-      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["0","1","2","3","4"]');
+      expect(localStorage[mongo.config.shellHistoryKey]).toEqual('["0","1","2","3","4"]');
       instance.submit('bump');
-      expect(localStorage[mongo.const.shellHistoryKey]).toEqual('["1","2","3","4","bump"]');
+      expect(localStorage[mongo.config.shellHistoryKey]).toEqual('["1","2","3","4","bump"]');
     });
 
     it('fails gracefully when localStorage is not available', function(){
@@ -266,6 +291,20 @@ describe('A Readline instance', function () {
       expect(instance.history).toEqual([]);
       instance.submit('command');
       expect(instance.history).toEqual(['command']);
+    });
+  });
+
+  describe('getting the last command', function(){
+    it('handles empty history', function(){
+      instance.history = [];
+      expect(instance.getLastCommand()).toBeUndefined();
+    });
+
+    it('ignores the command that is currently being executed', function () {
+      instance.history = ['1'];
+      expect(instance.getLastCommand()).toBeUndefined();
+      instance.history = ['1', '2', '3'];
+      expect(instance.getLastCommand()).toEqual('2');
     });
   });
 });

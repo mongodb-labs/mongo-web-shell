@@ -1,4 +1,19 @@
-/* global describe, it, beforeEach, mongo, spyOn, expect */
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+/* global describe, it, beforeEach, mongo, spyOn, expect, jasmine */
 /* jshint camelcase: false */
 describe('The Collection class', function () {
   var name_, db_, coll, makeRequest;
@@ -50,65 +65,55 @@ describe('The Collection class', function () {
   });
 
   describe('find', function () {
-    it('returns a cursor with the proper shell', function () {
-      var cursor = coll.find({}, {});
-      expect(cursor._shell).toEqual(coll.shell);
+    it('returns a cursor', function () {
+      spyOn(mongo, 'Cursor').andCallThrough();
+      var query = {foo: 'bar'};
+      var projection = {baz: 'garply'};
+      var cursor = coll.find(query, projection);
+      expect(mongo.Cursor.calls.length).toEqual(1);
+      expect(mongo.Cursor).toHaveBeenCalledWith(coll, query, projection);
+      expect(cursor instanceof mongo.Cursor).toBe(true);
+    });
+  });
+
+  describe('findOne', function () {
+    var cursor;
+    beforeEach(function () {
+      cursor = {
+        next: jasmine.createSpy(),
+        hasNext: jasmine.createSpy().andReturn(true),
+        limit: jasmine.createSpy()
+      };
+      cursor.limit.andReturn(cursor);
+      spyOn(coll, 'find').andReturn(cursor);
     });
 
-    describe('cursor query function', function () {
-      var queryFunc, query_, projection_;
-      var onSuccess_, async_;
-      beforeEach(function () {
-        spyOn(mongo, 'Cursor');
+    it('runs a query limiting to a single result', function () {
+      var query = {name: 'Mal Reynolds'};
+      var projection = {_id: 0, rank: 1};
+      coll.findOne(query, projection);
 
-        query_ = {a: 1, b: {$gt: 2}};
-        projection_ = {_id: 0, c: 1};
-        coll.find(query_, projection_);
-        queryFunc = mongo.Cursor.calls[0].args[1];
-
-        onSuccess_ = function () {};
-        async_ = true;
-      });
-
-      it('uses the collection url', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[0]).toEqual(coll.urlBase + 'find');
-      });
-
-      it('constructs appropriate params', function () {
-        queryFunc(onSuccess_, async_);
-        var params = makeRequest.calls[0].args[1];
-        expect(params.query).toEqual(query_);
-        expect(params.projection).toEqual(projection_);
-      });
-
-      it('uses the get HTTP method', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[2]).toEqual('GET');
-      });
-
-      it('uses the collection\'s shell', function () {
-        queryFunc(onSuccess_, async_);
-        expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
-      });
-
-      it('uses the supplied on success function', function () {
-        var onSuccess = function () { return 'test on success function'; };
-        queryFunc(onSuccess, async_);
-        expect(makeRequest.calls[0].args[5]).toBe(onSuccess);
-      });
-
-      it('uses the supplied on async flag', function () {
-        var async = true;
-        queryFunc(onSuccess_, async);
-        expect(makeRequest.calls[0].args[6]).toBe(async);
-
-        async = false;
-        queryFunc(onSuccess_, async);
-        expect(makeRequest.calls[1].args[6]).toBe(async);
-      });
+      expect(coll.find).toHaveBeenCalledWith(query, projection);
+      expect(cursor.limit).toHaveBeenCalledWith(1);
     });
 
+    it('returns the found value', function () {
+      var value = 'my value';
+      cursor.next.andReturn(value);
+      expect(coll.findOne()).toEqual(value);
+    });
+
+    it('returns null if there are no values', function () {
+      cursor.hasNext.andReturn(false);
+      expect(coll.findOne()).toBeNull();
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.findOne({a: 1}, {b: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.findOne', [{a: 1}, {b: 1}],
+                               {collection: name_});
+    });
   });
 
   describe('insert', function () {
@@ -133,6 +138,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.insert({});
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.insert({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.insert', [{a: 1}],
+                               {collection: name_});
     });
   });
 
@@ -159,6 +171,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.remove({}, true);
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.remove({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.remove', [{a: 1}],
+                               {collection: name_});
     });
   });
 
@@ -218,6 +237,62 @@ describe('The Collection class', function () {
       coll.update({}, {});
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.update({a: 1}, {b: 5}, true, false);
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.update', [
+        {a: 1}, {b: 5}, true, false
+      ], {collection: name_});
+    });
+  });
+
+  describe('aggregate', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.aggregate([{$match: {}}]);
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/aggregate');
+    });
+
+    it('takes empty params', function(){
+      coll.aggregate();
+      expect(makeRequest.calls[0].args[1]).toEqual([]);
+    });
+
+    it('constructs appropriate params', function () {
+      var query = [{$match: {}}];
+      coll.aggregate(query);
+      expect(makeRequest.calls[0].args[1]).toEqual(query);
+    });
+
+    it('uses the GET HTTP method', function () {
+      coll.aggregate({});
+      expect(makeRequest.calls[0].args[2]).toEqual('GET');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.aggregate({});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('retuns the aggregation results', function () {
+      var results = {
+        status: 'ok',
+        results: ['a', 'b', 'c']
+      };
+      makeRequest.andCallFake(function () {
+        arguments[5](results);
+      });
+      var actual = coll.aggregate({});
+      expect(actual).toEqual(results);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.aggregate({});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.aggregate', [{}],
+                               {collection: name_});
+    });
   });
 
   describe('drop', function () {
@@ -235,6 +310,13 @@ describe('The Collection class', function () {
     it('uses the collection\'s shell', function () {
       coll.drop();
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.drop();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.drop', [],
+                               {collection: name_});
     });
   });
 });

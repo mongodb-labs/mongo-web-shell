@@ -1,3 +1,18 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
 /* global spyOn, xit */
 /* jshint evil: true, nonew: false */
@@ -51,7 +66,7 @@ describe('A Shell', function () {
     var printFunc;
 
     beforeEach(function () {
-      printFunc = spyOn(instance.$sandbox.contentWindow, 'print').andCallThrough();
+      printFunc = spyOn(instance.context, 'print').andCallThrough();
       spyOn(instance, 'insertResponseLine');
     });
 
@@ -68,7 +83,7 @@ describe('A Shell', function () {
       };
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith({name: 'Mongo'});
-      expect(instance.insertResponseLine).toHaveBeenCalledWith('{"name":"Mongo"}');
+      expect(instance.insertResponseLine).toHaveBeenCalledWith('{ "name" : "Mongo" }');
     });
 
     it('that it uses the toString for objects for which it is a function', function () {
@@ -93,14 +108,15 @@ describe('A Shell', function () {
         return 'print(1, null, undefined, {}, {a:1}, "abc")';
       };
       instance.handleInput();
-      expect(instance.insertResponseLine).toHaveBeenCalledWith('1 null undefined {} {"a":1} abc');
+      var expected = '1 null undefined { } { "a" : 1 } abc';
+      expect(instance.insertResponseLine).toHaveBeenCalledWith(expected);
     });
 
   });
 
   describe('that has injected its HTML', function () {
     it('creates a hidden iframe sandbox', function () {
-      var sandbox = instance.$sandbox;
+      var sandbox = instance.sandbox;
       expect(sandbox instanceof HTMLIFrameElement).toBe(true);
       expect(sandbox.height).toEqual('0');
       expect(sandbox.width).toEqual('0');
@@ -108,7 +124,7 @@ describe('A Shell', function () {
     });
 
     it('initializes the sanbox\'s environment', function () {
-      var win = instance.$sandbox.contentWindow;
+      var win = instance.context;
       expect(win.__get).toBe(mongo.util.__get);
       expect(win.db).toBe(instance.db);
     });
@@ -266,7 +282,7 @@ describe('A Shell', function () {
   describe('evaling JavaScript statements', function () {
     var evalSpy;
     beforeEach(function () {
-      evalSpy = spyOn(instance.$sandbox.contentWindow, 'eval').andCallThrough();
+      evalSpy = spyOn(instance.context, 'eval').andCallThrough();
 
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
@@ -298,7 +314,7 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      instance.$sandbox.contentWindow.myCursor = new mongo.Cursor(instance, function () {});
+      instance.context.myCursor = new mongo.Cursor(instance, function () {});
       var statements = 'myCursor';
       instance.eval(statements);
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
@@ -355,23 +371,21 @@ describe('A Shell', function () {
   it('gets the shellBatchSize', function () {
     var expected = [0, 20, 40];
     expected.forEach(function (val) {
-      instance.vars.DBQuery.shellBatchSize = val;
+      instance.shellBatchSize = val;
       expect(instance.getShellBatchSize()).toBe(val);
     });
 
     expected = [null, undefined, NaN, '', [], {}, 'iu'];
     expected.forEach(function (val) {
       // TODO: Check insertResponseLine.
-      instance.vars.DBQuery.shellBatchSize = val;
+      instance.shellBatchSize = val;
       var willThrow = function () { instance.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });
   });
 
   it('extracts messages from errors', function () {
-    instance.$sandbox = {
-      contentWindow: {Error: function () {}}
-    };
+    instance.context = {Error: function () {}};
     var irl = spyOn(instance, 'insertResponseLine');
 
     instance.insertError(new ReferenceError('My Message'));

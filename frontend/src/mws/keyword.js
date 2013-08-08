@@ -1,3 +1,19 @@
+/*    Copyright 2013 10gen Inc.
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+/* jshint camelcase: false */
 /* global console, mongo */
 mongo.keyword = (function () {
   function handleKeywords(shell, src) {
@@ -49,10 +65,53 @@ mongo.keyword = (function () {
     shell.insertResponseLine('Cannot change db: functionality disabled.');
   }
 
+  function reset(shell){
+    if (!mongo.keyword._resetHasBeenCalled ||
+        !shell.readline.getLastCommand().match(/^reset\b/)){
+      shell.insertResponseArray([
+        'You will lose all of your current data.',
+        'Please enter "reset" again to reset the shell.'
+      ]);
+      mongo.keyword._resetHasBeenCalled = true;
+      return;
+    }
+    mongo.keyword._resetHasBeenCalled = false;
+    var url = mongo.config.baseUrl + shell.mwsResourceID + '/db';
+    mongo.request.makeRequest(url, null, 'DELETE', 'reset', shell, function(){
+      mongo.init.runInitializationScripts(shell.mwsResourceID, function(){
+        shell.insertResponseLine('Database reset successfully');
+      });
+    });
+  }
+
+  function help(shell){
+    shell.insertResponseArray([
+      '    help                           print out this help information',
+      '    show                           prints information about database',
+      '      show tables                  see show collections',
+      '      show collections             show collections in current database',
+      '    db.foo.find()                  list objects in collection foo',
+      '    db.foo.find(query)             list objects in foo matching query',
+      '    db.foo.update(query, update,   updates an object matching query with the given update',
+      '                  upsert, multi)   if no documents match and upsert is true, update is',
+      '                                   inserted if multiple documents matching query exist and',
+      '                                   multi is true all matching documents are updated',
+      '    db.foo.remove(query, justOne)  removes all or just one documents matching query',
+      '    db.foo.drop()                  removes the foo collection from the database',
+      '    it                             result of the last line evaluated; use to further ' +
+                                          'iterate',
+      '    reset                          resets the database to its initial state'
+    ]);
+  }
+
   return {
     handleKeywords: handleKeywords,
+    _resetHasBeenCalled: false,
+
     it: it,
     show: show,
-    use: use
+    use: use,
+    reset: reset,
+    help: help
   };
 }());
