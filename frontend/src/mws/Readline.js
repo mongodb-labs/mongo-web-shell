@@ -44,10 +44,15 @@ mongo.Readline.prototype.keydown = function (event) {
     return;
   }
 
-  event.preventDefault();
   if (line !== undefined && line !== null) {
     this.inputBox.setValue(line);
     this.moveCursorToEnd();
+  }
+  if (event.preventDefault) {
+    event.preventDefault();
+  } else {
+    // IE8
+    event.returnValue = false;
   }
 };
 
