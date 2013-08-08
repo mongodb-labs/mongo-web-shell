@@ -39,7 +39,7 @@ module.exports = function (grunt) {
           LIB_DIR + 'noty/js/noty/layouts/top.js',
           LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
           LIB_DIR + 'noty/js/noty/themes/default.js',
-          LIB_DIR + 'suspend.js/dist/evaluator.js',
+          LIB_DIR + 'suspend.js/dist/suspend.js',
           SRC_DIR + 'head.js',
           SRC_DIR + 'mws/**/*.js',
           SRC_DIR + 'tail.js'
