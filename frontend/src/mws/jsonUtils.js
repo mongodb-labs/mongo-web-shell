@@ -160,7 +160,7 @@ mongo.jsonUtils = (function () {
   };
 
   var hasDefinedProperty = function (obj, prop) {
-    if (Object.getPrototypeOf(obj) === null) {
+    if (Object.getPrototypeOf === undefined || Object.getPrototypeOf(obj) === null) {
       return false;
     } else if (obj.hasOwnProperty(prop)) {
       return true;
