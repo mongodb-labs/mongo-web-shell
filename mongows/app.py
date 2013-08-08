@@ -33,7 +33,8 @@ _ENVVAR = [
     'MONGOHQ_URL',
     'NO_FRONTEND',
     'NO_VALIDATION',
-    'PORT'
+    'PORT',
+    'CORS_ORIGIN',
 ]
 
 

@@ -16,6 +16,8 @@
 /* jshint camelcase: false, unused: false */
 /* global console, mongo, noty */
 mongo.request = (function () {
+  $.ajaxSetup({ xhrFields: {withCredentials: true}});
+
   /*
    * Creates an MWS resource for a set of shells on the remote server. Calls
    * onSuccess if the data received is valid. Otherwise, prints an error to the
