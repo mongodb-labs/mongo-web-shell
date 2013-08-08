@@ -36,6 +36,13 @@ mws = Blueprint('mws', __name__, url_prefix='/mws')
 CLIENTS_COLLECTION = 'clients'
 
 
+@mws.after_request
+def no_cache(response):
+    response.cache_control.no_cache = True
+    response.headers['Expires'] = 0
+    return response
+
+
 # TODO: Look over this method; remove unnecessary bits, check convention, etc.
 # via http://flask.pocoo.org/snippets/56/
 def crossdomain(origin=None, methods=None, headers=None,
