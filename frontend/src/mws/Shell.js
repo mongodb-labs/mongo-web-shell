@@ -73,6 +73,9 @@ mongo.Shell.prototype.injectHTML = function () {
     .appendTo('body')
     .get(0);
   this.context = this.sandbox.contentWindow;
+  if (!this.context.eval && this.context.execScript){
+    this.context.execScript('null');
+  }
 
   this.context.print = function(){
     this.insertResponseLine($.makeArray(arguments).map(function(e){
