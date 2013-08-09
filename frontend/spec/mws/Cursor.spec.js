@@ -40,7 +40,7 @@ describe('A Cursor', function () {
       result: ['test', 'results', 'here']
     };
     makeRequest = spyOn(mongo.request, 'makeRequest').andCallFake(function () {
-      var success = arguments[5];
+      var success = arguments[6];
       if (success) {
         success(result);
       }
@@ -147,28 +147,33 @@ describe('A Cursor', function () {
         expect(makeRequest.calls[0].args[2]).toEqual('GET');
       });
 
-      it('uses the collection\'s shell', function () {
+      it('uses the collection\'s shell', function(){
         instance._executeQuery();
         expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+      });
+
+      it('is ratelimited', function () {
+        instance._executeQuery();
+        expect(makeRequest.calls[0].args[5]).toBe(true);
       });
 
       it('uses the supplied on async flag', function () {
         var async = true;
         instance._executeQuery(null, async);
         expect(instance._executed).toBe(true);
-        expect(makeRequest.calls[0].args[6]).toBe(async);
+        expect(makeRequest.calls[0].args[7]).toBe(async);
 
         async = false;
         instance._executed = false;
         instance._executeQuery(null, async);
         expect(instance._executed).toBe(true);
-        expect(makeRequest.calls[1].args[6]).toBe(async);
+        expect(makeRequest.calls[1].args[7]).toBe(async);
       });
 
       it('executes default asynchronous queries', function () {
         instance._executeQuery(callbackSpy);
         expect(instance._executed).toBe(true);
-        expect(makeRequest.calls[0].args[6]).toEqual(true);
+        expect(makeRequest.calls[0].args[7]).toEqual(true);
       });
 
       it('calls the on success callback', function () {
@@ -367,7 +372,8 @@ describe('A Cursor', function () {
       expect(args[1]).toEqual({query: query}); // params
       expect(args[2]).toEqual('GET'); // GET request
       expect(args[4]).toEqual(coll.shell); // Use the collection's shell
-      expect(args[6]).toEqual(false); // Synchronous
+      expect(args[5]).toEqual(true); // Is ratelimited
+      expect(args[7]).toEqual(false); // Synchronous
     });
 
     it('ignores skip and limit by default', function () {

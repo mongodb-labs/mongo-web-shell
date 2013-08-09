@@ -146,6 +146,11 @@ describe('The Collection class', function () {
       expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.insert', [{a: 1}],
                                {collection: name_});
     });
+
+    it('is ratelimited', function () {
+      coll.insert({});
+      expect(makeRequest.calls[0].args[5]).toBe(true);
+    });
   });
 
   describe('remove', function () {
@@ -178,6 +183,11 @@ describe('The Collection class', function () {
       coll.remove({a: 1});
       expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.remove', [{a: 1}],
                                {collection: name_});
+    });
+
+    it('is ratelimited', function () {
+      coll.remove({}, true);
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 
@@ -245,6 +255,11 @@ describe('The Collection class', function () {
         {a: 1}, {b: 5}, true, false
       ], {collection: name_});
     });
+
+    it('is ratelimited', function () {
+      coll.update({}, {});
+      expect(makeRequest.calls[0].args[5]).toBe(true);
+    });
   });
 
   describe('aggregate', function(){
@@ -275,13 +290,18 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
 
+    it('is ratelimited', function () {
+      coll.aggregate({});
+      expect(makeRequest.calls[0].args[5]).toBe(true);
+    });
+
     it('retuns the aggregation results', function () {
       var results = {
         status: 'ok',
         results: ['a', 'b', 'c']
       };
       makeRequest.andCallFake(function () {
-        arguments[5](results);
+        arguments[6](results);
       });
       var actual = coll.aggregate({});
       expect(actual).toEqual(results);
@@ -317,6 +337,11 @@ describe('The Collection class', function () {
       coll.drop();
       expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.drop', [],
                                {collection: name_});
+    });
+
+    it('is ratelimited', function () {
+      coll.drop();
+      expect(makeRequest.calls[0].args[5]).toBe(true);
     });
   });
 });

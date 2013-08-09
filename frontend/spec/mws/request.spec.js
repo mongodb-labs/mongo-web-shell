@@ -47,6 +47,10 @@ describe('The request module', function () {
       method_ = 'POST';
       name_ = 'test';
       shell_ = {insertResponseLine: function () {}};
+      mongo.request._pending = {};
+      mongo.request._pendingId = 0;
+      mongo.request._ratelimitLock = 0;
+      mongo.config.ratelimitLockDuration = 10000;
     });
 
     it('uses the given url and HTTP method', function () {
@@ -71,11 +75,11 @@ describe('The request module', function () {
     it('calls onSuccess appropriately', function () {
       var onSuccess = jasmine.createSpy();
 
-      mongo.request.makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, onSuccess);
       requests[0].respond(500, '', 'INTERNAL SERVER ERROR');
       expect(onSuccess).not.toHaveBeenCalled();
 
-      mongo.request.makeRequest(url_, data_, method_, name_, shell_, onSuccess);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, onSuccess);
       expect(onSuccess).not.toHaveBeenCalled();
       var originalData = {msg: 'Success'};
       var responseBody = JSON.stringify(originalData);
@@ -108,11 +112,59 @@ describe('The request module', function () {
       mongo.request.makeRequest(url_, data_, method_, name_, shell_, null);
       expect(requests[0].async).toBe(true);
 
-      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null, true);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, null, true);
       expect(requests[1].async).toBe(true);
 
-      mongo.request.makeRequest(url_, data_, method_, name_, shell_, null, false);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, false, null, false);
       expect(requests[2].async).toBe(false);
+    });
+
+    it('keeps track of rate limited functions', function(){
+      spyOn($, 'ajax').andReturn('jqXHR');
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
+      expect(mongo.request._pending).toEqual({});
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
+      expect(mongo.request._pending).toEqual({0: 'jqXHR'});
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
+      expect(mongo.request._pending).toEqual({0: 'jqXHR', 1: 'jqXHR'});
+    });
+
+    it('cancels pending requests and sets ratelimitLock when rate limit exceeded', function(){
+      var clock = sinon.useFakeTimers(new Date().getTime(), 'Date');
+
+      var fakeRequest = { abort: jasmine.createSpy() };
+      spyOn($, 'ajax').andCallFake(function(opt){
+        expect(opt.error.bind(window, { status: 429, responseText: '{}' })).toThrow();
+        return {};
+      });
+
+      expect(mongo.request._ratelimitLock).toBe(0);
+      mongo.request._pending = [fakeRequest, fakeRequest, fakeRequest];
+
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
+      expect(fakeRequest.abort.callCount).toBe(3);
+      expect(mongo.request._ratelimitLock).toEqual(new Date());
+
+      clock.restore();
+    });
+
+    it('does not send a request when ratelimitLock is unexpired', function(){
+      spyOn($, 'ajax').andReturn('jqXHR');
+
+      expect(mongo.request._ratelimitLock).toBe(0);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
+      expect($.ajax).toHaveBeenCalled();
+
+      $.ajax.reset();
+
+      mongo.request._ratelimitLock = new Date();
+      var fn = mongo.request.makeRequest.bind(window, url_, data_, method_, name_, shell_, true);
+      expect(fn).toThrow();
+      expect($.ajax).not.toHaveBeenCalled();
+
+      mongo.request._ratelimitLock = new Date() - mongo.config.ratelimitLockDuration;
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_, true);
+      expect($.ajax).toHaveBeenCalled();
     });
   });
 
@@ -174,7 +226,7 @@ describe('The request module', function () {
       expect(mongo.keepaliveNotification).toBe(undefined);
     });
   });
-  
+
   /**
    * Valids the requests themselves, rather than the actions taken upon their
    * failure or success.

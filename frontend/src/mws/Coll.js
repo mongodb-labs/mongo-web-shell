@@ -70,7 +70,7 @@ mongo.Coll.prototype.insert = function (doc) {
   var params = {document: doc};
   mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell, true);
 };
 
 /**
@@ -83,7 +83,7 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
   var params = {constraint: constraint, just_one: justOne};
   mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
+  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell, true);
 };
 
 /**
@@ -113,7 +113,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   }
 
   var params = {query: query, update: update, upsert: !!upsert, multi: !!multi};
-  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', this.shell);
+  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', this.shell, true);
 };
 
 /**
@@ -125,7 +125,7 @@ mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
   mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
+  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell, true);
 };
 
 /**
@@ -143,7 +143,7 @@ mongo.Coll.prototype.aggregate = function(query){
 
   mongo.events.functionTrigger(this.shell, 'db.collection.aggregate', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell,
+  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, true,
                             onSuccess, false); // Sync request, blocking
   return results;
 };
