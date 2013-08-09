@@ -240,6 +240,28 @@ class DBCollectionTestCase(DBTestCase):
         data = {'query': query, 'skip': skip, 'limit': limit}
         return self._make_request('count', data, self.app.get, expected_status)
 
+    def make_ensure_index_request(self, keys, options=None,
+                                  expected_status=204):
+        data = {'keys': keys, 'options': options}
+        return self._make_request('ensureIndex', data, self.app.post,
+                                  expected_status)
+
+    def make_reindex_request(self, expected_status=204):
+        return self._make_request('reIndex', None, self.app.put,
+                                  expected_status)
+
+    def make_drop_index_request(self, name, expected_status=204):
+        return self._make_request('dropIndex', {'name': name}, self.app.delete,
+                                  expected_status)
+
+    def make_drop_indexes_request(self, expected_status=204):
+        return self._make_request('dropIndexes', None, self.app.delete,
+                                  expected_status)
+
+    def make_get_indexes_request(self, expected_status=200):
+        return self._make_request('getIndexes', None, self.app.get,
+                                  expected_status)
+
     def set_session_id(self, new_id):
         with self.app.session_transaction() as sess:
             sess['session_id'] = new_id
@@ -507,6 +529,109 @@ class CountTestCase(DBCollectionTestCase):
 
         response = self.make_count_request({}, skip=8, limit=0)
         self.assertEqual(response['count'], 2)
+
+
+class EnsureIndexTestCase(DBCollectionTestCase):
+    def test_single_index(self):
+        self.db_collection.insert([{'key': 1}, {'key': 2}, {'key': 3}])
+        self.assertEqual(len(self.db_collection.index_information()), 1)
+        self.make_ensure_index_request({'key': 1})
+        self.assertEqual(len(self.db_collection.index_information()), 2)
+
+    def test_compound_index(self):
+        self.db_collection.insert([{'key': 1}, {'key': 2}, {'key': 3},
+                                   {'key2': 4}, {'key2': 5}, {'key2': 6}])
+        self.assertEqual(len(self.db_collection.index_information()), 1)
+        self.make_ensure_index_request({'key': 1, 'key2': '2d'})
+        self.assertEqual(len(self.db_collection.index_information()), 2)
+
+    def test_options(self):
+        self.db_collection.insert([{'key': 1}, {'key': 2}, {'key': 3}])
+        self.assertEqual(len(self.db_collection.index_information()), 1)
+        self.make_ensure_index_request({'key': 1}, {
+            'background': True,
+            'unique': True,
+            'name': 'idx',
+            'dropDups': True,
+            'sparse': True,
+            'expireAfterSeconds': 60
+        })
+        info = self.db_collection.index_information()
+        self.assertEqual(len(info), 2)
+        self.assertItemsEqual(info['idx'], {
+            'background': True,
+            'unique': True,
+            'dropDups': True,
+            'sparse': True,
+            'expireAfterSeconds': 60,
+            'key': [('key', 1)],
+            'v': 1
+        })
+
+
+class ReIndexTestCase(DBCollectionTestCase):
+    @mock.patch('pymongo.collection.Collection.reindex')
+    def test_reindex(self, reindex_mock):
+        self.db_collection.ensure_index('a', 1)
+        self.make_reindex_request()
+        self.assertTrue(reindex_mock.called)
+        self.assertEqual(reindex_mock.call_args_list, [()])
+
+
+class DropIndexTestCase(DBCollectionTestCase):
+    def test_drop_index(self):
+        self.db_collection.ensure_index('a', 1, name='idx')
+        self.assertTrue('idx' in self.db_collection.index_information())
+        self.make_drop_index_request('idx')
+        self.assertFalse('idx' in self.db_collection.index_information())
+
+        self.db_collection.ensure_index('a', 1, name='idx1')
+        self.db_collection.ensure_index('b', 1, name='idx2')
+        info = self.db_collection.index_information()
+        self.assertTrue('idx1' in info)
+        self.assertTrue('idx2' in info)
+        self.make_drop_index_request('idx1')
+        info = self.db_collection.index_information()
+        self.assertFalse('idx1' in info)
+        self.assertTrue('idx2' in info)
+
+
+class DropIndexesTestCase(DBCollectionTestCase):
+    def test_drop_indexes(self):
+        self.db_collection.ensure_index('a', 1, name='idx')
+        self.assertTrue('idx' in self.db_collection.index_information())
+        self.make_drop_indexes_request()
+        self.assertFalse('idx' in self.db_collection.index_information())
+
+        self.db_collection.ensure_index('a', 1, name='idx1')
+        self.db_collection.ensure_index('b', 1, name='idx2')
+        info = self.db_collection.index_information()
+        self.assertTrue('idx1' in info)
+        self.assertTrue('idx2' in info)
+        self.make_drop_indexes_request()
+        info = self.db_collection.index_information()
+        self.assertFalse('idx1' in info)
+        self.assertFalse('idx2' in info)
+
+
+class GetIndexesTestCase(DBCollectionTestCase):
+    def test_get_indexes(self):
+        self.db_collection.ensure_index('a', 1, name='idx')
+        result = self.make_get_indexes_request()
+        self.assertEqual(result, [
+            {
+                'ns': 'test_collection',
+                'name': '_id_',
+                'key': {'_id': 1},
+                'v': 1
+            },
+            {
+                'ns': 'test_collection',
+                'name': 'idx',
+                'key': {'a': 1},
+                'v': 1
+            }
+        ])
 
 
 class DropUnitTestCase(DBCollectionTestCase):

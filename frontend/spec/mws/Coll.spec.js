@@ -275,7 +275,7 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
     });
 
-    it('retuns the aggregation results', function () {
+    it('returns the aggregation results', function () {
       var results = {
         status: 'ok',
         results: ['a', 'b', 'c']
@@ -316,6 +316,158 @@ describe('The Collection class', function () {
       var ft = spyOn(mongo.events, 'functionTrigger');
       coll.drop();
       expect(ft).toHaveBeenCalledWith(coll.shell, 'db.collection.drop', [],
+                               {collection: name_});
+    });
+  });
+
+  describe('ensureIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/ensureIndex');
+    });
+
+    it('constructs appropriate params', function () {
+      var keys = {a: 1, b: '2d'};
+      var options = {
+        background: true,
+        unique: true,
+        name: 'index',
+        dropDups: true,
+        sparse: true,
+        expireAfterSeconds: 60
+      };
+      coll.ensureIndex(keys, options);
+      var params = makeRequest.calls[0].args[1];
+      expect(params.keys).toEqual(keys);
+      expect(params.options).toEqual(options);
+    });
+
+    it('uses the POST HTTP method', function () {
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[2]).toEqual('POST');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.ensureIndex({a: 1});
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.ensureIndex({a: 1});
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:ensureIndex', [{a: 1}],
+                               {collection: name_});
+    });
+  });
+
+  describe('reIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/reIndex');
+    });
+
+    it('uses the PUT HTTP method', function () {
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[2]).toEqual('PUT');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.reIndex();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.reIndex();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:reIndex', [],
+                               {collection: name_});
+    });
+  });
+
+  describe('dropIndex', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/dropIndex');
+    });
+
+    it('constructs appropriate params', function () {
+      coll.dropIndex('name');
+      var params = makeRequest.calls[0].args[1];
+      expect(params.name).toEqual('name');
+    });
+
+    it('uses the DELETE HTTP method', function () {
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.dropIndex('name');
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.dropIndex('name');
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:dropIndex', ['name'],
+                               {collection: name_});
+    });
+  });
+
+  describe('dropIndexes', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.dropIndexes();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/dropIndexes');
+    });
+
+    it('uses the DELETE HTTP method', function () {
+      coll.dropIndexes();
+      expect(makeRequest.calls[0].args[2]).toEqual('DELETE');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.dropIndexes();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.dropIndexes();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:dropIndexes', [],
+                               {collection: name_});
+    });
+  });
+
+  describe('getIndexes', function(){
+    it('uses the collection url', function () {
+      coll.urlBase = 'test_url_base/';
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[0]).toEqual('test_url_base/getIndexes');
+    });
+
+    it('uses the GET HTTP method', function () {
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[2]).toEqual('GET');
+    });
+
+    it('uses the collection\'s shell', function () {
+      coll.getIndexes();
+      expect(makeRequest.calls[0].args[4]).toBe(coll.shell);
+    });
+
+    it('returns the indexes array', function () {
+      makeRequest.andCallFake(function(a, b, c, d, e, fn){ fn(['data']); });
+      expect(coll.getIndexes()).toEqual(['data']);
+    });
+
+    it('fires the appropriate event', function(){
+      var ft = spyOn(mongo.events, 'functionTrigger');
+      coll.getIndexes();
+      expect(ft).toHaveBeenCalledWith(coll.shell, 'db:collection:getIndexes', [],
                                {collection: name_});
     });
   });

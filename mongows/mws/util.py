@@ -18,6 +18,7 @@ import mongows
 from mongows.mws.db import get_db
 from flask import current_app
 from mongows.mws.MWSServerError import MWSServerError
+import re
 
 
 def get_internal_coll_name(res_id, collection_name):
@@ -34,18 +35,31 @@ def get_collection_names(res_id):
     )[0]['collections']
 
 
+def get_friendly_coll_name(collection_name):
+    return collection_name[36:]
+
+
 class UseResId:
-    def __init__(self, res_id):
+    # Require explicit allowing of access to system.* collections
+    def __init__(self, res_id, allowSystem=False):
         self.res_id = str(res_id)
         self.id_length = len(self.res_id)
         self.client_collection = get_db()[mongows.mws.views.CLIENTS_COLLECTION]
+        self.allowSystem = allowSystem
 
     def __enter__(self):
         self.old_get_attr = Database.__getattr__
         self.old_drop_collection = Database.drop_collection
 
         def __getattr__(db, name):
-            if not (name.startswith("oplog.$main") or name.startswith("$cmd")):
+            # Restrict the system.* collections by default
+            isSystem = re.match('system($|\.)', name) is not None
+            if isSystem and not self.allowSystem:
+                raise MWSServerError(403,
+                                     'Collection name may not ' +
+                                     'begin with system.*')
+            if not (name.startswith("oplog.$main") or name.startswith("$cmd")
+                    or isSystem):
                 name = '%s%s' % (self.res_id, name)
             return self.old_get_attr(db, name)
 

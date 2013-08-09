@@ -24,7 +24,8 @@ SECRET_KEY = 'A0gjhsd3678HK'
 # Misc settings.
 HOST = '0.0.0.0'
 LOGGING_CONF = 'mongows/configs/logging.yaml'
-MONGOHQ_URL = 'http://localhost:27017/mws'
+DB_NAME = 'mws'
+MONGOHQ_URL = 'http://localhost:27017/' + DB_NAME
 NO_FRONTEND = False
 NO_VALIDATION = False
 NO_INIT = False
