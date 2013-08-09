@@ -27,7 +27,10 @@ var JS_LIB = [
   LIB_DIR + 'noty/js/noty/jquery.noty.js',
   LIB_DIR + 'noty/js/noty/layouts/top.js',
   LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
-  LIB_DIR + 'noty/js/noty/themes/default.js'
+  LIB_DIR + 'noty/js/noty/themes/default.js',
+  LIB_DIR + 'codemirror/lib/codemirror.js',
+  LIB_DIR + 'codemirror/mode/javascript/javascript.js',
+  LIB_DIR + 'codemirror/addon/edit/matchbrackets.js'
 ];
 
 var JS_MWS = [
@@ -71,6 +74,9 @@ module.exports = function (grunt) {
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
+          ],
+          styles: [
+            DIST_DIR + 'mongoWebShell.min.css'
           ]
         }
       },
@@ -85,6 +91,9 @@ module.exports = function (grunt) {
           vendor: [
             LIB_DIR + 'sinon/sinon.js',
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
+          ],
+          styles: [
+            DIST_DIR + 'mongoWebShell.min.css'
           ]
         }
       }
@@ -157,11 +166,14 @@ module.exports = function (grunt) {
 
     cssmin: {
       minify: {
-        expand: true,
-        cwd: DIST_DIR,
-        src: ['*.css', '!*.min.css'],
-        dest: DIST_DIR,
-        ext: '.min.css'
+        files: {
+          // Have to hard code the dist dir into this string so it can be a key
+          'frontend/dist/mongoWebShell.min.css': [
+            LIB_DIR + 'codemirror/lib/codemirror.css',
+            LIB_DIR + 'codemirror/theme/solarized.css',
+            FRONTEND_DIR + 'mongoWebShell.css'
+          ]
+        }
       }
     }
   });

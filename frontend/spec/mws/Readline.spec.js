@@ -15,24 +15,35 @@
 
 /* global afterEach, beforeEach, describe, expect, it, mongo, spyOn, jasmine, localStorage:true */
 describe('A Readline instance', function () {
-  var $input, instance;
+  var codemirror, submitFunc, instance;
 
   beforeEach(function () {
     mongo.config.shellHistoryKey = 'temporary_key';
     delete localStorage[mongo.config.shellHistoryKey];
-    $input = $(document.createElement('input'));
-    instance = new mongo.Readline($input);
+    var value = 'test value';
+    codemirror = {
+      on: jasmine.createSpy('codemirror.on'),
+      getValue: function () {return value;},
+      setValue: function (newValue) {value = newValue;}
+    };
+    submitFunc = jasmine.createSpy('submit function');
+    instance = new mongo.Readline(codemirror, submitFunc);
   });
 
   afterEach(function () {
-    $input = null;
+    codemirror = null;
     instance = null;
     delete localStorage[mongo.config.shellHistoryKey];
   });
 
   it('registers a keydown handler', function () {
-    spyOn(instance, 'keydown');
-    $input.trigger('keydown');
+    codemirror.on.reset();
+    spyOn(mongo.Readline.prototype, 'keydown');
+    instance = new mongo.Readline(codemirror, submitFunc);
+
+    expect(codemirror.on).toHaveBeenCalled();
+    expect(codemirror.on.calls[0].args[0]).toEqual('keydown');
+    codemirror.on.calls[0].args[1]();
     expect(instance.keydown).toHaveBeenCalled();
   });
 
@@ -40,23 +51,39 @@ describe('A Readline instance', function () {
     var AFTER = 'after';
     var BEFORE = 'before';
     var KEYCODES = {up: 0, down: 1, enter: 2};
+    var EVENT;
     var constStore;
 
     beforeEach(function () {
       constStore = mongo.config;
       mongo.config = {keycodes: KEYCODES};
-      $input.val(BEFORE);
+      codemirror.getValue = function () {return BEFORE;};
+      codemirror.setValue = jasmine.createSpy('setValue');
+      EVENT = {
+        preventDefault: jasmine.createSpy('preventDefault')
+      };
     });
 
     afterEach(function () {
       mongo.config = constStore;
-      $input.val('');
+    });
+
+    it('prevents the default action for known key codes', function () {
+      EVENT.keyCode = 20; // unknown key code
+      instance.keydown(EVENT);
+      expect(EVENT.preventDefault).not.toHaveBeenCalled();
+
+      EVENT.keyCode = KEYCODES.down;
+      instance.keydown(EVENT);
+      expect(EVENT.preventDefault).toHaveBeenCalled();
     });
 
     // When adding additional keys, be sure to update the other keys' 'only'
     // methods.
     describe('that are the down arrow', function () {
-      var EVENT = {keyCode: KEYCODES.down};
+      beforeEach(function () {
+        EVENT.keyCode = KEYCODES.down;
+      });
 
       it('only gets a newer history entry', function () {
         spyOn(instance, 'getNewerHistoryEntry');
@@ -72,19 +99,21 @@ describe('A Readline instance', function () {
         var moveCursorToEnd = spyOn(instance, 'moveCursorToEnd');
         spyOn(instance, 'getNewerHistoryEntry').andReturn(AFTER);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(AFTER);
+        expect(codemirror.setValue).toHaveBeenCalledWith(AFTER);
         expect(moveCursorToEnd).toHaveBeenCalled();
       });
 
       it('does not clear the input when returning undefined', function () {
         spyOn(instance, 'getNewerHistoryEntry').andReturn(undefined);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(BEFORE);
+        expect(codemirror.setValue).not.toHaveBeenCalled();
       });
     });
 
     describe('that are the up arrow', function () {
-      var EVENT = {keyCode: KEYCODES.up};
+      beforeEach(function () {
+        EVENT.keyCode = KEYCODES.up;
+      });
 
       it('only gets an older history entry', function () {
         spyOn(instance, 'getNewerHistoryEntry');
@@ -100,19 +129,21 @@ describe('A Readline instance', function () {
         var moveCursorToEnd = spyOn(instance, 'moveCursorToEnd');
         spyOn(instance, 'getOlderHistoryEntry').andReturn(AFTER);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(AFTER);
+        expect(codemirror.setValue).toHaveBeenCalledWith(AFTER);
         expect(moveCursorToEnd).toHaveBeenCalled();
       });
 
       it('does not clear the input when returning undefined', function () {
         spyOn(instance, 'getOlderHistoryEntry').andReturn(undefined);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(BEFORE);
+        expect(codemirror.setValue).not.toHaveBeenCalled();
       });
     });
 
     describe('that are enter', function () {
-      var EVENT = {keyCode: KEYCODES.enter};
+      beforeEach(function () {
+        EVENT.keyCode = KEYCODES.enter;
+      });
 
       it('only submits input lines', function () {
         spyOn(instance, 'getNewerHistoryEntry');
@@ -127,13 +158,18 @@ describe('A Readline instance', function () {
       it('does not clear the input when returning a string', function () {
         spyOn(instance, 'submit').andReturn(AFTER);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(BEFORE);
+        expect(codemirror.setValue).not.toHaveBeenCalled();
       });
 
       it('does not clear the input when returning undefined', function () {
         spyOn(instance, 'submit').andReturn(undefined);
         instance.keydown(EVENT);
-        expect($input.val()).toBe(BEFORE);
+        expect(codemirror.setValue).not.toHaveBeenCalled();
+      });
+
+      it('calls the supplied submit function', function () {
+        instance.keydown(EVENT);
+        expect(submitFunc).toHaveBeenCalledWith(); // no args
       });
     });
   });
@@ -194,7 +230,7 @@ describe('A Readline instance', function () {
 
     it('remembers the command first being written', function () {
       instance.historyIndex = instance.history.length;
-      instance.$input.val('my partial command');
+      instance.inputBox.setValue('my partial command');
       instance.getOlderHistoryEntry();
       expect(instance.getNewerHistoryEntry()).toEqual('my partial command');
     });
@@ -211,49 +247,17 @@ describe('A Readline instance', function () {
     }
   });
 
-  it('waits to move the cursor to the end', function () {
-    var setTimeoutMock = spyOn(window, 'setTimeout');
+  it('moves the cursor the the end of the last line', function () {
+    instance.inputBox.lineCount = jasmine.createSpy().andReturn(5);
+    instance.inputBox.getLine = jasmine.createSpy().andReturn('1234567'); // length 7
+    instance.inputBox.setCursor = jasmine.createSpy();
+
     instance.moveCursorToEnd();
-    expect(setTimeoutMock).toHaveBeenCalled();
-    var args = setTimeoutMock.calls[0].args;
-    expect(typeof(args[0])).toEqual('function');
-    expect(args[1]).toEqual(0);
-  });
-
-  describe('moving the cursor to the end of the line', function () {
-    var callDeferredFunc = function () {
-      var setTimeoutMock = spyOn(window, 'setTimeout');
-      instance.moveCursorToEnd();
-      setTimeoutMock.calls[0].args[0]();
-    };
-
-    it('uses the setSelectionRange method when available', function () {
-      var input = {
-        setSelectionRange: jasmine.createSpy()
-      };
-      instance.$input = {
-        val: jasmine.createSpy().andReturn('123'),
-        get: jasmine.createSpy().andReturn(input)
-      };
-      callDeferredFunc();
-
-      expect(input.setSelectionRange.calls.length).toEqual(1);
-      expect(input.setSelectionRange).toHaveBeenCalledWith(6, 6);
-
-      expect(instance.$input.val.calls.length).toEqual(1);
-      expect(instance.$input.val).toHaveBeenCalledWith();
-    });
-
-    it('uses a fallback when setSelectionRange is not available', function () {
-      instance.$input = {
-        val: jasmine.createSpy().andReturn('123'),
-        get: jasmine.createSpy().andReturn({})
-      };
-      callDeferredFunc();
-
-      expect(instance.$input.val.calls.length).toEqual(2);
-      expect(instance.$input.val.calls[0].args).toEqual([]);
-      expect(instance.$input.val.calls[1].args).toEqual(['123']);
+    expect(instance.inputBox.lineCount).toHaveBeenCalledWith(); // no args
+    expect(instance.inputBox.getLine).toHaveBeenCalledWith(4);
+    expect(instance.inputBox.setCursor).toHaveBeenCalledWith({
+      line: 4,
+      pos: 6
     });
   });
 
@@ -261,7 +265,7 @@ describe('A Readline instance', function () {
     it('loads on init', function(){
       expect(instance.history).toEqual([]);
       localStorage[mongo.config.shellHistoryKey] = '["1","2","3"]';
-      instance = new mongo.Readline($input);
+      instance = new mongo.Readline(codemirror, submitFunc);
       expect(instance.history).toEqual(['1', '2', '3']);
     });
 
@@ -283,7 +287,7 @@ describe('A Readline instance', function () {
 
     it('fails gracefully when localStorage is not available', function(){
       localStorage = undefined;
-      instance = new mongo.Readline($input);
+      instance = new mongo.Readline(codemirror, submitFunc);
       expect(instance.history).toEqual([]);
       instance.submit('command');
       expect(instance.history).toEqual(['command']);
