@@ -168,14 +168,14 @@ mongo.Shell.prototype.insertResponseLine = function (data, prepend, noRefresh) {
       this.responseBlock.addLineClass(i, 'text', 'mws-cm-plain-text');
     }
   }
-  if (!noRefresh) {
-    this.responseBlock.refresh();
-  }
 
   this.hasShownResponse = true;
   this.$responseWrapper.css({display: ''});
   this.$inputWrapper.css({marginTop: '-8px'});
 
+  if (!noRefresh) {
+    this.responseBlock.refresh();
+  }
   // Reset scroll distance so the input is not hidden at the bottom.
   this.$scrollWrapper.scrollTop(this.$scrollWrapper.get(0).scrollHeight);
 };
