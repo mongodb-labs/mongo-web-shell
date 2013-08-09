@@ -19,7 +19,9 @@ describe('The jQuery methods', function(){
   describe('construct an instance of the web shell', function(){
     var initShell, shellElement, expectedOptions;
     beforeEach(function(){
-      initShell = spyOn(mongo.init, '_initShell');
+      initShell = spyOn(mongo.init, '_initShell').andCallFake(function(shell){
+        $(shell).data('shell', 'truthy');
+      });
       mongo.init.res_id = 'res_id';
       shellElement = $('<div class="mongo-web-shell" />').appendTo(document.body);
 
@@ -47,6 +49,29 @@ describe('The jQuery methods', function(){
 
       expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', expectedOptions);
       expect(initShell).toHaveBeenCalledWith(e[1], 'res_id', expectedOptions);
+
+      e.remove();
+    });
+
+    it('except on existing shells', function(){
+      $(document.body).append('<div class="mongo-web-shell" />');
+
+      var e = $('.mongo-web-shell').mws();
+      expect(e.length).toBe(2);
+
+      expect(initShell).toHaveBeenCalledWith(e[0], 'res_id', expectedOptions);
+      expect(initShell).toHaveBeenCalledWith(e[1], 'res_id', expectedOptions);
+      expect($(e[0]).data('shell')).toBeTruthy();
+      expect($(e[1]).data('shell')).toBeTruthy();
+
+      $(document.body).append('<div class="mongo-web-shell" />');
+      e = $('.mongo-web-shell');
+      expect($(e[2]).data('shell')).toBeFalsy();
+      e = e.mws();
+      expect($(e[2]).data('shell')).toBeTruthy();
+      expect(e.length).toBe(3);
+      expect(initShell).toHaveBeenCalledWith(e[2], 'res_id', expectedOptions);
+      expect(initShell.callCount).toBe(3);
 
       e.remove();
     });
