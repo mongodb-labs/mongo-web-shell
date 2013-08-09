@@ -13,14 +13,12 @@
  *    limitations under the License.
  */
 
-/* jshint evil: true */
-/* global console, mongo, Evaluator */
+/* jshint evil: true, newcap: false */
+/* global console, mongo, CodeMirror, Evaluator */
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
-  this.$responseList = null;
-  this.$inputLI = null;
-  this.$input = null;
 
+  this.hasShownResponse = false;
   this.id = shellID;
   this.mwsResourceID = null;
   this.readline = null;
@@ -34,22 +32,39 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
-  // We're injecting into <div class="mongo-web-shell">. The previous HTML
-  // content is used to fill the shell.
-  var html =
-      '<ul class="mws-response-list">' +
-        '<li>' + this.$rootElement.html() + '</li>' +
-        '<li class="mws-input-li">' +
-          '&gt;' +
-          '<form class="mws-form">' +
-            '<input type="text" class="mws-input" disabled="true">' +
-          '</form>' +
-        '</li>' +
-      '</ul>';
-  this.$rootElement.html(html);
-  this.$responseList = this.$rootElement.find('.mws-response-list');
-  this.$inputLI = this.$responseList.find('.mws-input-li');
-  this.$input = this.$inputLI.find('.mws-input');
+  this.$rootElement.addClass('cm-s-solarized').addClass('cm-s-dark');
+  this.$rootElement.html(
+    '<div class="mws-scroll-wrapper cm-s-solarized cm-s-dark">' +
+      // We're injecting into <div class="mongo-web-shell">. The previous HTML
+      // content is used to fill the shell.
+      this.$rootElement.html() +
+      '<div class="mws-responses"/>' +
+      '<div class="mws-input-wrapper">' +
+        '<div class="mws-prompt">&gt;</div>' +
+        '<div class="mws-input"></div>' +
+      '</div>' +
+    '</div>'
+  );
+  this.$responseWrapper = this.$rootElement.find('.mws-responses');
+  this.responseBlock = CodeMirror(this.$responseWrapper.get(0), {
+    readOnly: true,
+    lineWrapping: true,
+    theme: 'solarized dark'
+  });
+  // We want the response box to be hidden until there is a response to show
+  // (it gets shown in insertResponseLine).
+  this.$responseWrapper.css({display: 'none'});
+
+  this.inputBox = CodeMirror(this.$rootElement.find('.mws-input').get(0), {
+    matchBrackets: true,
+    lineWrapping: true,
+    readOnly: 'nocursor',
+    theme: 'solarized dark'
+  });
+  $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
+
+  this.$inputWrapper = this.$rootElement.find('.mws-input-wrapper');
+  this.$scrollWrapper = this.$rootElement.find('.mws-scroll-wrapper');
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
@@ -65,19 +80,16 @@ mongo.Shell.prototype.injectHTML = function () {
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
-  this.$rootElement.click(this.onClick.bind(this));
+  this.$rootElement.click(function () {
+    this.inputBox.focus();
+    this.inputBox.refresh();
+    this.responseBlock.setSelection({line: 0, ch: 0});
+  }.bind(this));
 };
 
-mongo.Shell.prototype.onClick = function () { this.$input.focus(); };
-
 mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
-  var shell = this;
   this.mwsResourceID = mwsResourceID;
-  this.$rootElement.find('form').submit(function (e) {
-    e.preventDefault();
-    shell.handleInput();
-  });
-  this.readline = new mongo.Readline(this.$input);
+  this.readline = new mongo.Readline(this.inputBox, this.handleInput.bind(this));
   this.enableInput(true);
 };
 
@@ -86,9 +98,9 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  * responses (indirectly via callbacks), and clears the input field.
  */
 mongo.Shell.prototype.handleInput = function () {
-  var userInput = this.$input.val();
-  this.$input.val('');
-  this.insertResponseLine('> ' + userInput);
+  var userInput = this.inputBox.getValue();
+  this.inputBox.setValue('');
+  this.insertResponseLine(userInput, '> ');
 
   if (mongo.keyword.handleKeywords(this, userInput)) {
     return;
@@ -121,22 +133,51 @@ mongo.Shell.prototype.eval = function (src) {
 };
 
 mongo.Shell.prototype.enableInput = function (bool) {
-  this.$input.get(0).disabled = !bool;
+  var readOnly = bool ? false : 'nocursor';
+  this.inputBox.setOption('readOnly', readOnly);
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
   for (var i = 0; i < data.length; i++) {
-    this.insertResponseLine(data[i]);
+    this.insertResponseLine(data[i], null, true);
   }
+  this.responseBlock.refresh();
 };
 
-mongo.Shell.prototype.insertResponseLine = function (data) {
-  var li = document.createElement('li');
-  $(li).addClass('mws-response').html(mongo.util.toString(data));
-  this.$inputLI.before(li);
+mongo.Shell.prototype.insertResponseLine = function (data, prepend, noRefresh) {
+  var lastLine = this.responseBlock.lineCount() - 1;
+  var lastChar = this.responseBlock.getLine(lastLine).length;
+  var lastPos = {line: lastLine, ch: lastChar};
+  var isString = typeof(data) === 'string';
+  var separator = this.hasShownResponse ? '\n' : '';
 
-  // Reset scroll distance so the <input> is not hidden at the bottom.
-  this.$responseList.scrollTop(this.$responseList[0].scrollHeight);
+  data = mongo.util.toString(data);
+  if (prepend) {
+    data = prepend + data;
+    var padding = Array(prepend.length + 1).join(' ');
+    data = data.replace(/\n/g, '\n' + padding);
+  }
+  this.responseBlock.replaceRange(separator + data, lastPos);
+
+  if (isString && !prepend) {
+    var newLines = data.match(/\n/g);
+    var insertedLines = newLines ? newLines.length + 1 : 1;
+    var totalLines = this.responseBlock.lineCount();
+    var startInsertedResponse = totalLines - insertedLines;
+    for (var i = startInsertedResponse; i < totalLines; i++) {
+      this.responseBlock.addLineClass(i, 'text', 'mws-cm-plain-text');
+    }
+  }
+  if (!noRefresh) {
+    this.responseBlock.refresh();
+  }
+
+  this.hasShownResponse = true;
+  this.$responseWrapper.css({display: ''});
+  this.$inputWrapper.css({marginTop: '-8px'});
+
+  // Reset scroll distance so the input is not hidden at the bottom.
+  this.$scrollWrapper.scrollTop(this.$scrollWrapper.get(0).scrollHeight);
 };
 
 mongo.Shell.prototype.insertError = function (err) {

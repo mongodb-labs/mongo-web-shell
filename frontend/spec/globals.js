@@ -23,18 +23,7 @@ $.ready = function () {}; // Prevent mongo.init.run() from running.
 var MWS_HOST = 'http://mwshost.example.com';
 
 var CONST = {
-  css: {
-    classes: {
-      root: 'mongo-web-shell',
-      internal: [
-        'mws-response-list',
-        'mws-input-li',
-        'mws-form',
-        'mws-input'
-      ],
-      responseList: 'mws-response-list'
-    }
-  },
+  rootClass: 'mongo-web-shell',
   domConfig: {
     dataAttrKeys: {
       cssPath: 'css-path',

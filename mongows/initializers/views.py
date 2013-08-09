@@ -14,6 +14,7 @@
 
 from importlib import import_module
 from flask import Blueprint, request
+from mongows.mws.MWSServerError import MWSServerError
 
 initializers = Blueprint('initializers', __name__, url_prefix='/init')
 
@@ -25,8 +26,14 @@ def run_initializer(script_name):
         module = import_module('mongows.initializers.scripts.%s' % script_name)
     except ImportError:
         return 'Unknown initialization script %s' % script_name, 404
-    if len(request.json) > 1:
-        module.run(res_id, request.json)
+    try:
+        if len(request.json) > 1:
+            ret = module.run(res_id, request.json)
+        else:
+            ret = module.run(res_id)
+        if ret:
+            return ret
+    except Exception as e:
+        raise MWSServerError(500, type(e).__name__, str(e))
     else:
-        module.run(res_id)
-    return 'ok', 200
+        return '', 204

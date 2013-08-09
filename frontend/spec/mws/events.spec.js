@@ -18,7 +18,7 @@
 describe('The events class', function(){
   var $shell, shell, fn, fn2;
   beforeEach(function(){
-    $shell = $('<div class=' + CONST.css.classes.root + '/>');
+    $shell = $('<div class=' + CONST.rootClass + '/>');
     $('body').append($shell);
     shell = new mongo.Shell($shell[0], 0);
     mongo.shells = [shell];
@@ -26,7 +26,7 @@ describe('The events class', function(){
   });
 
   afterEach(function(){
-    $('.' + CONST.css.classes.root).remove();
+    $('.' + CONST.rootClass).remove();
     $('iframe').remove();
   });
 
@@ -168,7 +168,7 @@ describe('The events class', function(){
   describe('has a bindAll function that', function(){
     var $shell2, shell2;
     beforeEach(function(){
-      $shell2 = $('<div class=' + CONST.css.classes.root + '/>');
+      $shell2 = $('<div class=' + CONST.rootClass + '/>');
       $('body').append($shell2);
       shell2 = new mongo.Shell($shell2[0], 0);
       mongo.shells.push(shell2);
@@ -228,7 +228,7 @@ describe('The events class', function(){
   describe('has an unbindAll function that', function(){
     var $shell2, shell2;
     beforeEach(function(){
-      $shell2 = $('<div class=' + CONST.css.classes.root + '/>');
+      $shell2 = $('<div class=' + CONST.rootClass + '/>');
       $('body').append($shell2);
       shell2 = new mongo.Shell($shell2.get(0), 0);
       mongo.shells.push(shell2);
