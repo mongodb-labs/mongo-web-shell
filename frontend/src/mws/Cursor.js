@@ -71,19 +71,30 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
 };
 
 mongo.Cursor.prototype._printBatch = function () {
-  this._executeQuery(function () {
-    this._shell.lastUsedCursor = this;
-    var batchSize = this._shell.getShellBatchSize();
-    var n = 0;
-    while (this.hasNext() && n < batchSize){
-      this._shell.insertResponseLine(this.next());
-      n++;
-    }
-
-    if (this.hasNext()) {
-      this._shell.insertResponseLine('Type "it" for more');
-    }
-  }.bind(this));
+  this._shell.lastUsedCursor = this;
+  var context = this._shell.evaluator.pause();
+  var batchSize = this._shell.getShellBatchSize();
+  var n = 0;
+  var doPrint = function () {
+    this.hasNext(function (hasNext) {
+      if (hasNext) {
+        if (n < batchSize) {
+          this.next(function (next) {
+            this._shell.insertResponseLine(next);
+            n++;
+            doPrint();
+          }.bind(this));
+        } else {
+          this._shell.insertResponseLine('Type "it" for more');
+          this._shell.evaluator.resume(context);
+        }
+      } else {
+        this._shell.lastUsedCursor = null;
+        this._shell.evaluator.resume(context);
+      }
+    }.bind(this));
+  }.bind(this);
+  doPrint();
 };
 
 mongo.Cursor.prototype._storeQueryResult = function (result) {
@@ -120,17 +131,33 @@ mongo.Cursor.prototype._ensureNotExecuted = function (methodName) {
   }
 };
 
-mongo.Cursor.prototype.hasNext = function () {
-  this._executeQuery(null, false); // Sync query, blocks
-  return this._result.length > 0;
+mongo.Cursor.prototype.hasNext = function (callback) {
+  var context = this._shell.evaluator.pause();
+  this._executeQuery(function () {
+    var hasNext = this._result.length > 0;
+    this._shell.evaluator.resume(context, hasNext);
+    if (callback) {
+      callback(hasNext);
+    }
+  }.bind(this));
 };
 
-mongo.Cursor.prototype.next = function () {
-  this._executeQuery(null, false); // Sync query, blocks
-  if (!this.hasNext()) {
-    throw new Error('Cursor does not have any more elements.');
-  }
-  return this._result.pop();
+mongo.Cursor.prototype.next = function (callback) {
+  var context = this._shell.evaluator.pause();
+  this._executeQuery(function () {
+    var next, isError;
+    if (this._result.length === 0) {
+      next = new Error('Cursor does not have any more elements.');
+      isError = true;
+    } else {
+      next = this._result.pop();
+      isError = false;
+    }
+    this._shell.evaluator.resume(context, next, isError);
+    if (callback && !isError) {
+      callback(next);
+    }
+  }.bind(this));
 };
 
 mongo.Cursor.prototype.sort = function (sort) {
@@ -158,21 +185,37 @@ mongo.Cursor.prototype.limit = function (limit) {
   return this;
 };
 
-mongo.Cursor.prototype.toArray = function () {
+mongo.Cursor.prototype.toArray = function (callback) {
+  var context = this._shell.evaluator.pause();
   if (this._arr) {
-    return this._arr;
+    this._shell.evaluator.resume(context, this._arr);
+    if (callback) {
+      callback(this._arr);
+    }
+    return;
   }
-  var a = [];
-  while (this.hasNext()) {
-    a.push(this.next());
-  }
-  this._arr = a;
-  return a;
+
+  this._executeQuery(function () {
+    // This is the wrong way to do this. We really should be calling next as
+    // long as hasNext returns true, but those need to take callbacks since
+    // they in theory can perform a network request at any time. However, this
+    // very quickly exceeds the maximum recursion limit for large arrays. This
+    // breaks the abstraction barrier and looks into how the results are stored.
+    // It also assumes that this is a dumb cursor that gets all possible results
+    // in a single request.
+
+    // Results are stored in reverse order
+    this._arr = this._result.reverse();
+    this._result = [];
+    this._shell.evaluator.resume(context, this._arr);
+    if (callback) {
+      callback(this._arr);
+    }
+  }.bind(this));
 };
 
 mongo.Cursor.prototype.count = function (useSkipLimit) {
   useSkipLimit = !!useSkipLimit; // Default false
-  var count = 0;
   var url = this._coll.urlBase + 'count';
   var params = {};
   if (this._query) { params.query = this._query; }
@@ -180,12 +223,11 @@ mongo.Cursor.prototype.count = function (useSkipLimit) {
     if (this._skip) { params.skip = this._skip; }
     if (this._limit) { params.limit = this._limit; }
   }
-  var updateCount = function (data) {
-    count = data.count;
-  };
-  mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell,
-                            updateCount, false); // Sync request, blocking
-  return count;
+  var context = this._shell.evaluator.pause();
+  var setCount = function (data) {
+    this._shell.evaluator.resume(context, data.count);
+  }.bind(this);
+  mongo.request.makeRequest(url, params, 'GET', 'Cursor.count', this._shell, setCount);
 };
 
 mongo.Cursor.prototype.size = function () {
@@ -199,7 +241,9 @@ mongo.Cursor.prototype.toString = function () {
 
 mongo.Cursor.prototype.__methodMissing = function (field) {
   if (mongo.util.isInteger(field)) {
-    return this.toArray()[field];
+    var context = this._shell.evaluator.pause();
+    this.toArray(function (arr) {
+      this._shell.evaluator.resume(context, arr[field]);
+    }.bind(this));
   }
-  return undefined;
 };

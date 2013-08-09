@@ -18,20 +18,18 @@ describe('A Cursor', function () {
   var instance, batchSize;
   var getShellBatchSizeSpy, insertResponseLineSpy, makeRequest;
   var coll, result;
+  var pause, resume;
 
   beforeEach(function () {
     batchSize = 2;
-    insertResponseLineSpy = jasmine.createSpy('insertResponseLine');
-    getShellBatchSizeSpy = jasmine.createSpy('getShellBatchSize').andCallFake(
+    var shell = new mongo.Shell($('<div></div>'), 0);
+    insertResponseLineSpy = spyOn(shell, 'insertResponseLine');
+    getShellBatchSizeSpy = spyOn(shell, 'getShellBatchSize').andCallFake(
         function () {
       return batchSize;
     });
     coll = {
-      shell: {
-        getShellBatchSize: getShellBatchSizeSpy,
-        insertResponseLine: insertResponseLineSpy,
-        lastUsedCursor: null
-      },
+      shell: shell,
       urlBase: 'coll_url_base/'
     };
     instance = new mongo.Cursor(coll);
@@ -45,6 +43,8 @@ describe('A Cursor', function () {
         success(result);
       }
     });
+    pause = spyOn(instance._shell.evaluator, 'pause').andCallThrough();
+    resume = spyOn(instance._shell.evaluator, 'resume');
   });
 
   it('can represent itself as a string', function () {
@@ -57,12 +57,19 @@ describe('A Cursor', function () {
   it('stores a query result', function () {
     var results = ['a', 'series', 'of', 'results'];
     result.result = results.slice(0);
+    var callback = jasmine.createSpy();
     instance._executeQuery();
     for (var i = 0; i < results.length; i++) {
-      expect(instance.hasNext()).toBe(true);
-      expect(instance.next()).toEqual(results[i]);
+      instance.hasNext(callback);
+      expect(callback).toHaveBeenCalledWith(true);
+      callback.reset();
+
+      instance.next(callback);
+      expect(callback).toHaveBeenCalledWith(results[i]);
+      callback.reset();
     }
-    expect(instance.hasNext()).toBe(false);
+    instance.hasNext(callback);
+    expect(callback).toHaveBeenCalledWith(false);
   });
 
   it('requires skipped amount to be an integer', function () {
@@ -283,26 +290,67 @@ describe('A Cursor', function () {
           expect(insertResponseLineSpy.calls.length).toBe(oldInsertCalls);
         });
 
-        it('returns a boolean showing if it has another result', function () {
-          var actual = instance.hasNext();
+        it('calls the callback with a boolean showing if it has another result', function () {
+          var callback = jasmine.createSpy();
+          instance.hasNext(callback);
           expect(instance._executeQuery.calls.length).toBe(1);
-          expect(actual).toBe(true);
+          expect(callback).toHaveBeenCalledWith(true);
+          callback.reset();
+
           instance._result = [];
-          actual = instance.hasNext();
+          instance.hasNext(callback);
           expect(instance._executeQuery.calls.length).toBe(2);
-          expect(actual).toBe(false);
+          expect(callback).toHaveBeenCalledWith(false);
         });
 
-        it('returns the next result', function () {
+        it('pauses execution when calling hasNext', function () {
+          instance.hasNext();
+          expect(pause).toHaveBeenCalled();
+        });
+
+        it('resumes execution with a boolean showing if it has another result', function () {
+          instance.hasNext();
+          expect(instance._executeQuery.calls.length).toBe(1);
+          expect(resume.mostRecentCall.args[1]).toEqual(true);
+          resume.reset();
+
+          instance._result = [];
+          instance.hasNext();
+          expect(instance._executeQuery.calls.length).toBe(2);
+          expect(resume.mostRecentCall.args[1]).toEqual(false);
+        });
+
+        it('pauses evaluation when calling next', function () {
+          instance.next();
+          expect(pause).toHaveBeenCalled();
+        });
+
+        it('calls the callback with the next result', function () {
           var actual = [];
           for (var i = 0; i < RESULTS.length; i++) {
-            actual.push(instance.next());
+            instance.next(actual.push.bind(actual));
           }
           RESULTS.forEach(function (val) { expect(actual).toContain(val); });
-          var oldCallCount = insertResponseLineSpy.calls.length;
-          expect(instance.next.bind(instance)).toThrow('Cursor does not have any more elements.');
-          // Should throw error, not print anything.
-          expect(insertResponseLineSpy.calls.length).toBe(oldCallCount);
+          var callback = jasmine.createSpy();
+          instance.next(callback);
+          // Nothing left, should not call callback or print anything.
+          expect(callback).not.toHaveBeenCalled();
+          expect(insertResponseLineSpy).not.toHaveBeenCalled();
+        });
+
+        it('resumes evaluation with the next element', function () {
+          var actual = [];
+          for (var i = 0; i < RESULTS.length; i++) {
+            instance.next();
+            actual.push(resume.mostRecentCall.args[1]);
+          }
+          RESULTS.forEach(function (val) { expect(actual).toContain(val); });
+          instance.next();
+          // Nothing left, should call resume with an error, tell it to throw
+          var error = new Error('Cursor does not have any more elements.');
+          expect(resume.mostRecentCall.args[1]).toEqual(error);
+          expect(resume.mostRecentCall.args[2]).toEqual(true);
+          expect(insertResponseLineSpy).not.toHaveBeenCalled();
         });
       });
 
@@ -316,34 +364,57 @@ describe('A Cursor', function () {
     });
   });
 
-  it('converts query results to an array', function () {
-    var results = [{a: 1}, {b: 2}, {c: 3}];
-    result.result = results.slice(0);
+  describe('converting query results to an array', function () {
+    it('pauses evaluation', function () {
+      instance.toArray();
+      expect(pause).toHaveBeenCalled();
+    });
 
-    var array = instance.toArray();
-    expect(array).toEqual(results);
+    it('resumes evaluation with the array', function () {
+      var results = [{a: 1}, {b: 2}, {c: 3}];
+      result.result = results.slice(0);
 
-    // Converting to array should consume the cursor
-    instance._printBatch();
-    expect(insertResponseLineSpy).not.toHaveBeenCalled();
+      function getArray() {
+        resume.reset();
+        instance.toArray();
+        return resume.mostRecentCall.args[1];
+      }
 
-    // To fit the shell's behavior, make sure we're not copying the array
-    array[0] = {foo: 'bar'};
-    expect(instance.toArray()).toEqual([{foo: 'bar'}, {b: 2}, {c: 3}]);
+      var array = getArray();
+      expect(array).toEqual(results);
 
-    // Only uses what's left of the cursor
-    result.result = results.slice(0);
-    instance = new mongo.Cursor(coll);
-    expect(instance.next()).toEqual({a: 1});
-    expect(instance.toArray()).toEqual([{b: 2}, {c: 3}]);
+      // Converting to array should consume the cursor
+      instance._printBatch();
+      expect(insertResponseLineSpy).not.toHaveBeenCalled();
+
+      // To fit the shell's behavior, make sure we're not copying the array
+      array[0] = {foo: 'bar'};
+      expect(getArray()).toEqual([{foo: 'bar'}, {b: 2}, {c: 3}]);
+
+      // Only uses what's left of the cursor
+      result.result = results.slice(0);
+      instance = new mongo.Cursor(coll);
+      instance.next(); // get rid of {a: 1}
+      expect(getArray()).toEqual([{b: 2}, {c: 3}]);
+    });
   });
 
-  it('acts as an array', function () {
-    var results = [{a: 1}, {b: 2}, {c: 3}];
-    result.result = results.slice();
-    $.each(results, function (i, expected) {
-      // This only works with the method missing functionality
-      expect(mongo.util.__get(instance, i)).toEqual(expected);
+  describe('accessing the cursor like an array', function () {
+    it('pauses evaluation', function () {
+      result.result = [0];
+      mongo.util.__get(instance, 0);
+      expect(pause).toHaveBeenCalled();
+    });
+
+    it('resumes evaluation with the element of the result array', function () {
+      var results = [{a: 1}, {b: 2}, {c: 3}];
+      result.result = results.slice();
+      $.each(results, function (i, expected) {
+        // This only works with the method missing functionality
+        mongo.util.__get(instance, i);
+        expect(resume.mostRecentCall.args[1]).toEqual(expected);
+        resume.reset();
+      });
     });
   });
 
@@ -353,21 +424,26 @@ describe('A Cursor', function () {
       expect(instance._executed).toBe(false);
     });
 
-    it('gets the count from the server', function () {
+    it('pauses evaluation', function () {
+      instance.count();
+      expect(pause).toHaveBeenCalled();
+    });
+
+    it('resumes evaluation with the count', function () {
       var query = {a: {$gt: 2}};
       var projection = {_id: 0, b: 1};
       coll.urlBase = 'my_coll_url/';
       instance = new mongo.Cursor(coll, query, projection);
       result = {count: 12};
 
-      expect(instance.count()).toEqual(12);
-      expect(makeRequest.calls.length).toEqual(1);
+      instance.count();
+      expect(resume.mostRecentCall.args[1]).toEqual(12);
+      expect(makeRequest.callCount).toEqual(1);
       var args = makeRequest.calls[0].args;
       expect(args[0]).toEqual('my_coll_url/count'); // Url
       expect(args[1]).toEqual({query: query}); // params
       expect(args[2]).toEqual('GET'); // GET request
       expect(args[4]).toEqual(coll.shell); // Use the collection's shell
-      expect(args[6]).toEqual(false); // Synchronous
     });
 
     it('ignores skip and limit by default', function () {
@@ -392,9 +468,8 @@ describe('A Cursor', function () {
     });
 
     it('uses size as an alias for count', function () {
-      var value = 14;
-      spyOn(instance, 'count').andReturn(value);
-      expect(instance.size()).toEqual(value);
+      spyOn(instance, 'count');
+      instance.size();
       expect(instance.count).toHaveBeenCalledWith(true);
     });
   });

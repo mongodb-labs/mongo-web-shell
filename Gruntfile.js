@@ -30,7 +30,8 @@ var JS_LIB = [
   LIB_DIR + 'noty/js/noty/themes/default.js',
   LIB_DIR + 'codemirror/lib/codemirror.js',
   LIB_DIR + 'codemirror/mode/javascript/javascript.js',
-  LIB_DIR + 'codemirror/addon/edit/matchbrackets.js'
+  LIB_DIR + 'codemirror/addon/edit/matchbrackets.js',
+  LIB_DIR + 'suspend.js/dist/suspend.js'
 ];
 
 var JS_MWS = [

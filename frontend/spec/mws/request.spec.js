@@ -46,13 +46,13 @@ describe('The request module', function () {
       data_ = {test: 'my data'};
       method_ = 'POST';
       name_ = 'test';
-      shell_ = {insertResponseLine: function () {}};
+      shell_ = new mongo.Shell($('<div></div>'), 0);
     });
 
     it('uses the given url and HTTP method', function () {
       var url = 'http://test.com/';
       var method = 'POST';
-      mongo.request.makeRequest(url, data_, method, name_);
+      mongo.request.makeRequest(url, data_, method, name_, shell_);
 
       expect(requests[0].url).toEqual(url);
       expect(requests[0].method).toEqual(method);
@@ -60,7 +60,7 @@ describe('The request module', function () {
 
     it('stringifies JSON', function () {
       var data = {foo: 'mydata'};
-      mongo.request.makeRequest(url_, data, method_, name_);
+      mongo.request.makeRequest(url_, data, method_, name_, shell_);
 
       var stringifiedData = JSON.stringify(data);
       expect(requests[0].requestBody).toEqual(stringifiedData);
@@ -84,24 +84,24 @@ describe('The request module', function () {
     });
 
     it('writes failure reasons to the shell', function () {
-      var shell = {insertResponseLine: jasmine.createSpy()};
-      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      spyOn(shell_, 'insertResponseLine');
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
       requests[0].respond(200, '', JSON.stringify({foo: 'bar'}));
-      expect(shell.insertResponseLine).not.toHaveBeenCalled();
+      expect(shell_.insertResponseLine).not.toHaveBeenCalled();
 
       // Error, no details
-      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
       var errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: ''});
       requests[1].respond(400, '', errResponse);
-      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason');
+      expect(shell_.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason');
 
       // Error with details
-      mongo.request.makeRequest(url_, data_, method_, name_, shell);
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
       errResponse = JSON.stringify({error: 400, reason: 'My Reason', detail: 'Some details'});
       requests[2].respond(400, '', errResponse);
-      expect(shell.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason\nSome details');
+      expect(shell_.insertResponseLine).toHaveBeenCalledWith('ERROR: My Reason\nSome details');
 
-      expect(shell.insertResponseLine.calls.length).toEqual(2);
+      expect(shell_.insertResponseLine.calls.length).toEqual(2);
     });
 
     it('is asynchronous by default', function () {
@@ -113,6 +113,27 @@ describe('The request module', function () {
 
       mongo.request.makeRequest(url_, data_, method_, name_, shell_, null, false);
       expect(requests[2].async).toBe(false);
+    });
+
+    it('pauses and resumes evaluation', function () {
+      var pause = spyOn(shell_.evaluator, 'pause').andCallThrough();
+      var resume = spyOn(shell_.evaluator, 'resume');
+
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
+      expect(pause).toHaveBeenCalled();
+      expect(resume).not.toHaveBeenCalled();
+      requests[0].respond(200, '', '{}');
+      expect(resume).toHaveBeenCalled();
+
+      pause.reset();
+      resume.reset();
+
+      mongo.request.makeRequest(url_, data_, method_, name_, shell_);
+      expect(pause).toHaveBeenCalled();
+      expect(resume).not.toHaveBeenCalled();
+      requests[1].respond(500, '', JSON.stringify({reason: 'Error occured', detail: 'Details'}));
+      expect(resume.mostRecentCall.args[1]).toEqual(new Error('ERROR: Error occured\nDetails'));
+      expect(resume.mostRecentCall.args[2]).toEqual(true);
     });
   });
 
