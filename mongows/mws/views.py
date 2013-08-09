@@ -177,7 +177,8 @@ def db_collection_find(res_id, collection_name):
     limit = request.json.get('limit', 0)
 
     with UseResId(res_id):
-        cursor = get_db()[collection_name].find(query, projection, skip, limit)
+        coll = get_db()[collection_name]
+        cursor = coll.find(query, projection, skip, limit)
         documents = list(cursor)
         return to_json({'result': documents})
 
@@ -275,7 +276,8 @@ def db_collection_aggregate(res_id, collection_name):
     parse_get_json(request)
     try:
         with UseResId(res_id):
-            result = get_db()[collection_name].aggregate(request.json)
+            coll = get_db()[collection_name]
+            result = coll.aggregate(request.json)
             return to_json(result)
     except OperationFailure as e:
         raise MWSServerError(400, e.message)
@@ -304,7 +306,8 @@ def db_collection_count(res_id, collection_name):
     use_skip_limit = bool(skip or limit)
 
     with UseResId(res_id):
-        cursor = get_db()[collection_name].find(query, skip=skip, limit=limit)
+        coll = get_db()[collection_name]
+        cursor = coll.find(query, skip=skip, limit=limit)
         count = cursor.count(use_skip_limit)
         return to_json({'count': count})
 
@@ -336,7 +339,8 @@ def generate_res_id():
 
 def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
-    return_value = get_db()[CLIENTS_COLLECTION].find_one(query)
+    coll = get_db()[CLIENTS_COLLECTION]
+    return_value = coll.find_one(query)
     return False if return_value is None else True
 
 
