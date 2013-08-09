@@ -28,7 +28,7 @@ def get_db():
     if db:
         return db
     config = urlparse(current_app.config['MONGOHQ_URL'])
-    db_name = config.path.rpartition('/')[2]
+    db_name = current_app.config['DB_NAME']
     try:
         client = pymongo.MongoClient(config.hostname, config.port)
     except TypeError:
