@@ -18,17 +18,16 @@
 /* jshint evil: true, nonew: false */
 describe('A Shell', function () {
   var instance, $rootElement;
-  var SHELL_COUNT = 2;
 
   beforeEach(function () {
-    $rootElement = $('<div class=' + CONST.css.classes.root + '/>');
+    $rootElement = $('<div class=' + CONST.rootClass + '/>');
     $('body').append($rootElement);
     instance = new mongo.Shell($rootElement.get(0), 0);
     mongo.shells = [instance];
   });
 
   afterEach(function () {
-    $('.' + CONST.css.classes.root).remove();
+    $('.' + CONST.rootClass).remove();
     $('iframe').remove();
   });
 
@@ -39,30 +38,28 @@ describe('A Shell', function () {
   });
 
   it('injects its HTML into the DOM', function () {
-    function expectInternalLength(len) {
-      CONST.css.classes.internal.forEach(function (cssClass) {
-        var $element = $('.' + cssClass);
-        expect($element.length).toBe(len);
-      });
-    }
+    var inputChildren = instance.$rootElement.find('.mws-input').children();
+    expect(inputChildren.length).toEqual(1);
+    expect(inputChildren[0]).toEqual(instance.inputBox.getWrapperElement());
 
-    // Remove all existing shells from the page
-    $('.' + CONST.css.classes.root).remove();
-    expectInternalLength(0);
-    for (var i = 0; i < SHELL_COUNT; i++) {
-      var $div = $('<div class=' + CONST.css.classes.root + '/>');
-      $('body').append($div);
-      new mongo.Shell($div, i);
-      expectInternalLength(i + 1);
-    }
+    var responseChildren = instance.$responseWrapper.children();
+    expect(responseChildren.length).toEqual(1);
+    expect(responseChildren[0]).toEqual(instance.responseBlock.getWrapperElement());
   });
 
   it('attaches the click listener', function () {
-    var attachClickListener = spyOn(mongo.Shell.prototype, 'attachClickListener');
+    var attachClickListener = spyOn(mongo.Shell.prototype, 'attachClickListener').andCallThrough();
     $rootElement.empty();
 
-    new mongo.Shell($rootElement.get(0), 0);
+    var shell = new mongo.Shell($rootElement.get(0), 0);
     expect(attachClickListener).toHaveBeenCalled();
+
+    spyOn(shell.inputBox, 'focus');
+    spyOn(shell.inputBox, 'refresh');
+
+    shell.$rootElement.trigger('click');
+    expect(shell.inputBox.focus).toHaveBeenCalled();
+    expect(shell.inputBox.refresh).toHaveBeenCalled();
   });
 
   describe('has a print() function', function () {
@@ -74,17 +71,15 @@ describe('A Shell', function () {
     });
 
     it('that prints nonobjects', function () {
-      instance.$input = {
-        val: function () {return 'print("mongo")';}
-      };
+      instance.inputBox.getValue = function () {return 'print("mongo")';};
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith('mongo');
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo');
     });
 
     it('that prints stringified objects', function () {
-      instance.$input = {
-        val: function () {return 'print({name: "Mongo"})';}
+      instance.inputBox.getValue = function () {
+        return 'print({name: "Mongo"})';
       };
       instance.handleInput();
       expect(printFunc).toHaveBeenCalledWith({name: 'Mongo'});
@@ -92,29 +87,25 @@ describe('A Shell', function () {
     });
 
     it('that it uses the toString for objects for which it is a function', function () {
-      instance.$input = {
-        val: function () {
-          return 'function A(){};' +
-            'A.prototype.toString = function(){ return "mongo!" };' +
-            'var a = new A();' +
-            'print(a);';
-        }
+      instance.inputBox.getValue = function () {
+        return 'function A(){};' +
+          'A.prototype.toString = function(){ return "mongo!" };' +
+          'var a = new A();' +
+          'print(a);';
       };
       instance.handleInput();
       expect(instance.insertResponseLine).toHaveBeenCalledWith('mongo!');
     });
 
     it('that refuses to print circular structures', function () {
-      instance.$input = {
-        val: function () {return 'var a = {}; a.a = a; print(a)';}
-      };
+      instance.inputBox.getValue = function () {return 'var a = {}; a.a = a; print(a)';};
       instance.handleInput();
       expect(instance.insertResponseLine.mostRecentCall.args[0]).toMatch(/^ERROR: /);
     });
 
     it('handles multiple arguments', function(){
-      instance.$input = {
-        val: function () {return 'print(1, null, undefined, {}, {a:1}, "abc")';}
+      instance.inputBox.getValue = function () {
+        return 'print(1, null, undefined, {}, {a:1}, "abc")';
       };
       instance.handleInput();
       var expected = '1 null undefined { } { "a" : 1 } abc';
@@ -138,13 +129,6 @@ describe('A Shell', function () {
       expect(win.db).toBe(instance.db);
     });
 
-    it('attaches a click listener', function () {
-      spyOn(instance, 'onClick');
-      instance.attachClickListener();
-      instance.$rootElement.trigger('click');
-      expect(instance.onClick).toHaveBeenCalled();
-    });
-
     xit('focuses the input when clicked', function () {
       // TODO: Is it possible to test this?
     });
@@ -157,42 +141,49 @@ describe('A Shell', function () {
       instance.attachInputHandler(resID);
       expect(instance.mwsResourceID).toBe(resID);
       expect(instance.enableInput).toHaveBeenCalledWith(true);
-      $rootElement.find('form').submit();
+      expect(mongo.Readline).toHaveBeenCalled();
+      expect(mongo.Readline.calls[0].args[0]).toEqual(instance.inputBox);
+      mongo.Readline.calls[0].args[1]();
       expect(instance.handleInput).toHaveBeenCalled();
-      expect(mongo.Readline).toHaveBeenCalledWith(instance.$input);
+      expect(instance.handleInput.calls[0].object).toBe(instance);
       expect(instance.readline).toEqual(jasmine.any(mongo.Readline));
     });
 
     it('sets the enabled state of the input', function () {
-      var $input = $rootElement.find('input');
-      $input.get(0).disabled = true;
+      var cm = instance.inputBox;
+      cm.setOption('readOnly', true);
       instance.enableInput(true);
-      expect($input.get(0).disabled).toBe(false);
+      expect(cm.getOption('readOnly')).toBe(false);
       instance.enableInput(false);
-      expect($input.get(0).disabled).toBe(true);
+      expect(cm.getOption('readOnly')).toBe('nocursor');
     });
 
     it('inserts an array of lines into the shell', function () {
-      var responseList = $rootElement.find('.' +
-          CONST.css.classes.responseList).get(0);
+      instance.insertResponseLine('line');
       var array = [];
       do  {
         array.push('line');
-        var numResponses = responseList.children.length;
+        var numResponses = instance.responseBlock.lineCount();
         instance.insertResponseArray(array);
-        expect(responseList.children.length).toBe(numResponses + array.length);
-        expectContentEntirelyScrolled(responseList);
+        expect(instance.responseBlock.lineCount()).toBe(numResponses + array.length);
+        expectContentEntirelyScrolled(instance.$scrollWrapper);
       } while (array.length < 5);
     });
 
     it('inserts a line into the shell', function () {
-      var responseList = $rootElement.find('.' +
-          CONST.css.classes.responseList).get(0);
+      // The first insert shouldn't add a new line, because we go from being on
+      // an empty first line to populating the first line. Therefore the line
+      // count should stay the same (as long as the inserted data doesn't have
+      // a newline in it).
+      expect(instance.responseBlock.lineCount()).toEqual(1);
+      instance.insertResponseLine('line');
+      expect(instance.responseBlock.lineCount()).toEqual(1);
+
       for (var i = 0; i < 4; i++) {
-        var numResponses = responseList.children.length;
+        var numResponses = instance.responseBlock.lineCount();
         instance.insertResponseLine('line');
-        expect(responseList.children.length).toBe(numResponses + 1);
-        expectContentEntirelyScrolled(responseList);
+        expect(instance.responseBlock.lineCount()).toBe(numResponses + 1);
+        expectContentEntirelyScrolled(instance.$scrollWrapper);
       }
     });
 
@@ -202,14 +193,15 @@ describe('A Shell', function () {
      * https://developer.mozilla.org/en-US/docs/DOM/scrollHeight
      * #Determine_if_an_element_has_been_totally_scrolled
      */
-    function expectContentEntirelyScrolled(element) {
+    function expectContentEntirelyScrolled($element) {
+      var element = $element.get(0);
       expect(element.scrollHeight - element.scrollTop).toBe(
           element.clientHeight);
     }
 
     describe('while handling user input', function () {
       var SWAPPED_CALLS = 'calls';
-      var $input, swapCallsThrowsError, evalThrowsError;
+      var swapCallsThrowsError, evalThrowsError;
 
       beforeEach(function () {
         var ms = mongo.mutateSource;
@@ -222,20 +214,15 @@ describe('A Shell', function () {
         spyOn(instance, 'eval').andCallFake(function () {
           if (evalThrowsError) { throw {}; }
         });
-        $input = $rootElement.find('input');
         swapCallsThrowsError = evalThrowsError = false;
-      });
-
-      afterEach(function () {
-        $input = null;
       });
 
       it('clears the input value and inserts it into responses', function () {
         var expected = ';';
-        $input.val(expected);
+        instance.inputBox.setValue(expected);
         instance.handleInput();
-        expect($input.val()).toBe('');
-        expect(instance.insertResponseLine).toHaveBeenCalledWith('> ' + expected);
+        expect(instance.inputBox.getValue()).toBe('');
+        expect(instance.insertResponseLine).toHaveBeenCalledWith(expected, '> ');
       });
 
       it('checks for keywords first', function () {
@@ -244,7 +231,7 @@ describe('A Shell', function () {
 
         var keywordInput = 'use a keyword';
         handleKeywords.andReturn(true);
-        $input.val(keywordInput);
+        instance.inputBox.setValue(keywordInput);
         instance.handleInput();
         expect(handleKeywords).toHaveBeenCalledWith(instance, keywordInput);
         expect(swapMemberAccess).not.toHaveBeenCalled();
@@ -253,7 +240,7 @@ describe('A Shell', function () {
         swapMemberAccess.reset();
         var jsInput = 'not.a = keyword;';
         handleKeywords.andReturn(false);
-        $input.val(jsInput);
+        instance.inputBox.setValue(jsInput);
         instance.handleInput();
         expect(handleKeywords).toHaveBeenCalledWith(instance, jsInput);
         expect(swapMemberAccess).toHaveBeenCalledWith(jsInput);
@@ -264,7 +251,7 @@ describe('A Shell', function () {
         var ms = mongo.mutateSource;
         var kw = mongo.keyword;
         var userInput = ';';
-        $input.val(userInput);
+        instance.inputBox.setValue(userInput);
         instance.handleInput();
         expect(kw.handleKeywords).toHaveBeenCalledWith(instance, userInput);
         expect(ms.swapMemberAccesses).toHaveBeenCalledWith(userInput);
@@ -338,6 +325,49 @@ describe('A Shell', function () {
     });
   });
 
+  describe('inserting a line', function () {
+    var expected, toString, refresh, replaceRange;
+    beforeEach(function () {
+      expected = 'myString';
+      toString = spyOn(mongo.util, 'toString').andReturn(expected);
+      replaceRange = spyOn(instance.responseBlock, 'replaceRange');
+      refresh = spyOn(instance.responseBlock, 'refresh');
+    });
+
+    it('stringifies and highlights objects', function () {
+      // Does not insert newline before first line
+      instance.insertResponseLine(123);
+      expect(toString).toHaveBeenCalledWith(123);
+      expect(replaceRange).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0]).toEqual(expected);
+      expect(refresh).toHaveBeenCalled();
+      refresh.reset();
+
+      // Inserts newlines before all subsequent lines
+      instance.insertResponseLine(123);
+      expect(refresh).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0]).toEqual('\n' + expected);
+    });
+
+    it('highlights string commands', function () {
+      instance.insertResponseLine('an input string', '> ');
+      var lastLine = instance.responseBlock.lineCount() - 1;
+      expect(instance.responseBlock.lineInfo(lastLine).textClass).toBeUndefined();
+    });
+
+    it('does not highlights response strings', function () {
+      instance.insertResponseLine('an input string');
+      var lastLine = instance.responseBlock.lineCount() - 1;
+      expect(instance.responseBlock.lineInfo(lastLine).textClass).toEqual('mws-cm-plain-text');
+    });
+
+    it('prepends the given string', function () {
+      instance.insertResponseLine({my: 'obj'}, '==> ');
+      expect(replaceRange).toHaveBeenCalled();
+      expect(replaceRange.mostRecentCall.args[0].indexOf('==> ')).toBe(0);
+    });
+  });
+
   it('gets the shellBatchSize', function () {
     var expected = [0, 20, 40];
     expected.forEach(function (val) {
@@ -352,24 +382,6 @@ describe('A Shell', function () {
       var willThrow = function () { instance.getShellBatchSize(); };
       expect(willThrow).toThrow();
     });
-  });
-
-  it('converts inserted lines to a string', function () {
-    var expected = 'myString';
-    var toString = spyOn(mongo.util, 'toString').andReturn(expected);
-    instance.$inputLI = {
-      before: jasmine.createSpy('$inputLI')
-    };
-    instance.$responseList = {
-      0: {scrollHeight: 0},
-      scrollTop: function () {}
-    };
-
-    instance.insertResponseLine(123);
-    expect(toString).toHaveBeenCalledWith(123);
-    expect(instance.$inputLI.before).toHaveBeenCalled();
-    var li = instance.$inputLI.before.calls[0].args[0];
-    expect(li.innerHTML).toEqual(expected);
   });
 
   it('extracts messages from errors', function () {

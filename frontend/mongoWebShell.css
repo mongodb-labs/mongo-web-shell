@@ -17,11 +17,6 @@
   border-radius: 10px;
   height: 30em;
   padding: 8px 16px;
-}
-
-.mongo-web-shell, .mongo-web-shell * {
-  background-color: #000000;
-  color: #00e500;
   font-size: 15px;
   font-family: monospace;
 }
@@ -31,36 +26,70 @@
   margin: 0;
 }
 
-.mws-response-list {
-  height: 100%;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  overflow-y: auto;
-  word-wrap: break-word;
+.mws-responses {
+  margin-left: -8px;
 }
 
-.mws-response-list li {
-  margin: 3px 0;
-}
-
-.mws-response-list .mws-response {
-  white-space: pre-wrap;
-}
-
-.mws-form {
-  display: inline-block;
-  margin-left: 1ex; /* Space before the PS1 */
-  width: 95%; /* TODO: This doesn't fill the space properly. */
+.mws-input-wrapper {
+  line-height: 29px;
+  position: relative;
 }
 
 .mws-input {
-  border: none;
-  width: 95%;
-  padding: 0;
-  margin: 0;
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 10px;
 }
 
-.mws-input:focus {
-  outline: none;
+.mws-prompt {
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 1px;
+}
+
+.mws-scroll-wrapper {
+  overflow-y: auto;
+  height: inherit;
+}
+
+/* Try to make the scrollbar less ugly, at least on IE and WebKit */
+.mongo-web-shell ::-webkit-scrollbar {
+    width: 7px;
+}
+
+.mongo-web-shell ::-webkit-scrollbar-track {
+  visibility: hidden;  /* doesn't seem to work */
+  background: transparent;
+}
+
+.mongo-web-shell ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgba(0,0,0,0.5);
+}
+
+.mongo-web-shell ::-webkit-scrollbar:window-inactive {
+    visibility: hidden;
+}
+
+/* Code Mirror overrides */
+.mongo-web-shell .CodeMirror {
+  height: auto;
+}
+
+div.CodeMirror-vscrollbar {
+  overflow: visible;
+}
+
+.cm-s-solarized.CodeMirror {
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  background-image: none;
+}
+
+/* Allows removal of highlighting on a line */
+.mws-cm-plain-text, .mws-cm-plain-text span {
+  color: inherit !important;
 }
