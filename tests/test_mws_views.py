@@ -122,6 +122,16 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
 
             self.assertEqual(cm.exception.error, 401)
 
+    def test_nocache(self):
+        res = self.app.post('/mws/')
+        self.assertEqual(res.headers['cache-control'], 'no-cache')
+        self.assertEqual(res.headers['expires'], '0')
+
+        res_id = loads(res.data)['res_id']
+        res = self.app.get('/mws/%s/db/coll/find?{}' % res_id)
+        self.assertEqual(res.headers['cache-control'], 'no-cache')
+        self.assertEqual(res.headers['expires'], '0')
+
 
 class DBTestCase(MongoWSTestCase):
     def setUp(self):
