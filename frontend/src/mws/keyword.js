@@ -31,12 +31,12 @@ mongo.keyword = (function () {
 
   function it(shell) {
     var cursor = shell.lastUsedCursor;
-    if (cursor && cursor.hasNext()) {
+    if (cursor) {
       cursor._printBatch();
-      return;
+    } else {
+      shell.insertResponseLine('no cursor');
+      console.warn('no cursor');
     }
-    shell.insertResponseLine('no cursor');
-    console.warn('no cursor');
   }
 
   function show(shell, args) {

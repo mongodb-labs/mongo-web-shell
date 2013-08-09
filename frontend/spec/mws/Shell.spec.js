@@ -14,7 +14,7 @@
  */
 
 /* global afterEach, beforeEach, CONST, describe, expect, it, jasmine, mongo */
-/* global spyOn, xit */
+/* global spyOn, xit, Evaluator */
 /* jshint evil: true, nonew: false */
 describe('A Shell', function () {
   var instance, $rootElement;
@@ -66,7 +66,9 @@ describe('A Shell', function () {
     var printFunc;
 
     beforeEach(function () {
-      printFunc = spyOn(instance.context, 'print').andCallThrough();
+      var originalPrint = instance.evaluator.getGlobal('print');
+      printFunc = jasmine.createSpy().andCallFake(originalPrint);
+      instance.evaluator.setGlobal('print', printFunc);
       spyOn(instance, 'insertResponseLine');
     });
 
@@ -115,18 +117,15 @@ describe('A Shell', function () {
   });
 
   describe('that has injected its HTML', function () {
-    it('creates a hidden iframe sandbox', function () {
-      var sandbox = instance.sandbox;
-      expect(sandbox instanceof HTMLIFrameElement).toBe(true);
-      expect(sandbox.height).toEqual('0');
-      expect(sandbox.width).toEqual('0');
-      expect(sandbox.style.visibility).toEqual('hidden');
+    it('creates an evaluator', function () {
+      var evaluator = instance.evaluator;
+      expect(evaluator).toEqual(jasmine.any(Evaluator));
     });
 
-    it('initializes the sanbox\'s environment', function () {
-      var win = instance.context;
-      expect(win.__get).toBe(mongo.util.__get);
-      expect(win.db).toBe(instance.db);
+    it('initializes the evaluator\'s environment', function () {
+      var e = instance.evaluator;
+      expect(e.getGlobal('__get')).toBe(mongo.util.__get);
+      expect(e.getGlobal('db')).toBe(instance.db);
     });
 
     xit('focuses the input when clicked', function () {
@@ -282,7 +281,7 @@ describe('A Shell', function () {
   describe('evaling JavaScript statements', function () {
     var evalSpy;
     beforeEach(function () {
-      evalSpy = spyOn(instance.context, 'eval').andCallThrough();
+      evalSpy = spyOn(instance.evaluator, 'eval').andCallThrough();
 
       spyOn(instance, 'insertResponseLine');
       spyOn(mongo.Cursor.prototype, '_printBatch');
@@ -291,10 +290,10 @@ describe('A Shell', function () {
       );
     });
 
-    it('uses the sandbox to evalute the javascript', function () {
+    it('uses the evaluator to evaluate the javascript', function () {
       var statements = 'var i = {}; i.a = 2';
       instance.eval(statements);
-      expect(evalSpy).toHaveBeenCalledWith(statements);
+      expect(evalSpy).toHaveBeenCalledWith(statements, jasmine.any(Function));
     });
 
     it('does not print valid statement output that is undefined', function () {
@@ -302,6 +301,7 @@ describe('A Shell', function () {
       for (var i = 0; i < statements.length; i++) {
         instance.eval(statements[i]);
         expect(instance.insertResponseLine).not.toHaveBeenCalled();
+        instance.insertResponseLine.reset();
       }
     });
 
@@ -314,14 +314,16 @@ describe('A Shell', function () {
     });
 
     it('executes an output Cursor query and prints a batch', function () {
-      instance.context.myCursor = new mongo.Cursor(instance, function () {});
+      instance.evaluator.setGlobal('myCursor', new mongo.Cursor(instance, function () {}));
       var statements = 'myCursor';
       instance.eval(statements);
       expect(mongo.Cursor.prototype._printBatch).toHaveBeenCalled();
     });
 
-    it('throws an error if the statement is invalid', function () {
-      expect(function () { instance.eval('invalid'); }).toThrow();
+    it('inserts an error if the statement is invalid', function () {
+      var insertError = spyOn(instance, 'insertError');
+      instance.eval('invalid');
+      expect(insertError).toHaveBeenCalled();
     });
   });
 
@@ -385,7 +387,6 @@ describe('A Shell', function () {
   });
 
   it('extracts messages from errors', function () {
-    instance.context = {Error: function () {}};
     var irl = spyOn(instance, 'insertResponseLine');
 
     instance.insertError(new ReferenceError('My Message'));

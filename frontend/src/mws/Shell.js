@@ -14,7 +14,7 @@
  */
 
 /* jshint evil: true, newcap: false */
-/* global console, mongo, CodeMirror */
+/* global console, mongo, CodeMirror, Evaluator */
 mongo.Shell = function (rootElement, shellID) {
   this.$rootElement = $(rootElement);
 
@@ -68,24 +68,15 @@ mongo.Shell.prototype.injectHTML = function () {
 
   // Todo: We should whitelist what is available in this namespace
   // e.g. get rid of parent
-  this.sandbox = $('<iframe width="0" height="0"></iframe>')
-    .css({visibility : 'hidden'})
-    .appendTo('body')
-    .get(0);
-  this.context = this.sandbox.contentWindow;
-  if (!this.context.eval && this.context.execScript){
-    this.context.execScript('null');
-  }
+  this.evaluator = new Evaluator();
 
-  this.context.print = function(){
+  this.evaluator.setGlobal('print', function(){
     this.insertResponseLine($.makeArray(arguments).map(function(e){
       return mongo.util.toString(e);
     }).join(' '));
-  }.bind(this);
-  this.context.__get = mongo.util.__get;
-  this.context.db = this.db;
-
-  this.context.tojson = mongo.jsonUtils.tojson;
+  }.bind(this));
+  this.evaluator.setGlobal('__get', mongo.util.__get);
+  this.evaluator.setGlobal('db', this.db);
 };
 
 mongo.Shell.prototype.attachClickListener = function () {
@@ -128,15 +119,17 @@ mongo.Shell.prototype.handleInput = function () {
  * throw any exceptions eval throws.
  */
 mongo.Shell.prototype.eval = function (src) {
-  var out = this.context.eval(src);
-  // TODO: Since the result is returned asynchronously, multiple JS
-  // statements entered on one line in the shell may have their results
-  // printed out of order. Fix this.
-  if (out instanceof mongo.Cursor) {
-    out._printBatch();
-  } else if (out !== undefined) {
-    this.insertResponseLine(out);
-  }
+  this.evaluator.eval(src, function (out, isError) {
+    if (isError) {
+      this.insertError(out);
+    } else {
+      if (out instanceof mongo.Cursor) {
+        out._printBatch();
+      } else if (out !== undefined) {
+        this.insertResponseLine(out);
+      }
+    }
+  }.bind(this));
 };
 
 mongo.Shell.prototype.enableInput = function (bool) {
@@ -188,7 +181,7 @@ mongo.Shell.prototype.insertResponseLine = function (data, prepend, noRefresh) {
 };
 
 mongo.Shell.prototype.insertError = function (err) {
-  if (err instanceof Error || err instanceof this.context.Error) {
+  if (err instanceof Error || err instanceof this.evaluator.getGlobal('Error')) {
     err = err.toString();
   } else if (err.message) {
     err = 'ERROR: ' + err.message;
