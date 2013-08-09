@@ -87,7 +87,7 @@ def ratelimit(f):
             raise MWSServerError(401, error)
 
         config = current_app.config
-        coll = get_db(MWSExceptions=True)[config['RATELIMIT_COLLECTION']]
+        coll = get_db()[config['RATELIMIT_COLLECTION']]
         coll.insert({'session_id': session_id, 'timestamp': datetime.now()})
 
         delta = timedelta(seconds=config['RATELIMIT_EXPIRY'])
@@ -106,7 +106,7 @@ def ratelimit(f):
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
     session['session_id'] = session_id
-    clients = get_db(MWSExceptions=True)[CLIENTS_COLLECTION]
+    clients = get_db()[CLIENTS_COLLECTION]
 
     cursor = clients.find({'session_id': session_id}, {'res_id': 1, '_id': 0})
     if cursor.count():
@@ -130,7 +130,7 @@ def create_mws_resource():
 @crossdomain(origin=REQUEST_ORIGIN)
 @check_session_id
 def keep_mws_alive(res_id):
-    clients = get_db(MWSExceptions=True)[CLIENTS_COLLECTION]
+    clients = get_db()[CLIENTS_COLLECTION]
     clients.update({'session_id': session.get('session_id'), 'res_id': res_id},
                    {'$set': {'timestamp': datetime.now()}})
     return empty_success()
@@ -151,7 +151,7 @@ def db_collection_find(res_id, collection_name):
     limit = request.json.get('limit', 0)
 
     with UseResId(res_id):
-        coll = get_db(MWSExceptions=True)[collection_name]
+        coll = get_db()[collection_name]
         cursor = coll.find(query, projection, skip, limit)
         documents = list(cursor)
         return to_json({'result': documents})
@@ -186,7 +186,7 @@ def db_collection_insert(res_id, collection_name):
 
     # Insert document
     with UseResId(res_id):
-        get_db(MWSExceptions=True)[collection_name].insert(document)
+        get_db()[collection_name].insert(document)
         return empty_success()
 
 
@@ -200,7 +200,7 @@ def db_collection_remove(res_id, collection_name):
     just_one = request.json and request.json.get('just_one', False)
 
     with UseResId(res_id):
-        collection = get_db(MWSExceptions=True)[collection_name]
+        collection = get_db()[collection_name]
         if just_one:
             collection.find_and_modify(constraint, remove=True)
         else:
@@ -231,7 +231,7 @@ def db_collection_update(res_id, collection_name):
         # It would be nice if we were able to make a more conservative estimate
         # of the space difference that an update will cause. (especially if it
         # results in smaller documents)
-        db = get_db(MWSExceptions=True)
+        db = get_db()
         affected = db[collection_name].find(query).count()
         req_size = len(BSON.encode(update)) * affected
 
@@ -250,7 +250,7 @@ def db_collection_aggregate(res_id, collection_name):
     parse_get_json(request)
     try:
         with UseResId(res_id):
-            coll = get_db(MWSExceptions=True)[collection_name]
+            coll = get_db()[collection_name]
             result = coll.aggregate(request.json)
             return to_json(result)
     except OperationFailure as e:
@@ -264,7 +264,7 @@ def db_collection_aggregate(res_id, collection_name):
 @ratelimit
 def db_collection_drop(res_id, collection_name):
     with UseResId(res_id):
-        get_db(MWSExceptions=True).drop_collection(collection_name)
+        get_db().drop_collection(collection_name)
     return empty_success()
 
 
@@ -280,7 +280,7 @@ def db_collection_count(res_id, collection_name):
     use_skip_limit = bool(skip or limit)
 
     with UseResId(res_id):
-        coll = get_db(MWSExceptions=True)[collection_name]
+        coll = get_db()[collection_name]
         cursor = coll.find(query, skip=skip, limit=limit)
         count = cursor.count(use_skip_limit)
         return to_json({'count': count})
@@ -299,7 +299,7 @@ def db_get_collection_names(res_id):
 @crossdomain(headers='Content-type', origin=REQUEST_ORIGIN)
 @check_session_id
 def db_drop(res_id):
-    DB = get_db(MWSExceptions=True)
+    DB = get_db()
     collections = get_collection_names(res_id)
     with UseResId(res_id):
         for c in collections:
@@ -313,7 +313,7 @@ def generate_res_id():
 
 def user_has_access(res_id, session_id):
     query = {'res_id': res_id, 'session_id': session_id}
-    coll = get_db(MWSExceptions=True)[CLIENTS_COLLECTION]
+    coll = get_db()[CLIENTS_COLLECTION]
     return_value = coll.find_one(query)
     return False if return_value is None else True
 
@@ -342,7 +342,7 @@ def parse_get_json(request):
 def get_collection_size(res_id, collection_name):
     coll = get_internal_coll_name(res_id, collection_name)
     try:
-        return get_db(MWSExceptions=True).command({'collstats': coll})['size']
+        return get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
         if 'ns not found' in e.message:
             return 0

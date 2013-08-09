@@ -3,13 +3,12 @@ from urlparse import urlparse
 from flask import current_app
 import pymongo
 
-from pymongo.errors import ConnectionFailure, AutoReconnect
 from mongows.mws.MWSServerError import MWSServerError
 
 db = None
 
 
-def get_db(MWSExceptions=False):
+def get_db(MWSExceptions=True):
     global db
     # TODO: Ensure MongoClient connection is still active.
     if db:
