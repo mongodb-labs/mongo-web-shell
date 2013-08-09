@@ -19,7 +19,7 @@ def run_scheduler(app):
 
 def expire_sessions(app):
     with app.app_context():
-        db = get_db()
+        db = get_db(MWSExceptions=False)
         delta = timedelta(seconds=EXPIRE_SESSION_DURATION)
         exp = datetime.now() - delta
         sessions = db.clients.find({'timestamp': {'$lt': exp}})
