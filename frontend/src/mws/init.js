@@ -151,9 +151,6 @@ mongo.init = (function(){
   var run = function () {
     mongo.jQueryInit(jQuery);
     mongo.util.enableConsoleProtection();
-    var config = mongo.config = mongo.dom.retrieveConfig();
-    mongo.dom.injectStylesheet(config.cssPath);
-
 
     // Request a resource ID, give it to all the shells, and keep it alive
     mongo.request.createMWSResource(mongo.shells, function (data) {
@@ -161,12 +158,12 @@ mongo.init = (function(){
 
       setInterval(
         function () { mongo.request.keepAlive(data.res_id); },
-        mongo.const.keepAliveTime
+        mongo.config.keepAliveTime
       );
 
       // For now, assume a single resource id for all shells
       // Initialize all shells and process initialization urls
-      $(mongo.const.rootElementSelector).mws({createNew: true, initData: data.is_new});
+      $(mongo.config.rootElementSelector).mws({createNew: true, initData: data.is_new});
     });
   };
 

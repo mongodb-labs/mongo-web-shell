@@ -14,7 +14,8 @@
  */
 
 /* global mongo */
-mongo.const = (function () {
+mongo.config = (function () {
+  var mwsHost = window.MWS_HOST || '';
   var KEYCODES = {
     enter: 13,
     left: 37,
@@ -27,9 +28,11 @@ mongo.const = (function () {
     keycodes: KEYCODES,
     keepAliveTime: 30000,
     rootElementSelector: '.mongo-web-shell',
-    scriptName: 'mongoWebShell.js',
+    scriptName: 'mongoWebShell',
     shellBatchSize: 20,
     shellHistoryKey: 'mongo.history',
-    shellHistorySize: 500
+    shellHistorySize: 500,
+    mwsHost: mwsHost,
+    baseUrl: mwsHost + '/mws/'
   };
 }());

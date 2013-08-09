@@ -25,7 +25,7 @@ mongo.Shell = function (rootElement, shellID) {
   this.mwsResourceID = null;
   this.readline = null;
   this.lastUsedCursor = null;
-  this.shellBatchSize = mongo.const.shellBatchSize;
+  this.shellBatchSize = mongo.config.shellBatchSize;
   this.db = new mongo.DB(this, 'test');
 
   this.injectHTML();
@@ -58,6 +58,9 @@ mongo.Shell.prototype.injectHTML = function () {
     .appendTo('body')
     .get(0);
   this.context = this.sandbox.contentWindow;
+  if (!this.context.eval && this.context.execScript){
+    this.context.execScript('null');
+  }
 
   this.context.print = function(){
     this.insertResponseLine($.makeArray(arguments).map(function(e){
