@@ -18,4 +18,4 @@
 	url = git://github.com/kriskowal/es5-shim
 [submodule "frontend/lib/suspend.js"]
 	path = frontend/lib/suspend.js
-	url = git@github.com:FuegoFro/suspend.js.git
+	url = git://github.com/FuegoFro/suspend.js.git
