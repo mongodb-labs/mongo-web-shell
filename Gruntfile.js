@@ -13,12 +13,31 @@
  *    limitations under the License.
  */
 
-/* jshint node: true */
+/* jshint node: true, camelcase: false */
 var FRONTEND_DIR = 'frontend/';
 var LIB_DIR = FRONTEND_DIR + 'lib/';
 var SPEC_DIR = FRONTEND_DIR + 'spec/';
 var SRC_DIR = FRONTEND_DIR + 'src/';
 var DIST_DIR = FRONTEND_DIR + 'dist/';
+
+var JS_LIB = [
+  LIB_DIR + 'es5-shim/es5-shim.min.js',
+  LIB_DIR + 'esprima/esprima.js',
+  LIB_DIR + 'falafel/falafel.browser.js',
+  LIB_DIR + 'noty/js/noty/jquery.noty.js',
+  LIB_DIR + 'noty/js/noty/layouts/top.js',
+  LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
+  LIB_DIR + 'noty/js/noty/themes/default.js',
+  LIB_DIR + 'codemirror/lib/codemirror.js',
+  LIB_DIR + 'codemirror/mode/javascript/javascript.js',
+  LIB_DIR + 'codemirror/addon/edit/matchbrackets.js'
+];
+
+var JS_MWS = [
+  SRC_DIR + 'head.js',
+  SRC_DIR + 'mws/**/*.js',
+  SRC_DIR + 'tail.js'
+];
 
 module.exports = function (grunt) {
 
@@ -30,37 +49,22 @@ module.exports = function (grunt) {
     },
 
     concat: {
-      dist: {
-        src: [
-          LIB_DIR + 'es5-shim/es5-shim.min.js',
-          LIB_DIR + 'esprima/esprima.js',
-          LIB_DIR + 'falafel/falafel.browser.js',
-          LIB_DIR + 'noty/js/noty/jquery.noty.js',
-          LIB_DIR + 'noty/js/noty/layouts/top.js',
-          LIB_DIR + 'noty/js/noty/layouts/topCenter.js',
-          LIB_DIR + 'noty/js/noty/themes/default.js',
-          LIB_DIR + 'codemirror/lib/codemirror.js',
-          LIB_DIR + 'codemirror/mode/javascript/javascript.js',
-          LIB_DIR + 'codemirror/addon/edit/matchbrackets.js',
-          SRC_DIR + 'head.js',
-          SRC_DIR + 'mws/**/*.js',
-          SRC_DIR + 'tail.js'
-        ],
+      js: {
+        src: JS_LIB.concat(JS_MWS),
         dest: DIST_DIR + 'mongoWebShell.js'
       },
-      css: {
+      minjs: {
         src: [
-          LIB_DIR + 'codemirror/lib/codemirror.css',
-          LIB_DIR + 'codemirror/theme/solarized.css',
-          FRONTEND_DIR + 'mongoWebShell.css'
+          DIST_DIR + '_lib.min.js',
+          DIST_DIR + '_mws.min.js'
         ],
-        dest: DIST_DIR + 'mongoWebShell.css'
+        dest: DIST_DIR + 'mongoWebShell.min.js'
       }
     },
 
     jasmine: {
-      dist: {
-        src: DIST_DIR + '**/*.js',
+      js: {
+        src: DIST_DIR + 'mongoWebShell.js',
         options: {
           specs: SPEC_DIR + '**/*.spec.js',
           helpers: [
@@ -72,7 +76,24 @@ module.exports = function (grunt) {
             'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
           ],
           styles: [
-            DIST_DIR + 'mongoWebShell.css'
+            DIST_DIR + 'mongoWebShell.min.css'
+          ]
+        }
+      },
+      minified: {
+        src: DIST_DIR + 'mongoWebShell.min.js',
+        options: {
+          specs: SPEC_DIR + '**/*.spec.js',
+          helpers: [
+            SPEC_DIR + 'disableConsole.js',
+            SPEC_DIR + 'globals.js'
+          ],
+          vendor: [
+            LIB_DIR + 'sinon/sinon.js',
+            'https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js'
+          ],
+          styles: [
+            DIST_DIR + 'mongoWebShell.min.css'
           ]
         }
       }
@@ -88,13 +109,17 @@ module.exports = function (grunt) {
     },
 
     watch: {
-      dist: {
+      mws: {
         files: [SRC_DIR + '**/*'],
-        tasks: ['concat:dist']
+        tasks: ['closure-compiler:mws', 'concat']
+      },
+      lib: {
+        files: [LIB_DIR + '**/*'],
+        tasks: ['closure-compiler:lib', 'concat']
       },
       css: {
-        files: [FRONTEND_DIR + 'mongoWebShell.css'],
-        tasks: ['concat:css']
+        files: [FRONTEND_DIR + '*.css'],
+        tasks: ['cssmin']
       }
     },
 
@@ -113,6 +138,43 @@ module.exports = function (grunt) {
           failOnError: true
         }
       }
+    },
+
+    'closure-compiler': {
+      mws: {
+        js: JS_MWS,
+        jsOutputFile: DIST_DIR + '_mws.min.js',
+        maxBuffer: 500,
+        options: {
+          compilation_level: 'SIMPLE_OPTIMIZATIONS',
+          language_in: 'ECMASCRIPT5'
+        },
+        noreport: true
+      },
+
+      lib: {
+        js: JS_LIB,
+        jsOutputFile: DIST_DIR + '_lib.min.js',
+        maxBuffer: 500,
+        options: {
+          compilation_level: 'SIMPLE_OPTIMIZATIONS',
+          language_in: 'ECMASCRIPT5'
+        },
+        noreport: true
+      }
+    },
+
+    cssmin: {
+      minify: {
+        files: {
+          // Have to hard code the dist dir into this string so it can be a key
+          'frontend/dist/mongoWebShell.min.css': [
+            LIB_DIR + 'codemirror/lib/codemirror.css',
+            LIB_DIR + 'codemirror/theme/solarized.css',
+            FRONTEND_DIR + 'mongoWebShell.css'
+          ]
+        }
+      }
     }
   });
 
@@ -122,12 +184,15 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('grunt-closure-compiler');
+  grunt.loadNpmTasks('grunt-contrib-cssmin');
 
-  grunt.registerTask('default', ['concat']);
+  grunt.registerTask('minify', ['closure-compiler', 'cssmin']);
+  grunt.registerTask('default', ['minify', 'concat']);
   grunt.registerTask('pep8', ['shell:pep8']);
   grunt.registerTask('unittest', ['shell:unittest']);
   grunt.registerTask(
     'test',
-    ['jshint', 'concat', 'jasmine', 'pep8', 'unittest']
+    ['jshint', 'minify', 'concat', 'jasmine', 'pep8', 'unittest']
   );
 };

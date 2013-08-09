@@ -28,7 +28,7 @@ mongo.config = (function () {
     keycodes: KEYCODES,
     keepAliveTime: 30000,
     rootElementSelector: '.mongo-web-shell',
-    scriptName: 'mongoWebShell.js',
+    scriptName: 'mongoWebShell',
     shellBatchSize: 20,
     shellHistoryKey: 'mongo.history',
     shellHistorySize: 500,
