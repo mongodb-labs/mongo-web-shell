@@ -22,8 +22,6 @@ import yaml
 
 from .mws import mws
 from .demo import demo
-from .initializers import initializers
-from .validators import validators
 
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
@@ -32,7 +30,6 @@ _ENVVAR = [
     'LOGGING_CONF',
     'MONGOHQ_URL',
     'NO_FRONTEND',
-    'NO_VALIDATION',
     'PORT',
     'CORS_ORIGIN',
 ]
@@ -55,7 +52,6 @@ def override_config_from_envvar(app):
     # Correct data types.
     app.config['DEBUG'] = bool(app.config['DEBUG'])
     app.config['NO_FRONTEND'] = bool(app.config['NO_FRONTEND'])
-    app.config['NO_VALIDATION'] = bool(app.config['NO_VALIDATION'])
     app.config['PORT'] = int(app.config['PORT'])
 
 
@@ -93,7 +89,3 @@ def register_blueprints(app):
     app.register_blueprint(mws)
     if not app.config['NO_FRONTEND']:
         app.register_blueprint(demo)
-    if not app.config['NO_INIT']:
-        app.register_blueprint(initializers)
-    if not app.config['NO_VALIDATION']:
-        app.register_blueprint(validators)
