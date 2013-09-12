@@ -175,10 +175,14 @@ def db_collection_find(res_id, collection_name):
     projection = request.json.get('projection')
     skip = request.json.get('skip', 0)
     limit = request.json.get('limit', 0)
+    sort = request.json.get('sort', {})
+    sort = sort.items()
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
         cursor = coll.find(query, projection, skip, limit)
+        if len(sort) > 0:
+            cursor.sort(sort)
         documents = list(cursor)
         return to_json({'result': documents})
 

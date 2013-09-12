@@ -54,6 +54,7 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
     if (this._fields) { params.projection = this._fields; }
     if (this._skip) { params.skip = this._skip; }
     if (this._limit) { params.limit = this._limit; }
+    if (this._sort) {params.sort = this._sort; }
     var wrappedSuccess = function (data) {
       mongo.events.callbackTrigger(this._shell, 'cursor.execute', data.result.slice());
       this._storeQueryResult(data.result);
@@ -162,7 +163,10 @@ mongo.Cursor.prototype.next = function (callback) {
 
 mongo.Cursor.prototype.sort = function (sort) {
   if (this._warnIfExecuted('sort')) { return this; }
-  // TODO: Implement.
+  if (!$.isPlainObject(sort)){
+    throw new Error('Sort must be an object');
+  }
+  this._sort = sort;
   console.debug('mongo.Cursor would be sorted with', sort, this);
   return this;
 };
