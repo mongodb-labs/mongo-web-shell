@@ -78,6 +78,14 @@ mongo.Coll.prototype.insert = function (doc) {
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
 };
 
+mongo.Coll.prototype.save = function (doc) {
+  var url = this.urlBase + 'save';
+  var params = {document: doc}
+  mongo.events.functionTrigger(this.shell, 'db.collection.save', arguments,
+    {collection: this.name});
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionSave', this.shell);
+}
+
 /**
  * Makes a remove request to the mongod instance on the backing server. On
  * success, the item(s) are removed from the collection, otherwise a failure
