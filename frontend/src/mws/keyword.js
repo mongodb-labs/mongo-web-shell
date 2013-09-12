@@ -85,25 +85,25 @@ mongo.keyword = (function () {
   }
 
   function help(shell){
-    shell.insertResponseArray([
-      '    help                           print out this help information',
-      '    show                           prints information about database',
-      '      show tables                  see show collections',
-      '      show collections             show collections in current database',
-      '    db.foo.find()                  list objects in collection foo',
-      '    db.foo.find(query)             list objects in foo matching query',
-      '    db.foo.update(query, update,   updates an object matching query with the given update',
-      '                  upsert, multi)   if no documents match and upsert is true, update is',
-      '                                   inserted if multiple documents matching query exist and',
-      '                                   multi is true all matching documents are updated',
-      '    db.foo.remove(query, justOne)  removes all or just one documents matching query',
-      '    db.foo.drop()                  removes the foo collection from the database',
-      '    it                             result of the last line evaluated; use to further ' +
-                                          'iterate',
-      '    reset                          resets the database to its initial state'
-    ]);
+    shell.insertResponseLine('help', []);
+    shell.insertResponseLine('    Print out this help information.');
+    shell.insertResponseLine('show collections', []);
+    shell.insertResponseLine('    Show collections in current database.');
+    shell.insertResponseLine('db.foo.find()', []);
+    shell.insertResponseLine('    List objects in collection foo.');
+    shell.insertResponseLine('db.foo.find(query)', []);
+    shell.insertResponseLine('    List objects in foo matching query.');
+    shell.insertResponseLine('db.foo.update(query, update, upsert, multi)', []);
+    shell.insertResponseLine('    Updates an object matching query with the given update if no documents match and upsert is true, update is inserted if multiple documents matching query exist and multi is true all matching documents are updated.');
+    shell.insertResponseLine('db.foo.remove(query, justOne)', []);
+    shell.insertResponseLine('    Removes all or just one documents matching query.');
+    shell.insertResponseLine('db.foo.drop()', []);
+    shell.insertResponseLine('    Removes the foo collection from the database.');
+    shell.insertResponseLine('it', []);
+    shell.insertResponseLine('    Get next batch of results from a query.');
+    shell.insertResponseLine('reset', []);
+    shell.insertResponseLine('    Resets the database to its initial state.');
   }
-
   return {
     handleKeywords: handleKeywords,
     _resetHasBeenCalled: false,
