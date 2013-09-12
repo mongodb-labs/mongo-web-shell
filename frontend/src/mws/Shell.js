@@ -99,18 +99,16 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  */
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.inputBox.getValue();
-  this.inputBox.setValue('');
+  if(userInput.trim === ''){ insertResponseLine('>'); }
   this.insertResponseLine(userInput, '> ');
-
-  if (mongo.keyword.handleKeywords(this, userInput)) {
-    return;
-  }
-
-  try {
-    var mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
-    this.eval(mutatedSrc);
-  } catch (err) {
-    this.insertError(err);
+  this.inputBox.setValue('');
+  if (!mongo.keyword.handleKeywords(this, userInput)) {
+      try {
+        var mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
+        this.eval(mutatedSrc);
+      } catch (err) {
+        this.insertError(err);
+      }
   }
 };
 

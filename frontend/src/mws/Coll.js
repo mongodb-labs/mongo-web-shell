@@ -157,3 +157,10 @@ mongo.Coll.prototype.aggregate = function(query){
                                {collection: this.name});
   mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, onSuccess);
 };
+
+mongo.Coll.prototype.__methodMissing = function (field) {
+    this.shell.insertError(field + " is not a function on collections.");
+    var noop = function(){};
+    noop.toString = function(){ return ""; };
+    return noop
+}

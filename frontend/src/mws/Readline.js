@@ -98,8 +98,6 @@ mongo.Readline.prototype.getOlderHistoryEntry = function () {
  * Stores the given line to the command history and resets the history index.
  */
 mongo.Readline.prototype.submit = function (line) {
-  // ignore blank lines
-  if (line.match(/^\s*$/)){ return; }
 
   this.history.push(line);
 
