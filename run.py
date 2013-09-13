@@ -25,13 +25,12 @@ def ensure_indices(app):
                                   background=True,
                                   expireAfterSeconds=60)
 
+app = create_app()
+host, port = app.config['HOST'], app.config['PORT']
+run_scheduler(app)
+ensure_indices(app)
 
 def main():
-    global app, host, port
-    app = create_app()
-    host, port = app.config['HOST'], app.config['PORT']
-    run_scheduler(app)
-    ensure_indices(app)
     app.run(host=host, port=port)
 
 
