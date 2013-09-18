@@ -99,16 +99,18 @@ mongo.Shell.prototype.attachInputHandler = function (mwsResourceID) {
  */
 mongo.Shell.prototype.handleInput = function () {
   var userInput = this.inputBox.getValue();
-  if(userInput.trim === ''){ insertResponseLine('>'); }
+  if(userInput.trim === ''){
+    this.insertResponseLine('>');
+  }
   this.insertResponseLine(userInput, '> ');
   this.inputBox.setValue('');
   if (!mongo.keyword.handleKeywords(this, userInput)) {
-      try {
-        var mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
-        this.eval(mutatedSrc);
-      } catch (err) {
-        this.insertError(err);
-      }
+    try {
+      var mutatedSrc = mongo.mutateSource.swapMemberAccesses(userInput);
+      this.eval(mutatedSrc);
+    } catch (err) {
+      this.insertError(err);
+    }
   }
 };
 

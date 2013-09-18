@@ -80,11 +80,11 @@ mongo.Coll.prototype.insert = function (doc) {
 
 mongo.Coll.prototype.save = function (doc) {
   var url = this.urlBase + 'save';
-  var params = {document: doc}
+  var params = {document: doc};
   mongo.events.functionTrigger(this.shell, 'db.collection.save', arguments,
     {collection: this.name});
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionSave', this.shell);
-}
+};
 
 /**
  * Makes a remove request to the mongod instance on the backing server. On
@@ -159,8 +159,8 @@ mongo.Coll.prototype.aggregate = function(query){
 };
 
 mongo.Coll.prototype.__methodMissing = function (field) {
-    this.shell.insertError(field + " is not a function on collections.");
-    var noop = function(){};
-    noop.toString = function(){ return ""; };
-    return noop
-}
+  this.shell.insertError(field + ' is not a function on collections.');
+  var noop = function(){};
+  noop.toString = function(){ return ''; };
+  return noop;
+};

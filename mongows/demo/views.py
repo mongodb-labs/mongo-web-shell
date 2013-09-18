@@ -23,9 +23,11 @@ demo = Blueprint(
 def render():
     return render_template('default.html')
 
+
 @demo.route('/try')
 def render_try_page():
     return render_template('try.html')
+
 
 @demo.route('/events_demo')
 def render_events_demo():

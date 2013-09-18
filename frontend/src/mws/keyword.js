@@ -94,7 +94,10 @@ mongo.keyword = (function () {
     shell.insertResponseLine('db.foo.find(query)', []);
     shell.insertResponseLine('    List objects in foo matching query.');
     shell.insertResponseLine('db.foo.update(query, update, upsert, multi)', []);
-    shell.insertResponseLine('    Updates an object matching query with the given update if no documents match and upsert is true, update is inserted if multiple documents matching query exist and multi is true all matching documents are updated.');
+    shell.insertResponseLine('    Updates an object matching query with the given ' +
+        'update if no documents match and upsert is true, update is inserted if ' +
+        'multiple documents matching query exist and multi is true all matching ' +
+        'documents are updated.');
     shell.insertResponseLine('db.foo.remove(query, justOne)', []);
     shell.insertResponseLine('    Removes all or just one documents matching query.');
     shell.insertResponseLine('db.foo.drop()', []);

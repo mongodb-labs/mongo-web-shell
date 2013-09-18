@@ -226,8 +226,7 @@ describe('A Cursor', function () {
 
       describe('will execute a function that', function () {
         it('sorts the query result set', function () {
-          // TODO: Implement sort.
-          var actual = instance.sort();
+          var actual = instance.sort({});
           expect(actual).toEqual(jasmine.any(mongo.Cursor));
         });
       });

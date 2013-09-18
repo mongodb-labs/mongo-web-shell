@@ -162,9 +162,11 @@ class DBTestCase(MongoWSTestCase):
                 data = None
         result = method(url, data=data, content_type='application/json')
         actual_status = result.status_code
-        self.assertEqual(actual_status, expected_status,
-                         "Expected request status to be %s, got %s instead" %
-                         (expected_status, actual_status))
+        self.assertEqual(
+            actual_status, expected_status,
+            ("Expected request status to be %s, got %s instead."
+             "  Full result: %s") %
+            (expected_status, actual_status, result.data))
         result_dict = loads(result.data) if result.data else {}
         return result_dict
 

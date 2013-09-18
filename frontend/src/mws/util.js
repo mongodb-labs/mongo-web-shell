@@ -81,8 +81,8 @@ mongo.util = (function () {
     __get: objectMemberGetter
   };
 }());
-if(typeof(String.prototype.trim) === "undefined"){
-    String.prototype.trim = function(){
-        return String(this).replace(/^\s+|\s+$/g, '');
-    }
+if(typeof(String.prototype.trim) === 'undefined'){
+  String.prototype.trim = function(){
+    return String(this).replace(/^\s+|\s+$/g, '');
+  };
 }

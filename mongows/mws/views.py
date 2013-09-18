@@ -12,6 +12,7 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import logging
 from datetime import datetime, timedelta
 from functools import update_wrapper
 import uuid
@@ -34,6 +35,8 @@ from mongows.mws.util import (
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
 CLIENTS_COLLECTION = 'clients'
+
+_logger = logging.getLogger('mongows.views')
 
 
 @mws.after_request
@@ -271,6 +274,7 @@ def db_collection_update(res_id, collection_name):
         db[collection_name].update(query, update, upsert, multi=multi)
         return empty_success()
 
+
 @mws.route('/<res_id>/db/<collection_name>/save',
            methods=['POST', 'OPTIONS'])
 @crossdomain()
@@ -289,7 +293,9 @@ def db_collection_insert(res_id, collection_name):
 
     # Handle inserting both a list of docs or a single doc
     if isinstance(document, list):
-        raise MWSServerError(400, "Can only save single documents, not arrays")
+        document_sizes = [len(BSON.encode(d)) for d in document]
+        _logger.info('documents: {0}'.format(document_sizes))
+        req_size = sum(document_sizes)
     else:
         req_size = len(BSON.encode(document))
 
@@ -298,8 +304,9 @@ def db_collection_insert(res_id, collection_name):
 
     # Insert document
     with UseResId(res_id):
-        get_db()[collection_name].save(document)
+        get_db()[collection_name].insert(document)
         return empty_success()
+
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
            methods=['GET', 'OPTIONS'])

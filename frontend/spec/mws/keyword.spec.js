@@ -182,7 +182,7 @@ describe('The keyword module', function () {
   describe('the help keyword', function(){
     it('prints out the help message', function(){
       mongo.keyword.help(shell);
-      expect(shell.insertResponseArray).toHaveBeenCalled();
+      expect(shell.insertResponseLine).toHaveBeenCalled();
     });
   });
 
