@@ -12,13 +12,18 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import logging
+import flask
 from unittest import defaultTestLoader, TestCase
 
-from mongows import create_app
+from webapps.server.app import create_app
 
-app = create_app()
-app.testing = True
-app.config['QUOTA_NUM_COLLECTIONS'] = None
+if not flask.has_app_context():
+    app = create_app()
+    app.testing = True
+    app.config['QUOTA_NUM_COLLECTIONS'] = None
+
+_logger = logging.getLogger(__name__)
 
 
 class MongoWSTestCase(TestCase):
@@ -27,6 +32,8 @@ class MongoWSTestCase(TestCase):
     def setUp(self):
         self.real_app = app
         self.app = app.test_client()
+        ctx = app.app_context()
+        ctx.push()
 
     def tearDown(self):
         pass

@@ -126,7 +126,7 @@ module.exports = function (grunt) {
 
     shell: {
       pep8: {
-        command: 'pep8 mongows tests run*.py',
+        command: 'pep8 webapps tests run*.py',
         options: {
           stdout: true,
           stderr: true,

@@ -14,10 +14,10 @@
 
 from datetime import datetime, timedelta
 import mock
-from mongows import crontab
-from mongows.crontab import run_scheduler, EXPIRE_SESSION_EVERY
-from mongows.mws.db import get_db
-from mongows.mws.util import get_internal_coll_name
+from webapps.server import crontab
+from webapps.server.crontab import run_scheduler, EXPIRE_SESSION_EVERY
+from webapps.lib.db import get_db
+from webapps.lib.util import get_internal_coll_name
 from tests import MongoWSTestCase
 
 
@@ -39,7 +39,7 @@ class ExpireSessionsTestCase(MongoWSTestCase):
         self.db.clients.remove({'timestamp': {'$lt': self.test_before_date}})
         self.context.pop()
 
-    @mock.patch('mongows.crontab.datetime')
+    @mock.patch('webapps.server.crontab.datetime')
     def test_removes_old_sessions_and_associated_collections(self,
                                                              datetime_mock):
         dates = [
@@ -97,8 +97,8 @@ class ExpireSessionsTestCase(MongoWSTestCase):
         for name in ['20', '21', '22', '30', '31', '32']:
             self.db[name].drop()
 
-    @mock.patch('mongows.crontab.Scheduler')
-    @mock.patch('mongows.crontab.expire_sessions')
+    @mock.patch('webapps.server.crontab.Scheduler')
+    @mock.patch('webapps.server.crontab.expire_sessions')
     def test_run_scheduler_starts_expire_sessions_job(self,
                                                       expire_sessions_mock,
                                                       scheduler_cls_mock):

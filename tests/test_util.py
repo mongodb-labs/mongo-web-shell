@@ -16,10 +16,10 @@ import StringIO
 from bson.json_util import dumps
 import mock
 from werkzeug.exceptions import NotFound, InternalServerError
-from mongows.mws.db import get_db
-from mongows.mws.util import UseResId, get_collection_names
-from mongows.mws.views import CLIENTS_COLLECTION
-from mongows.mws.MWSServerError import MWSServerError
+from webapps.lib.db import get_db
+from webapps.lib.util import UseResId, get_collection_names
+from webapps.lib import CLIENTS_COLLECTION
+from webapps.lib.MWSServerError import MWSServerError
 from tests import MongoWSTestCase
 
 

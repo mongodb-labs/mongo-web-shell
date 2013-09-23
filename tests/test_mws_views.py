@@ -12,19 +12,22 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import logging
 from bson.json_util import loads, dumps
 import datetime
 import mock
-from mongows.mws.db import get_db
-from mongows.mws.util import get_internal_coll_name, get_collection_names
-from mongows.mws.views import ratelimit
+import webapps.server
+from webapps.server.views import ratelimit
+from webapps.lib.db import get_db
+from webapps.lib.util import get_internal_coll_name, get_collection_names
 from flask import session
 
 from pymongo.errors import OperationFailure
-from mongows.mws.MWSServerError import MWSServerError
+from webapps.lib.MWSServerError import MWSServerError
 
 from tests import MongoWSTestCase
-from mongows.mws.views import CLIENTS_COLLECTION
+from webapps.lib import CLIENTS_COLLECTION
+
 
 
 class ViewsSetUpUnitTestCase(MongoWSTestCase):
@@ -64,7 +67,7 @@ class ViewsSetUpUnitTestCase(MongoWSTestCase):
         self.assertIsNotNone(new_res_id)
         self.assertNotEqual(res_id, new_res_id)
 
-    @mock.patch('mongows.mws.views.datetime')
+    @mock.patch('webapps.server.views.datetime')
     def test_keep_mws_alive(self, datetime_mock):
         first = datetime.datetime(2012, 7, 4)
         second = first + datetime.timedelta(days=1)
@@ -182,6 +185,7 @@ class DBTestCase(MongoWSTestCase):
 class DBCollectionTestCase(DBTestCase):
     def setUp(self):
         super(DBCollectionTestCase, self).setUp()
+
 
         self.coll_name = 'test_collection'
         self.internal_coll_name = get_internal_coll_name(self.res_id,
