@@ -12,12 +12,14 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import json
+import requests
 import traceback
 
 from flask import Blueprint, current_app
 
 from importlib import import_module
-from flask import request
+from flask import jsonify, request
 from webapps.lib.MWSServerError import MWSServerError
 from webapps.ivs.lib.naivesign import decode_signed_value
 
@@ -25,46 +27,33 @@ ivs = Blueprint(
     'ivs', __name__, url_prefix='', template_folder='templates',
     static_url_path='', static_folder='../../frontend')
 
-import sys
 import logging
 _logger = logging.getLogger(__name__)
 
 
-@ivs.route('/init/<script_name>')
+@ivs.route('/init/<script_name>', methods=['POST'])
 def init(script_name):
-    if current_app.config.get('DEBUG'):
-        user_id = request.values.get('user_id')
-    elif 'mws-track-id' not in request.cookies:
-        raise MWSServerError(400, "Invalid request (missing cookie)")
-    else:
-        key = current_app.config.get('EDX_SHARED_KEY')
-        user_id = decode_signed_value(key, request.cookies['mws-track-id'])
+    user_id = _get_user_id()
     try:
         module = 'webapps.ivs.initializers.scripts.{0}'.format(script_name)
         module = import_module(module)
     except ImportError as e:
         raise MWSServerError(404, str(e))
     try:
-        success = module.run(user_id, request)
+        module.run(user_id, request)
     except Exception as e:
         _logger.error('Init script {0} threw exception {1}'.format(
             script_name, str(e)))
         _logger.error('Traceback: {0}'.format(traceback.format_exc()))
         raise MWSServerError(500, type(e).__name__, str(e))
-    return 'Collection initilaized successfully', 200
+    return 'Collection initialized successfully', 200
 
 
-@ivs.route('/verify/<script_name>')
-def init(script_name):
-    if current_app.config.get('DEBUG'):
-        user_id = request.values.get('user_id')
-    elif 'mws-track-id' not in request.cookies:
-        raise MWSServerError(400, "Invalid request (missing cookie)")
-    else:
-        key = current_app.config.get('EDX_SHARED_KEY')
-        user_id = decode_signed_value(key, request.cookies['mws-track-id'])
+@ivs.route('/verify/<script_name>', methods=['POST'])
+def verify(script_name):
+    user_id = _get_user_id()
     if 'course_id' not in request.values or 'problem_id' not in request.values:
-        raise MWSServerError(400, "Course of Problem not specified.")
+        raise MWSServerError(400, "Course or Problem not specified.")
     else:
         course_id = request.values['course_id']
         problem_id = request.values['problem_id']
@@ -74,18 +63,33 @@ def init(script_name):
     except ImportError as e:
         raise MWSServerError(404, str(e))
     try:
-        grade = module.run(user_id, request)
+        results = module.run(user_id, request)
     except Exception as e:
         _logger.error('Verification script {0} threw exception {1}'.format(
             script_name, str(e)))
         _logger.error('Traceback: {0}'.format(traceback.format_exc()))
         raise MWSServerError(500, type(e).__name__, str(e))
-        server_url = current_app.config.get('GRADING_SERVER_URL')
-        post_url = '{0}/api/v1.0/grade/{1}/{2}/{3}'.format(
-            server_url,
-            course_id,
-            problem_id,
-            user_id)
-        r = requests.post(server_url, params=json.dumps(grade))
-       # TODO: Post return value from script
-    return json.dumps(grade), 200
+    server_url = current_app.config.get('GRADING_SERVER_URL')
+    post_url = '{0}/api/v1/grade/{1}/{2}/{3}'.format(
+        server_url,
+        course_id,
+        problem_id,
+        user_id)
+    response = requests.post(post_url, data=results)
+    if response.status_code != 200:
+        raise MWSServerError(response.status_code, response.text)
+    return jsonify(**(json.loads(response.text)))
+
+
+def _get_user_id():
+    if current_app.config.get('DEBUG'):
+        return request.values.get('user_id')
+
+    if 'mws-track-id' not in request.cookies:
+        raise MWSServerError(400, "Invalid request (missing cookie)")
+
+    key = current_app.config.get('EDX_SHARED_KEY')
+    user_id = decode_signed_value(key, request.cookies['mws-track-id'])
+    if user_id is None:
+        raise MWSServerError(400, "Invalid request (invalid cookie)")
+    return user_id
