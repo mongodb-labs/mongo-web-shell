@@ -1,0 +1,9 @@
+server {
+  server_name {{ mws_nginx_server_name }};
+  access_log /var/log/nginx/mws.log;
+
+  location / {
+    include uwsgi_params;
+    uwsgi_pass unix:/tmp/mws-uwsgi.sock;
+  }
+}

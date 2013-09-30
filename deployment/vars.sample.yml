@@ -1,0 +1,11 @@
+---
+git_repo: <git repo>
+git_version: <This can be the git SHA, the literal string HEAD, a branch name, or a tag name>
+owner: <source code owner user>
+uwsgi_uid: <uwsgi will run as this user>
+ivs_grading_server_url: <base url to the grading server>
+ivs_edx_shared_key: <secret key used to sign cookies with>
+ivs_debug: <set to '' to turn off debug>
+ivs_nginx_server_name: <server name for iws nginx service>
+mws_nginx_server_name: <server name for mws nginx service>
+mws_debug: <set to '' to turn off debug>
