@@ -39,7 +39,7 @@ def update_config(app, prefix):
         key, t = envvar
         val = os.environ.get(key, app.config[key])
         val = t(val)
-        app.config[envvar] = val
+        app.config[key] = val
 
     for envvar in _PREFIXED_ENVVAR:
         key, t = envvar
@@ -47,4 +47,4 @@ def update_config(app, prefix):
             key = key[len(prefix) + 1:]
             val = os.environ.get(key, app.config[key])
             val = t(val)
-            app.config[envvar] = val
+            app.config[key] = val
