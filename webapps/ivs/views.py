@@ -16,10 +16,12 @@ import json
 import requests
 import traceback
 
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, jsonify, request, session
 
 from importlib import import_module
-from flask import jsonify, request
+
+from webapps.lib import CLIENTS_COLLECTION
+from webapps.lib.db import get_db
 from webapps.lib.MWSServerError import MWSServerError
 from webapps.ivs.lib.naivesign import decode_signed_value
 
@@ -33,14 +35,14 @@ _logger = logging.getLogger(__name__)
 
 @ivs.route('/init/<script_name>', methods=['POST'])
 def init(script_name):
-    user_id = _get_user_id()
+    res_id = _get_res_id()
     try:
         module = 'webapps.ivs.initializers.scripts.{0}'.format(script_name)
         module = import_module(module)
     except ImportError as e:
         raise MWSServerError(404, str(e))
     try:
-        module.run(user_id, request)
+        module.run(res_id, request)
     except Exception as e:
         _logger.error('Init script {0} threw exception {1}'.format(
             script_name, str(e)))
@@ -51,6 +53,7 @@ def init(script_name):
 
 @ivs.route('/verify/<script_name>', methods=['POST'])
 def verify(script_name):
+    res_id = _get_res_id()
     user_id = _get_user_id()
     if 'course_id' not in request.values or 'problem_id' not in request.values:
         raise MWSServerError(400, "Course or Problem not specified.")
@@ -63,7 +66,7 @@ def verify(script_name):
     except ImportError as e:
         raise MWSServerError(404, str(e))
     try:
-        results = module.run(user_id, request)
+        results = module.run(res_id, request)
     except Exception as e:
         _logger.error('Verification script {0} threw exception {1}'.format(
             script_name, str(e)))
@@ -93,3 +96,14 @@ def _get_user_id():
     if user_id is None:
         raise MWSServerError(400, "Invalid request (invalid cookie)")
     return user_id
+
+
+def _get_res_id():
+    if 'session_id' not in session:
+        raise MWSServerError(400, "Invalid request (missing session)")
+    session_id = session['session_id']
+    clients = get_db()[CLIENTS_COLLECTION]
+    doc = clients.find_one({'session_id': session_id}, {'res_id': 1, '_id': 0})
+    if not doc:
+        raise MWSServerError(500, "Resource id not associated with session")
+    return doc['res_id']
