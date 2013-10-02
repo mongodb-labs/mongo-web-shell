@@ -33,3 +33,6 @@ def create_app():
     _logger.info('test')
     app.register_blueprint(ivs)
     return app
+
+
+app = create_app()
