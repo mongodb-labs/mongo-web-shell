@@ -1,0 +1,19 @@
+---
+# file: roles/mongodb/tasks/main.yml
+# see http://docs.mongodb.org/manual/tutorial/install-mongodb-on-ubuntu/
+
+- name: install pycurl for apt key retrieval
+  apt: pkg=python-pycurl state=present
+  sudo: yes
+
+- name: register 10gen apt key
+  apt_key: url=http://docs.mongodb.org/10gen-gpg-key.asc state=present
+  sudo: yes
+
+- name: register 10gen apt repo
+  apt_repository: repo='deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' update_cache=yes state=present
+  sudo: yes
+
+- name: install mongodb
+  apt: pkg=mongodb-10gen update_cache=yes state=present
+  sudo: yes

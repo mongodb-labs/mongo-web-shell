@@ -1,0 +1,15 @@
+description 'Mongo Web Shell'
+
+start on (net-device-up
+          and local-filesystems
+          and runlevel [2345])
+
+stop on runlevel [06]
+respawn
+
+script
+  . /opt/mws/venv/bin/activate
+  cd /opt/mws/mongo-web-shell
+  export DEBUG={{ mws_debug }}
+  uwsgi --uid {{ uwsgi_uid }} -s /tmp/mws-uwsgi.sock -w webapps.server.app:app --chown-socket '{{ uwsgi_uid }}:www-data' --chmod-socket=660 --processes=4
+end script
