@@ -28,6 +28,8 @@ _PREFIXED_ENVVAR = [
     ('TRY_PORT', int),
     ('TRY_MWS_HOST', str),
     # Init Verification service
+    ('IVS_EDX_SHARED_KEY', str),
+    ('IVS_GRADING_SERVER_URL', str),
     ('IVS_HOST', str),
     ('IVS_PORT', int),
 ]
