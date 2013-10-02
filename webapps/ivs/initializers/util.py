@@ -19,7 +19,7 @@ from subprocess import Popen
 from bson.json_util import loads
 from werkzeug.exceptions import NotFound, InternalServerError
 from webapps.lib.db import get_db
-from webapps.lib.util import UseResId
+from webapps.lib.util import get_collection_names, UseResId
 
 
 _logger = logging.getLogger(__name__)
@@ -27,10 +27,9 @@ _logger = logging.getLogger(__name__)
 
 def cleanup_collections(res_id):
     db = get_db()
-    for coll in db.collection_names():
-        _logger.info(coll)
-        if coll.startswith(res_id):
-            _logger.info('dropping')
+    for coll in get_collection_names(res_id):
+        with UseResId(res_id):
+            _logger.info('dropping %s', coll)
             db.drop_collection(coll)
 
 
