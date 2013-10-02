@@ -32,3 +32,6 @@ def create_app():
     configure_logging(app)
     app.register_blueprint(mws)
     return app
+
+
+app = create_app()
