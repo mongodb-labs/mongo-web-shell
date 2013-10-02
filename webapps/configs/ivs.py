@@ -26,5 +26,6 @@ DB_HOST = 'localhost'
 DB_PORT = 27017
 DB_NAME = 'mongows'
 
-#edX integration
+# edX integration
 EDX_SHARED_KEY = 'wanderlust'
+GRADING_SERVER_URL = 'http://localhost'
