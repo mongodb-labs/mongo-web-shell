@@ -104,7 +104,7 @@ class UseResId:
                 {'collections': 1}
             )
 
-            if len(set(data['collections']).union(name)) > limit:
+            if len(set(data['collections']).union([name])) > limit:
                 raise MWSServerError(429, 'Max number of collections exceeded')
 
         self.client_collection.update(
