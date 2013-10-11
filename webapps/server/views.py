@@ -279,30 +279,25 @@ def db_collection_update(res_id, collection_name):
 @crossdomain()
 @check_session_id
 @ratelimit
-def db_collection_insert(res_id, collection_name):
+def db_collection_save(res_id, collection_name):
     # TODO: Ensure request.json is not None.
     if 'document' in request.json:
         document = request.json['document']
     else:
-        error = '\'document\' argument not found in the insert request.'
+        error = '\'document\' argument not found in the save request.'
         raise MWSServerError(400, error)
 
     # Check quota
     size = get_collection_size(res_id, collection_name)
 
-    # Handle inserting both a list of docs or a single doc
-    if isinstance(document, list):
-        document_sizes = [len(BSON.encode(d)) for d in document]
-        req_size = sum(document_sizes)
-    else:
-        req_size = len(BSON.encode(document))
+    req_size = len(BSON.encode(document))
 
     if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
         raise MWSServerError(403, 'Collection size exceeded')
 
-    # Insert document
+    # Save document
     with UseResId(res_id):
-        get_db()[collection_name].insert(document)
+        get_db()[collection_name].save(document)
         return empty_success()
 
 
