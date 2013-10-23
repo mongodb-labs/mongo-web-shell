@@ -11,5 +11,6 @@ script
   . /opt/mws/venv/bin/activate
   cd /opt/mws/mongo-web-shell
   export DEBUG={{ mws_debug }}
+  export SECRET_KEY={{ shared_secret_key }}
   uwsgi --uid {{ uwsgi_uid }} -s /tmp/mws-uwsgi.sock -w webapps.server.app:app --chown-socket '{{ uwsgi_uid }}:www-data' --chmod-socket=660 --processes=4
 end script

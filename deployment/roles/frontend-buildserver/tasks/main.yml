@@ -37,3 +37,6 @@
 - name: install grunt-cli
   npm: name=grunt-cli global=yes
   sudo: yes
+
+- name: ensure front-end assets are built
+  shell: CLOSURE_PATH=/opt/closure-compiler /usr/bin/grunt chdir=/opt/mws/mongo-web-shell

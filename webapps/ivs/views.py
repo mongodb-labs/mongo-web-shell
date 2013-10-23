@@ -26,8 +26,9 @@ from webapps.lib.MWSServerError import MWSServerError
 from webapps.ivs.lib.naivesign import decode_signed_value
 
 ivs = Blueprint(
-    'ivs', __name__, url_prefix='', template_folder='templates',
-    static_url_path='', static_folder='../../frontend')
+    'ivs', __name__, url_prefix='/ivs', template_folder='templates',
+    static_url_path='', static_folder='../../frontend'
+)
 
 import logging
 _logger = logging.getLogger(__name__)
@@ -48,7 +49,9 @@ def init(script_name):
             script_name, str(e)))
         _logger.error('Traceback: {0}'.format(traceback.format_exc()))
         raise MWSServerError(500, type(e).__name__, str(e))
-    return 'Collection initialized successfully', 200
+    return jsonify(
+        success=True,
+        msg='Collection initialized successfully')
 
 
 @ivs.route('/verify/<script_name>', methods=['POST'])

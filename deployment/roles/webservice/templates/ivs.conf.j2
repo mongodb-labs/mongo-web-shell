@@ -11,6 +11,7 @@ script
   . /opt/mws/venv/bin/activate
   cd /opt/mws/mongo-web-shell
   export DEBUG={{ ivs_debug }}
+  export SECRET_KEY={{ shared_secret_key }}
   export GRADING_SERVER_URL={{ ivs_grading_server_url }}
   export EDX_SHARED_KEY={{ ivs_edx_shared_key }}
   uwsgi --uid {{ uwsgi_uid }} -s /tmp/ivs-uwsgi.sock -w webapps.ivs.app:app --chown-socket '{{ uwsgi_uid }}:www-data' --chmod-socket=660 --processes=4

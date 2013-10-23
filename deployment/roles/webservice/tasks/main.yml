@@ -29,15 +29,37 @@
 - name: install mws init file
   template: src=mws.conf.j2 dest=/etc/init/mws.conf mode=0644
   sudo: yes
+  notify:
+    - restart mws
 
-- name: install mws nginx config
-  template: src=mws.j2 dest=/etc/nginx/sites-enabled/mws mode=0644
+- name: ensure service mws is runing
+  action: service name=mws state=started
   sudo: yes
 
 - name: install ivs init file
   template: src=ivs.conf.j2 dest=/etc/init/ivs.conf mode=0644
   sudo: yes
+  notify:
+    - restart ivs
 
-- name: install ivs nginx config
-  template: src=ivs.j2 dest=/etc/nginx/sites-enabled/ivs mode=0644
+- name: ensure data directory exists
+  file: path=/var/opt/mws state=directory owner={{ owner }}
+  sudo: yes
+
+- name: ensure service ivs is running
+  action: service name=ivs state=started
+  sudo: yes
+
+- name: remove default nginx site
+  action: file path=/etc/nginx/sites-enabled/default state=absent
+  sudo: yes
+
+- name: install mws nginx config
+  template: src=mws.j2 dest=/etc/nginx/sites-available/mws mode=0644
+  sudo: yes
+  notify:
+    - restart nginx
+
+- name: link nginx config
+  action: file src=/etc/nginx/sites-available/mws dest=/etc/nginx/sites-enabled/mws state=link
   sudo: yes
