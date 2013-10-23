@@ -19,11 +19,11 @@ import traceback
 from flask import Blueprint, current_app, jsonify, request, session
 
 from importlib import import_module
+from itsdangerous import Signer
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.db import get_db
 from webapps.lib.MWSServerError import MWSServerError
-from webapps.ivs.lib.naivesign import decode_signed_value
 
 ivs = Blueprint(
     'ivs', __name__, url_prefix='', template_folder='templates',
@@ -92,8 +92,11 @@ def _get_user_id():
         raise MWSServerError(400, "Invalid request (missing cookie)")
 
     key = current_app.config.get('EDX_SHARED_KEY')
-    user_id = decode_signed_value(key, request.cookies['mws-track-id'])
-    if user_id is None:
+    s = Signer(key)
+    try:
+        user_id = s.unsign(request.cookies['mws-track-id'])
+    except Exception as e:
+        _logger.exception(e)
         raise MWSServerError(400, "Invalid request (invalid cookie)")
     return user_id
 
