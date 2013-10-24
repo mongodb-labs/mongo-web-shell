@@ -1,0 +1,11 @@
+- name: restart mws
+  action: service name=mws state=restarted
+  sudo: yes
+
+- name: restart ivs
+  action: service name=ivs state=restarted
+  sudo: yes
+
+- name: restart nginx
+  action: service name=nginx state=restarted
+  sudo: yes
