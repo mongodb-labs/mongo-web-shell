@@ -17,3 +17,9 @@
 - name: install mongodb
   apt: pkg=mongodb-10gen update_cache=yes state=present
   sudo: yes
+
+- name: disable server-side execution of JavaScript
+  lineinfile: dest=/etc/mongodb.conf regexp=^noscripting= line=noscripting=true
+  sudo: yes
+  notify:
+    - restart mongodb
