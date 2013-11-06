@@ -20,6 +20,8 @@ var SPEC_DIR = FRONTEND_DIR + 'spec/';
 var SRC_DIR = FRONTEND_DIR + 'src/';
 var DIST_DIR = FRONTEND_DIR + 'dist/';
 
+var MWS_DIST = DIST_DIR + '_mws.min.js';
+var LIB_DIST = DIST_DIR + '_lib.min.js';
 var JS_LIB = [
   LIB_DIR + 'es5-shim/es5-shim.min.js',
   LIB_DIR + 'esprima/esprima.js',
@@ -112,11 +114,11 @@ module.exports = function (grunt) {
     watch: {
       mws: {
         files: [SRC_DIR + '**/*'],
-        tasks: ['closure-compiler:mws', 'concat']
+        tasks: ['uglify:mws', 'concat']
       },
       lib: {
         files: [LIB_DIR + '**/*'],
-        tasks: ['closure-compiler:lib', 'concat']
+        tasks: ['uglify:lib', 'concat']
       },
       css: {
         files: [FRONTEND_DIR + '*.css'],
@@ -141,27 +143,17 @@ module.exports = function (grunt) {
       }
     },
 
-    'closure-compiler': {
+    'uglify': {
       mws: {
-        js: JS_MWS,
-        jsOutputFile: DIST_DIR + '_mws.min.js',
-        maxBuffer: 500,
-        options: {
-          compilation_level: 'SIMPLE_OPTIMIZATIONS',
-          language_in: 'ECMASCRIPT5'
-        },
-        noreport: true
+        files: {
+           MWS_DIST: JS_MWS
+        }
       },
 
       lib: {
-        js: JS_LIB,
-        jsOutputFile: DIST_DIR + '_lib.min.js',
-        maxBuffer: 500,
-        options: {
-          compilation_level: 'SIMPLE_OPTIMIZATIONS',
-          language_in: 'ECMASCRIPT5'
-        },
-        noreport: true
+        files: {
+            LIB_DIST: JS_LIB
+        }
       }
     },
 
@@ -184,11 +176,11 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jasmine');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-shell');
-  grunt.loadNpmTasks('grunt-closure-compiler');
   grunt.loadNpmTasks('grunt-contrib-cssmin');
 
-  grunt.registerTask('minify', ['closure-compiler', 'cssmin']);
+  grunt.registerTask('minify', ['uglify', 'cssmin']);
   grunt.registerTask('default', ['minify', 'concat']);
   grunt.registerTask('pep8', ['shell:pep8']);
   grunt.registerTask('unittest', ['shell:unittest']);
