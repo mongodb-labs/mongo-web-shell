@@ -22,6 +22,9 @@ from webapps.lib.db import get_db
 from webapps.lib.util import get_collection_names, UseResId
 
 
+from flask import current_app
+
+
 _logger = logging.getLogger(__name__)
 
 
@@ -41,6 +44,7 @@ def load_data_from_mongoexport(res_id, export_location, collection_name,
     its own line, or a single array of documents. All documents will be
     inserted into the given collection.
     """
+    export_location = _data_file_path(export_location)
     with open(export_location) as export:
         first_char = export.read(1)
         export.seek(0, SEEK_SET)
@@ -64,6 +68,7 @@ def load_data_from_json(res_id, file_name, remove_id=False):
     The top level of this file should be an object who's keys are collection
     names which map to an array of documents to be inserted into the collection
     """
+    file_name = _data_file_path(file_name)
     with open(file_name) as json_file:
         collections = loads(json_file.read())
         db = get_db()
@@ -81,6 +86,7 @@ def load_data_from_mongodump(res_id, dump_location, collection_name):
     as created by mongodump. Instead, use the .bson files inside this
     directory structure.
     """
+    dump_location = _data_file_path(dump_location)
     if not os.path.exists(dump_location):
         raise NotFound('Unable to find dump file')
     p = Popen((
@@ -100,3 +106,12 @@ def _remove_id(documents):
     for document in documents:
         if '_id' in document:
             del document['_id']
+
+
+def _data_file_path(path):
+    """
+    Returns the full path of the data file with respect to the configured
+    data directory (specified via config).
+    """
+    data_dir = current_app.config.get('DATA_DIR', '')
+    return os.path.join(data_dir, path)
