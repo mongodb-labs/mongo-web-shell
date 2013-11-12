@@ -1,9 +1,0 @@
----
-- hosts: mws
-  vars_files:
-    - vars.yml
-  roles:
-    - common
-    - mongodb
-    - frontend-buildserver
-    - webservice
