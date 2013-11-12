@@ -12,10 +12,8 @@ _SpecRunner.html
 *.pyc
 
 # scripts
-/mongows/initializers/scripts/*
-!/mongows/initializers/scripts/__init__.py
-/mongows/validators/scripts/*
-!/mongows/validators/scripts/__init__.py
+webapps/ivs/initializers/scripts
+webapps/ivs/verify/scripts
 
 # misc
 .DS_Store
