@@ -12,8 +12,8 @@
     "grunt-contrib-jshint": "~0.5.2",
     "grunt-contrib-clean": "~0.4.1",
     "grunt-contrib-jasmine": "~0.4.2",
+    "grunt-contrib-uglify": "~0.2.5",
     "grunt-shell": "~0.2.2",
-    "grunt-closure-compiler": "~0.0.19",
     "sinon": "~1.7.1",
     "grunt-contrib-cssmin": "~0.6.1"
   }
