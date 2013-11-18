@@ -20,6 +20,7 @@ SECRET_KEY = 'A0gjhsd3678HK'
 HOST = '0.0.0.0'
 LOGGING_CONF = 'webapps/configs/logging.yaml'
 PORT = 8081
+DATA_DIR = '/tmp'
 
 # DB Settings
 DB_HOST = 'localhost'

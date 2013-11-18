@@ -30,6 +30,7 @@ _PREFIXED_ENVVAR = [
     # Init Verification service
     ('IVS_EDX_SHARED_KEY', str),
     ('IVS_GRADING_SERVER_URL', str),
+    ('IVS_DATA_DIR', str),
     ('IVS_HOST', str),
     ('IVS_PORT', int),
 ]
