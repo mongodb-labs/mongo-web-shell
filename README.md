@@ -14,7 +14,6 @@ __Requirements__:
 * [node.js][]
 * [Python 2.7]
 * [virtualenv][]
-* [Closure Compiler]
 
 After the above requirements are installed, clone the repo:
 
@@ -36,8 +35,6 @@ pip, while the front-end dependencies are managed via npm.
 [Grunt][] is used to build the front-end code.
 
     npm install -g grunt-cli
-
-You will need to [set the CLOSURE_PATH environment variable][CLOSURE_PATH] or specify it using closurePath under closure-compiler in Gruntfile.js
 
 ### Linters
 All committed code should be linted.
@@ -125,5 +122,3 @@ See the project [wiki][].
 [virtualenv]: http://www.virtualenv.org/en/latest/
 [wiki]: https://github.com/10gen-labs/mongo-web-shell/wiki
 [Python 2.7]: http://www.python.org/download/releases/2.7.5
-[Closure Compiler]: https://developers.google.com/closure/compiler/
-[CLOSURE_PATH]: https://github.com/gmarty/grunt-closure-compiler#set-up-the-environment-variable
