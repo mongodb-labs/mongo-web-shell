@@ -20,8 +20,6 @@ var SPEC_DIR = FRONTEND_DIR + 'spec/';
 var SRC_DIR = FRONTEND_DIR + 'src/';
 var DIST_DIR = FRONTEND_DIR + 'dist/';
 
-var MWS_DIST = DIST_DIR + '_mws.min.js';
-var LIB_DIST = DIST_DIR + '_lib.min.js';
 var JS_LIB = [
   LIB_DIR + 'es5-shim/es5-shim.min.js',
   LIB_DIR + 'esprima/esprima.js',
@@ -144,15 +142,16 @@ module.exports = function (grunt) {
     },
 
     'uglify': {
+        // Have to hard code the dist dir into this string so it can be a key
       mws: {
         files: {
-           MWS_DIST: JS_MWS
+          'frontend/dist/_mws.min.js': JS_MWS
         }
       },
 
       lib: {
         files: {
-            LIB_DIST: JS_LIB
+          'frontend/dist/_lib.min.js': JS_LIB
         }
       }
     },
