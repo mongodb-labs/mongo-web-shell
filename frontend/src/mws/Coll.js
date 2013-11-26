@@ -70,6 +70,12 @@ mongo.Coll.prototype.findOne = function (query, projection) {
   }.bind(this));
 };
 
+mongo.Coll.prototype.count = function (query, projection) {
+  mongo.events.functionTrigger(this.shell, 'db.collection.count', arguments,
+                               {collection: this.name});
+  return new mongo.Cursor(this, query, projection).count();
+};
+
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
