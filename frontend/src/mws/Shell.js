@@ -137,6 +137,10 @@ mongo.Shell.prototype.enableInput = function (bool) {
   this.inputBox.setOption('readOnly', readOnly);
 };
 
+mongo.Shell.prototype.focus = function() {
+  this.inputBox.focus();
+};
+
 mongo.Shell.prototype.insertResponseArray = function (data) {
   for (var i = 0; i < data.length; i++) {
     this.insertResponseLine(data[i], null, true);

@@ -46,6 +46,7 @@ mongo.request = (function () {
       // Default async to true
       async = true;
     }
+    shell.enableInput(false);
     var context = shell.evaluator.pause();
     console.debug(name + ' request:', url, params);
     $.ajax({
@@ -57,6 +58,8 @@ mongo.request = (function () {
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {
         console.info(name + ' success');
+        shell.enableInput(true);
+        shell.focus();
         shell.evaluator.resume(context);
         if (onSuccess) {
           onSuccess(data);
@@ -70,6 +73,8 @@ mongo.request = (function () {
         }
         shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);
+        shell.enableInput(true);
+        shell.focus();
         shell.evaluator.resume(context, new Error(message), true);
       }
     });
