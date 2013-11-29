@@ -184,7 +184,7 @@ mongo.Coll.prototype.__methodMissing = function (field) {
   var msg;
 
   if (unimplemented.hasOwnProperty(field)) {
-    msg = ' is not implemented.'
+    msg = ' is not implemented.';
   } else {
     msg = ' is not a function on collections.';
   }
