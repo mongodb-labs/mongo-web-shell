@@ -146,8 +146,13 @@ mongo.Coll.prototype.drop = function () {
  * On success, the result of the aggregation is returned, otherwise a failure
  * message is printed and an error is thrown.
  */
-mongo.Coll.prototype.aggregate = function(query){
-  query = query || [];
+mongo.Coll.prototype.aggregate = function() {
+  var query;
+  if (arguments.length === 1 && $.isArray(arguments[0])) {
+    query = arguments[0];
+  } else {
+    query = $.makeArray(arguments);
+  }
   var url = this.urlBase + 'aggregate';
   var context = this.shell.evaluator.pause();
   var onSuccess = function(data){
