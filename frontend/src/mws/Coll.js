@@ -165,7 +165,36 @@ mongo.Coll.prototype.aggregate = function(query){
 };
 
 mongo.Coll.prototype.__methodMissing = function (field) {
-  this.shell.insertError(field + ' is not a function on collections.');
+  var unimplemented = {
+    'createIndex': 0,
+    'copyTo': 0,
+    'distinct': 0,
+    'dropIndex': 0,
+    'dropIndexes': 0,
+    'ensureIndex': 0,
+    'findAndModify': 0,
+    'getIndexes': 0,
+    'getShardDistribution': 0,
+    'getShardVersion': 0,
+    'group': 0,
+    'isCapped': 0,
+    'mapReduce': 0,
+    'reIndex': 0,
+    'renameCollection': 0,
+    'stats': 0,
+    'storageSize': 0,
+    'totalSize': 0,
+    'totalIndexSize': 0,
+    'validate': 0
+  };
+  var msg;
+
+  if (unimplemented.hasOwnProperty(field)) {
+    msg = ' is not implemented.';
+  } else {
+    msg = ' is not a function on collections.';
+  }
+  this.shell.insertError(field + msg);
   var noop = function(){};
   noop.toString = function(){ return ''; };
   return noop;
