@@ -21,7 +21,7 @@ from bson import BSON
 from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
-from pymongo.errors import OperationFailure
+from pymongo.errors import InvalidDocument, OperationFailure
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
@@ -185,8 +185,11 @@ def db_collection_insert(res_id, collection_name):
 
     # Insert document
     with UseResId(res_id):
-        get_db()[collection_name].insert(document)
-        return empty_success()
+        try:
+            get_db()[collection_name].insert(document)
+            return empty_success()
+        except InvalidDocument as e:
+            raise MWSServerError(400, e.message)
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
@@ -237,8 +240,11 @@ def db_collection_update(res_id, collection_name):
         if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
             raise MWSServerError(403, 'Collection size exceeded')
 
-        db[collection_name].update(query, update, upsert, multi=multi)
-        return empty_success()
+        try:
+            db[collection_name].update(query, update, upsert, multi=multi)
+            return empty_success()
+        except OperationFailure as e:
+            raise MWSServerError(400, e.message)
 
 
 @mws.route('/<res_id>/db/<collection_name>/save',
@@ -264,8 +270,11 @@ def db_collection_save(res_id, collection_name):
 
     # Save document
     with UseResId(res_id):
-        get_db()[collection_name].save(document)
-        return empty_success()
+        try:
+            get_db()[collection_name].save(document)
+            return empty_success()
+        except InvalidDocument as e:
+            raise MWSServerError(400, e.message)
 
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
