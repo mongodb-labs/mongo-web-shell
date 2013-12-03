@@ -22,6 +22,11 @@ LOGGING_CONF = 'webapps/configs/logging.yaml'
 PORT = 8081
 DATA_DIR = '/tmp'
 
+# Rate limit settings
+RATELIMIT_COLLECTION = 'ivs_ratelimit'
+RATELIMIT_QUOTA = 3    # requests per expiry
+RATELIMIT_EXPIRY = 10  # expiry in seconds
+
 # DB Settings
 DB_HOST = 'localhost'
 DB_PORT = 27017

@@ -21,9 +21,12 @@ from flask import Blueprint, current_app, jsonify, request, session
 from importlib import import_module
 from itsdangerous import BadSignature, Signer
 
+from webapps.decorators import ratelimit
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.db import get_db
+from webapps.lib.decorators import ratelimit
 from webapps.lib.MWSServerError import MWSServerError
+
 
 ivs = Blueprint(
     'ivs', __name__, url_prefix='/ivs', template_folder='templates',
@@ -35,6 +38,7 @@ _logger = logging.getLogger(__name__)
 
 
 @ivs.route('/init/<script_name>', methods=['POST'])
+@ratelimit
 def init(script_name):
     res_id = _get_res_id()
     try:
@@ -55,6 +59,7 @@ def init(script_name):
 
 
 @ivs.route('/verify/<script_name>', methods=['POST'])
+@ratelimit
 def verify(script_name):
     res_id = _get_res_id()
     user_id = _get_user_id()

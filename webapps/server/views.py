@@ -26,6 +26,7 @@ from pymongo.errors import OperationFailure
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
 from webapps.lib.db import get_db
+from webapps.lib.decorators import check_session_id, ratelimit
 from webapps.lib.util import (
     UseResId,
     get_collection_names,
@@ -93,40 +94,6 @@ def crossdomain(origin=None, methods=None, headers=None,
         f.provide_automatic_options = False
         return update_wrapper(wrapped_function, f)
     return decorator
-
-
-def check_session_id(f):
-    def wrapped_function(*args, **kwargs):
-        session_id = session.get('session_id')
-        if session_id is None:
-            raise MWSServerError(401, 'There is no session_id cookie')
-        if not user_has_access(kwargs['res_id'], session_id):
-            error = 'Session error. User does not have access to res_id'
-            raise MWSServerError(403, error)
-        return f(*args, **kwargs)
-    return update_wrapper(wrapped_function, f)
-
-
-def ratelimit(f):
-    def wrapped_function(*args, **kwargs):
-        session_id = session.get('session_id')
-        if session_id is None:
-            error = 'Cannot rate limit without session_id cookie'
-            raise MWSServerError(401, error)
-
-        config = current_app.config
-        coll = get_db()[config['RATELIMIT_COLLECTION']]
-        coll.insert({'session_id': session_id, 'timestamp': datetime.now()})
-
-        delta = timedelta(seconds=config['RATELIMIT_EXPIRY'])
-        expiry = datetime.now() - delta
-        accesses = coll.find({'session_id': session_id,
-                              'timestamp': {'$gt': expiry}})
-        if accesses.count() > config['RATELIMIT_QUOTA']:
-            raise MWSServerError(429, 'Rate limit exceeded')
-
-        return f(*args, **kwargs)
-    return update_wrapper(wrapped_function, f)
 
 
 @mws.route('/', methods=['POST', 'OPTIONS'])
