@@ -274,6 +274,13 @@ describe('The Collection class', function () {
       expect(makeRequest.calls[0].args[1]).toEqual(query);
     });
 
+    it('supports the shortcut syntax', function() {
+      var query = [{$match: {}},
+                   {$group: {_id: null, total: {$sum: '$price'}}}];
+      coll.aggregate(query[0], query[1]);
+      expect(makeRequest.calls[0].args[1]).toEqual(query);
+    });
+
     it('uses the GET HTTP method', function () {
       coll.aggregate({});
       expect(makeRequest.calls[0].args[2]).toEqual('GET');
