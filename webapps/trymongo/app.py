@@ -29,3 +29,5 @@ def create_app():
     configure_logging(app)
     app.register_blueprint(trymongo)
     return app
+
+app = create_app()
