@@ -75,6 +75,9 @@ mongo.Shell.prototype.injectHTML = function () {
       return mongo.util.toString(e);
     }).join(' '));
   }.bind(this));
+  this.evaluator.setGlobal('ObjectId', function(oid) {
+    return {'$oid': oid};
+  });
   this.evaluator.setGlobal('__get', mongo.util.__get);
   this.evaluator.setGlobal('db', this.db);
 };
