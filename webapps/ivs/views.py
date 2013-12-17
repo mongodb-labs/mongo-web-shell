@@ -21,7 +21,6 @@ from flask import Blueprint, current_app, jsonify, request, session
 from importlib import import_module
 from itsdangerous import BadSignature, Signer
 
-from webapps.decorators import ratelimit
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.db import get_db
 from webapps.lib.decorators import ratelimit
