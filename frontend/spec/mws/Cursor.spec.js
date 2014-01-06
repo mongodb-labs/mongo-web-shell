@@ -35,7 +35,9 @@ describe('A Cursor', function () {
     instance = new mongo.Cursor(coll);
 
     result = {
-      result: ['test', 'results', 'here']
+      result: ['test', 'results', 'here'],
+      count: 3,
+      cursor_id: 1234
     };
     makeRequest = spyOn(mongo.request, 'makeRequest').andCallFake(function () {
       var success = arguments[5];
@@ -86,6 +88,10 @@ describe('A Cursor', function () {
     });
   });
 
+  it('will disallow batchSize', function () {
+      expect(instance.batchSize).toThrow(new Error('batchSize() is disallowed in the web shell'));
+  });
+
   describe('depending on query state', function () {
     var callbackSpy;
 
@@ -109,6 +115,17 @@ describe('A Cursor', function () {
         var params = makeRequest.mostRecentCall.args[1];
         expect(params.query).toEqual(query);
         expect(params.projection).toEqual(projection);
+        expect(params.drain_cursor).toBeUndefined();
+
+        instance = new mongo.Cursor(coll, query, projection);
+        result.count = 4;
+        result.cursor_id = 1234;
+        instance._executeQuery();
+        instance._executeQuery(null, true, true);
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.cursor_id).toEqual(1234);
+        expect(params.retrieved).toEqual(result.result.length);
+        expect(params.count).toEqual(4);
 
         instance = new mongo.Cursor(coll, query);
         instance._executeQuery();
@@ -121,6 +138,11 @@ describe('A Cursor', function () {
         params = makeRequest.mostRecentCall.args[1];
         expect(params.query).toBeUndefined();
         expect(params.projection).toBeUndefined();
+
+        instance = new mongo.Cursor(coll);
+        instance._executeQuery(null, true, true);
+        params = makeRequest.mostRecentCall.args[1];
+        expect(params.drain_cursor).toBe(true);
       });
 
       it('will skip results', function () {
@@ -167,6 +189,7 @@ describe('A Cursor', function () {
 
         async = false;
         instance._executed = false;
+        instance._result = [];
         instance._executeQuery(null, async);
         expect(instance._executed).toBe(true);
         expect(makeRequest.calls[1].args[6]).toBe(async);
@@ -237,10 +260,21 @@ describe('A Cursor', function () {
         instance._executed = true;
       });
 
-      it('does not re-execute and calls the on success callback', function () {
+      it('does not re-execute and calls the on success callback if it has all results', function () {
+        instance._count = 1;
+        instance._retrieved = 1;
         instance._executeQuery(callbackSpy);
         expect(instance._executed).toBe(true);
         expect(makeRequest).not.toHaveBeenCalled();
+        expect(callbackSpy).toHaveBeenCalled();
+      });
+
+      it('re-executes and calls the on success callback if it does not have all results', function () {
+        instance._count = 10;
+        instance._retrieved = 1;
+        instance._executeQuery(callbackSpy);
+        expect(instance._executed).toBe(true);
+        expect(makeRequest).toHaveBeenCalled();
         expect(callbackSpy).toHaveBeenCalled();
       });
 
