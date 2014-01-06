@@ -48,3 +48,5 @@ QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes
 # 0: user is unable to create additional collections
 # 1+: user may have up to # collections per res_id
 QUOTA_NUM_COLLECTIONS = 8
+
+CURSOR_BATCH_SIZE = 20  # default max docs to return for a query
