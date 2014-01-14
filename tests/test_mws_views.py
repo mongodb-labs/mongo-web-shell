@@ -156,7 +156,7 @@ class DBTestCase(MongoWSTestCase):
         if data is not None:
             if isinstance(data, dict):
                 data = dumps(
-                    {k: v for k, v in data.iteritems() if v is not None}
+                    dict((k, v) for (k, v) in data.iteritems() if v is not None)
                 )
             else:
                 data = dumps(data)

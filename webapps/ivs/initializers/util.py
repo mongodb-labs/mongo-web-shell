@@ -12,7 +12,6 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-from io import SEEK_SET
 import os
 import logging
 from subprocess import Popen
@@ -24,6 +23,7 @@ from webapps.lib.util import get_collection_names, UseResId
 
 from flask import current_app
 
+SEEK_SET = 0
 
 _logger = logging.getLogger(__name__)
 

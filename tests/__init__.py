@@ -14,7 +14,7 @@
 
 import logging
 import flask
-from unittest import defaultTestLoader, TestCase
+from unittest2 import defaultTestLoader, TestCase
 
 from webapps.server.app import create_app
 
@@ -39,7 +39,7 @@ class MongoWSTestCase(TestCase):
         pass
 
 
-def load_tests(loader, tests, pattern):
+def load_tests():
     """Returns the test modules for the mongows package.
 
     The expected output of this function is defined by the unittest module's

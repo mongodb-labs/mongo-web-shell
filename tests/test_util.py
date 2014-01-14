@@ -94,24 +94,26 @@ class QuotaCollectionsTestCase(UseResIdTestCase):
     def test_quota_collections(self):
         self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 2
 
-        with self.real_app.app_context(), UseResId(self.res_id):
-            self.db.a.insert({'a': 1})
-            self.db.b.insert({'a': 1})
-            with self.assertRaises(MWSServerError) as cm:
-                self.db.c.insert({'a': 1})
+        with self.real_app.app_context():
+            with UseResId(self.res_id):
+                self.db.a.insert({'a': 1})
+                self.db.b.insert({'a': 1})
+                with self.assertRaises(MWSServerError) as cm:
+                    self.db.c.insert({'a': 1})
 
-            self.assertEqual(cm.exception.error, 429)
+                self.assertEqual(cm.exception.error, 429)
 
-            for c in ['a', 'b']:
-                self.db.drop_collection(c)
+                for c in ['a', 'b']:
+                    self.db.drop_collection(c)
 
     def test_quota_collections_zero(self):
         self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 0
 
-        with self.real_app.app_context(), UseResId(self.res_id):
-            with self.assertRaises(MWSServerError) as cm:
-                self.db.a.insert({'a': 1})
+        with self.real_app.app_context():
+            with UseResId(self.res_id):
+                with self.assertRaises(MWSServerError) as cm:
+                    self.db.a.insert({'a': 1})
 
-            self.assertEqual(cm.exception.error, 429)
+                self.assertEqual(cm.exception.error, 429)
 
-            self.db.drop_collection('a')
+                self.db.drop_collection('a')

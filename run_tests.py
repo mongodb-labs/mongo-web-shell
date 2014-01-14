@@ -12,9 +12,13 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
-import unittest
-
-TEST_MODULE = 'tests'
+import nose
 
 if __name__ == '__main__':
-    unittest.main(TEST_MODULE)
+    result = nose.runmodule(name='tests', argv=[
+           '',
+           '-s',
+           '--verbose',
+           '--logging-level=INFO',
+           '--rednose',
+           ])
