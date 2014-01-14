@@ -63,6 +63,9 @@ mongo.Shell.prototype.injectHTML = function () {
   });
   $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
 
+  // Start with prompt hidden
+  this.$inputPrompt = this.$rootElement.find('.mws-prompt').hide();
+
   this.$inputWrapper = this.$rootElement.find('.mws-input-wrapper');
   this.$scrollWrapper = this.$rootElement.find('.mws-scroll-wrapper');
 
@@ -138,6 +141,15 @@ mongo.Shell.prototype.eval = function (src) {
 mongo.Shell.prototype.enableInput = function (bool) {
   var readOnly = bool ? false : 'nocursor';
   this.inputBox.setOption('readOnly', readOnly);
+  if (bool) {
+    this.$inputPrompt.show();
+  } else {
+    this.$inputPrompt.hide();
+  }
+};
+
+mongo.Shell.prototype.focus = function() {
+  this.inputBox.focus();
 };
 
 mongo.Shell.prototype.insertResponseArray = function (data) {
