@@ -332,6 +332,20 @@ class FindUnitTestCase(DBCollectionTestCase):
         self.verify_cursor(batch_size+1)
         self.verify_cursor(batch_size-1)
 
+    def test_invalid_cursor(self):
+        query = {}
+        invalid_cursor = 1234
+        docs = [{'val': i} for i in xrange(21)]
+        self.db_collection.insert(docs)
+
+        response = self.make_find_request(query=query)
+        count = response['count']
+        retrieved = len(response['result'])
+
+        self.make_find_request(query=query, cursor_id=invalid_cursor,
+                               retrieved=retrieved, count=count,
+                               expected_status=400)
+
     def test_cursor_with_limit(self):
         batch_size = self.real_app.config['CURSOR_BATCH_SIZE']
 
