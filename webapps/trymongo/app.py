@@ -30,4 +30,4 @@ def create_app():
     app.register_blueprint(trymongo)
     return app
 
-app = create_app()
+app = application = create_app()
