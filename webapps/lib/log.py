@@ -1,6 +1,7 @@
 import sys
 import logging
 import logging.config
+import logging.handlers
 import yaml
 
 _logger = logging.getLogger(__name__)
@@ -21,3 +22,9 @@ def configure_logging(app):
     rl = logging.getLogger()
     rl.setLevel(logging.DEBUG)
     rl.addHandler(ch)
+    fh = logging.handlers.TimedRotatingFileHandler(
+        '/var/log/trymongo-prod/trymongo.log',
+        when='midnight',
+        backupCount=30)
+    fh.setFormatter(simple_fmt)
+    fh.setLevel(logging.INFO)

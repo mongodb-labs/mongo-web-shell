@@ -16,7 +16,7 @@ from flask import Flask
 import logging
 
 from webapps.lib.log import configure_logging
-from .views import mws
+from webapps.server.views import mws
 
 from webapps.lib.conf import update_config
 
