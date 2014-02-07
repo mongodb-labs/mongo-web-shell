@@ -23,7 +23,7 @@ SECRET_KEY = 'A0gjhsd3678HK'
 
 
 #DB Settings
-DB_HOST = 'localhost'
+DB_HOSTS = ["trymongo-1.10gen.cc", "trymongo-2.10gen.cc", "trymongo-arbiter.10gen.cc"]
 DB_PORT = 27017
 DB_NAME = 'mongows'
 
