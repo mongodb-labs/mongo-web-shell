@@ -379,7 +379,7 @@ def get_collection_size(res_id, collection_name):
     try:
         return get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
-        if 'ns not found' in e.message:
+        if 'ns not found' in str(e):
             return 0
         else:
             raise MWSServerError(500, e.message)
