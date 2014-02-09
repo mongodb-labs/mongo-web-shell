@@ -22,6 +22,10 @@ from . import CLIENTS_COLLECTION
 import logging
 _logger = logging.getLogger(__name__)
 
+def sanitize_query(query):
+    if query is not None and "$where" in query:
+        del query["$where"]
+    return query
 
 def get_internal_coll_name(res_id, collection_name):
     return '%s%s' % (res_id, collection_name)
