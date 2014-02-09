@@ -30,7 +30,8 @@ from webapps.lib.decorators import check_session_id, ratelimit
 from webapps.lib.util import (
     UseResId,
     get_collection_names,
-    get_internal_coll_name
+    get_internal_coll_name,
+    sanitize_query
 )
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
@@ -149,6 +150,7 @@ def db_collection_find(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
+        query = sanitize_query(query)
         cursor = coll.find(query, projection, skip, limit)
         if len(sort) > 0:
             cursor.sort(sort)
@@ -234,6 +236,7 @@ def db_collection_update(res_id, collection_name):
         # of the space difference that an update will cause. (especially if it
         # results in smaller documents)
         db = get_db()
+        query = sanitize_query(query)
         affected = db[collection_name].find(query).count()
         req_size = len(BSON.encode(update)) * affected
 
@@ -316,6 +319,7 @@ def db_collection_count(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
+        query = sanitize_query(query)
         cursor = coll.find(query, skip=skip, limit=limit)
         count = cursor.count(use_skip_limit)
         return to_json({'count': count})
