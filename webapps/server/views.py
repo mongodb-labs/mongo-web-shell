@@ -21,11 +21,12 @@ from bson import BSON
 from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
+from pymongo.cursor import Cursor
 from pymongo.errors import InvalidDocument, OperationFailure
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
-from webapps.lib.db import get_db
+from webapps.lib.db import get_db, get_keepalive_db
 from webapps.lib.decorators import check_session_id, ratelimit
 from webapps.lib.util import (
     UseResId,
@@ -139,21 +140,62 @@ def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    parse_get_json(request)
-    query = request.json.get('query')
-    projection = request.json.get('projection')
-    skip = request.json.get('skip', 0)
-    limit = request.json.get('limit', 0)
-    sort = request.json.get('sort', {})
-    sort = sort.items()
-
     with UseResId(res_id):
-        coll = get_db()[collection_name]
-        cursor = coll.find(query, projection, skip, limit)
-        if len(sort) > 0:
-            cursor.sort(sort)
-        documents = list(cursor)
-        return to_json({'result': documents})
+        parse_get_json(request)
+        cursor_id = int(request.json.get('cursor_id', 0))
+        limit = request.json.get('limit', 0)
+        retrieved = request.json.get('retrieved', 0)
+        drain_cursor = request.json.get('drain_cursor', False)
+        batch_size = -1 if drain_cursor else current_app.config['CURSOR_BATCH_SIZE']
+        count = request.json.get('count', 0)
+
+        result = {}
+        coll = get_keepalive_db()[collection_name]
+
+        cursor = recreate_cursor(coll, cursor_id, retrieved, batch_size, count)
+        if cursor is None:
+            query = request.json.get('query')
+            projection = request.json.get('projection')
+            skip = request.json.get('skip', 0)
+            sort = request.json.get('sort', {})
+            sort = sort.items()
+            cursor = create_cursor(
+                coll, query=query,
+                projection=projection,
+                skip=skip, limit=limit,
+                batch_size=batch_size)
+            # count is only available before cursor is read so we include it
+            # in the first response
+            result['count'] = cursor.count(with_limit_and_skip=True)
+            count = result['count']
+
+        if batch_size == -1:
+            num_to_return = count - retrieved
+        else:
+            num_to_return = batch_size if limit > batch_size or limit == 0 else limit
+        if num_to_return == 0:
+            result['result'] = [x for x in cursor]
+        else:
+            try:
+                result['result'] = []
+                for i in range(num_to_return):
+                    try:
+                        result['result'].append(cursor.next())
+                    except StopIteration:
+                        break
+            except OperationFailure as e:
+                return MWSServerError(400, 'Cursor not found')
+
+        # cursor_id is too big as a number, use a string instead
+        result['cursor_id'] = str(cursor.cursor_id)
+        # close the Cursor object, but keep the cursor alive on the server
+        del cursor
+
+        # kill cursor on server if all results are returned
+        if count == retrieved + len(result['result']):
+            kill_cursor(coll, long(result['cursor_id']))
+
+        return to_json(result)
 
 
 @mws.route('/<res_id>/db/<collection_name>/insert',
@@ -340,6 +382,57 @@ def db_drop(res_id):
         for c in collections:
             DB.drop_collection(c)
         return empty_success()
+
+
+def create_cursor(collection, query=None, projection=None, sort=None, skip=0,
+                  limit=0, batch_size=-1):
+    # Need the below since mutable default values persist between calls
+    if query is None:
+        query = {}
+    if sort is None:
+        sort = {}
+
+    if batch_size == -1:
+        cursor = collection.find(query=query, projection=projection, skip=skip,
+                                 limit=limit)
+    else:
+        cursor = collection.find(query=query, projection=projection, skip=skip,
+                                 limit=limit).batch_size(batch_size)
+
+    if len(sort) > 0:
+        cursor.sort(sort)
+    return cursor
+
+
+def recreate_cursor(collection, cursor_id, retrieved, batch_size, total_count):
+    """
+    Creates and returns a Cursor object based on an existing cursor in the
+    in the server. If cursor_id is invalid, the returned cursor will raise
+    OperationFailure on read. If batch_size is -1, then all remaining documents
+    on the cursor are returned.
+    """
+    if cursor_id == 0:
+        return None
+
+    # since batch_size is not available when recreating a cursor, we have
+    # to make some decisions so that limit represents both batch_size and
+    # limit, and also accounts for pymongo subtracting retrieved from limit.
+    if batch_size == -1:
+        limit = (total_count - retrieved) + retrieved
+    elif total_count - retrieved > batch_size:
+        limit = batch_size + retrieved
+    else:
+        limit = (total_count - retrieved) + retrieved
+
+    cursor = Cursor(
+        collection, limit=limit, _cursor_id=cursor_id, _retrieved=retrieved)
+
+    return cursor
+
+
+def kill_cursor(collection, cursor_id):
+    client = collection.database.connection
+    client.kill_cursors([cursor_id])
 
 
 def generate_res_id():
