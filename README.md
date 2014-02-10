@@ -2,9 +2,15 @@ mongo-web-shell
 ===============
 A recreation of the interactive mongoDB shell for the browser.
 
-The shell input is initially evaluated in the browser with all appropriate
-database queries being forwarded to (and returned from) a running mongod
-instance on the back-end server.
+There are three components related to the shell captured in this repo:
+
+1. The server webapp - A flask application that provides a RESTish API for \
+    interacting with MongoDB.
+2. The tutorial static html page - A static html file that initializes a \
+    shell, and hosts a simple tutorial.
+3. The init-verification webapp - An api for confirming the validitiy of the \
+    contents of a users' databases.
+
 
 Installation
 ------------
@@ -12,7 +18,7 @@ __Requirements__:
 
 * [mongoDB][mongoDB install]
 * [node.js][]
-* [Python 2.7]
+* [Python 2.6+]
 * [virtualenv][]
 
 After the above requirements are installed, clone the repo:
@@ -64,27 +70,39 @@ accessed by the back-end server:
 
     mongod
 
-Then run the server from within your virtual environment:
+Make sure that you have activated your virtualenv
 
-    python run.py
+### The Server Webapp
+
+The server webapp can be run with:
+
+    python -m webapps.server.app
 
 To enable Flask debug mode, which restarts the server whenever any source files
 change, set the `DEBUG` environment variable to any value.
 
-    DEBUG=1 python run.py
+    DEBUG=1 python -m webapp.server.app
 
-By default, you can connect to the running sample at
-<http://localhost:5000/sample/>.
+### The Tutorial
 
-### Foreman
-The recommended method of running is to use [foreman][] as it performs both the
-"Building" and "Running" steps above (except for starting a `mongod` instance).
+Consider using apache with a configuration similar to this:
 
-    foreman start -f Procfile.dev
+    <VirtualHost *:80>
+        DocumentRoot [path to mongo-web-shell]/frontend
 
-You can create a `.env` file to specify debug mode and set other environment
-variables (see the [wiki][wiki-config] for more). See `.env.sample` for an
-example.
+        DirectoryIndex index.html
+        <Directory "[path to mongo-web-shell]">
+            Order deny,allow
+            Allow from all
+            Require all granted
+        </Directory>
+
+        ProxyPass /server http://127.0.0.1:5000
+        ProxyPassReverse /server http://127.0.0.1:5000
+
+    </VirtualHost>
+
+Make sure that you've run `grunt` to build the assets first.
 
 Tests
 -----
@@ -107,6 +125,24 @@ From within a virtual environment:
 Lint via pep8.
 
     pep8 mongows tests run*.py
+
+Configuration
+-------------
+
+In a development environment, you can specify configration in a number of ways.
+
+You can choose to specify configurations by
+
+ 1. Specify a yaml file containing configuration.  For example, on my system
+I specify this:
+    export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml
+
+In staging and production, because apache doesn't play well with environment
+varaibles, we default to /opt/10gen/trymongo-<env>/shared/config.yml
+
+ 2. Any of the variables that appear in `webapps/lib/conf.py` can be
+ overridden with environment variables - they will override anything in the
+ configuration file.
 
 More info
 ---------
