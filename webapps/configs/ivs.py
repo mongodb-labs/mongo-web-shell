@@ -35,3 +35,5 @@ DB_NAME = 'mongows'
 # edX integration
 EDX_SHARED_KEY = 'wanderlust'
 GRADING_SERVER_URL = 'http://localhost'
+GRADING_API_KEY = 'i4mm3'
+GRADING_API_SECRET = 's0s3cr3t'

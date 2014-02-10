@@ -80,6 +80,11 @@ def verify(script_name):
         _logger.error('Traceback: {0}'.format(traceback.format_exc()))
         raise MWSServerError(500, type(e).__name__, str(e))
     server_url = current_app.config.get('GRADING_SERVER_URL')
+    # add grading credentials
+    results.update({
+        'api_key': current_app.config.get('GRADING_API_KEY'),
+        'api_secret': current_app.config.get('GRADING_API_SECRET')
+    })
     post_url = '{0}/api/v1/grade/{1}/{2}/{3}'.format(
         server_url,
         course_id,
