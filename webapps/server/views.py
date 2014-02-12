@@ -21,7 +21,8 @@ from bson import BSON
 from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request, session
 app = current_app
-from pymongo.errors import InvalidDocument, OperationFailure, InvalidId
+from pymongo.errors import (InvalidDocument, OperationFailure,
+    InvalidId, DuplicateKeyError)
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
@@ -86,7 +87,10 @@ def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    parse_get_json(request)
+    try:
+        parse_get_json(request)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     query = request.json.get('query')
     projection = request.json.get('projection')
     skip = request.json.get('skip', 0)
@@ -99,7 +103,7 @@ def db_collection_find(res_id, collection_name):
         try:
             cursor = coll.find(query, projection, skip, limit)
         except (InvalidId, TypeError) as e:
-            raise MWSServerError(400, e)
+            raise MWSServerError(400, str(e))
         if len(sort) > 0:
             cursor.sort(sort)
         documents = list(cursor)
@@ -112,6 +116,10 @@ def db_collection_find(res_id, collection_name):
 @ratelimit
 def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
+    try:
+        request.json = loads(request.data)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     if 'document' in request.json:
         document = request.json['document']
     else:
@@ -137,8 +145,8 @@ def db_collection_insert(res_id, collection_name):
         try:
             get_db()[collection_name].insert(document)
             return empty_success()
-        except (InvalidDocument, InvalidId, TypeError) as e:
-            raise MWSServerError(400, e)
+        except (DuplicateKeyError, InvalidDocument, InvalidId, TypeError) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
@@ -157,7 +165,7 @@ def db_collection_remove(res_id, collection_name):
             else:
                 collection.remove(constraint)
         except (InvalidDocument, InvalidId, TypeError) as e:
-            raise MWSServerError(400, e)
+            raise MWSServerError(400, str(e))
         return empty_success()
 
 
@@ -167,13 +175,10 @@ def db_collection_remove(res_id, collection_name):
 def db_collection_update(res_id, collection_name):
     query = update = None
     if request.json:
-        try:
-            query = request.json.get('query')
-            update = request.json.get('update')
-            upsert = request.json.get('upsert', False)
-            multi = request.json.get('multi', False)
-        except (InvalidId, TypeError) as e:
-            raise MWSServerError(400, e)
+        query = request.json.get('query')
+        update = request.json.get('update')
+        upsert = request.json.get('upsert', False)
+        multi = request.json.get('multi', False)
     if query is None or update is None:
         error = 'update requires spec and document arguments'
         raise MWSServerError(400, error)
@@ -196,8 +201,12 @@ def db_collection_update(res_id, collection_name):
         try:
             db[collection_name].update(query, update, upsert, multi=multi)
             return empty_success()
-        except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
-            raise MWSServerError(400, e)
+        except (DuplicateKeyError,
+            InvalidDocument,
+            InvalidId,
+            TypeError,
+            OperationFailure) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/save',
@@ -225,8 +234,8 @@ def db_collection_save(res_id, collection_name):
         try:
             get_db()[collection_name].save(document)
             return empty_success()
-        except (InvalidId, TypeError, InvalidDocument) as e:
-            raise MWSServerError(400, e.message)
+        except (InvalidId, TypeError, InvalidDocument, DuplicateKeyError) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
@@ -241,9 +250,9 @@ def db_collection_aggregate(res_id, collection_name):
                 result = coll.aggregate(request.json)
                 return to_json(result)
             except (InvalidId, TypeError, InvalidDocument) as e:
-                raise MWSServerError(400, e.message)
+                raise MWSServerError(400, str(e))
     except OperationFailure as e:
-        raise MWSServerError(400, e.message)
+        raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop',
@@ -260,7 +269,11 @@ def db_collection_drop(res_id, collection_name):
 @check_session_id
 @ratelimit
 def db_collection_count(res_id, collection_name):
-    parse_get_json(request)
+    try:
+        parse_get_json(request)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
+
     query = request.json.get('query')
     skip = request.json.get('skip', 0)
     limit = request.json.get('limit', 0)
@@ -272,8 +285,8 @@ def db_collection_count(res_id, collection_name):
             cursor = coll.find(query, skip=skip, limit=limit)
             count = cursor.count(use_skip_limit)
             return to_json({'count': count})
-        except (InvalidId, TypeError, InvalidDocument) as e:
-            raise MWSServerError(400, e)
+        except InvalidDocument as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
@@ -335,4 +348,4 @@ def get_collection_size(res_id, collection_name):
         if 'ns not found' in str(e):
             return 0
         else:
-            raise MWSServerError(500, e.message)
+            raise MWSServerError(500, str(e))
