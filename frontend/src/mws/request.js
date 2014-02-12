@@ -68,11 +68,15 @@ mongo.request = (function () {
       error: function (jqXHR, textStatus, errorThrown) {
         try{
             var response = $.parseJSON(jqXHR.responseText);
-            var message = 'ERROR: ' + response.reason;
+            var message = response.reason;
         } catch (e) {
-            var message = 'ERROR: The server experienced an unexpected error.' 
+            var message = 'The server experienced an unexpected error.' 
         }
-        shell.insertResponseLine(message);
+        // Hack: suspend.js doesn't seem to handle errors for single command
+        // evaluations.
+        if(context == null){
+            shell.insertResponseLine("Error: " + message);
+        }
         console.error(name + ' fail:', textStatus, errorThrown);
         shell.enableInput(true);
         shell.focus();
