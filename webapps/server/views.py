@@ -19,8 +19,8 @@ import uuid
 
 from bson import BSON
 from bson.json_util import dumps, loads
-from flask import Blueprint, current_app, make_response, request
-from flask import session
+from flask import Blueprint, current_app, make_response, request, session
+app = current_app
 from pymongo.errors import InvalidDocument, OperationFailure, InvalidId
 
 from webapps.lib import CLIENTS_COLLECTION
@@ -223,10 +223,13 @@ def db_collection_remove(res_id, collection_name):
 def db_collection_update(res_id, collection_name):
     query = update = None
     if request.json:
-        query = request.json.get('query')
-        update = request.json.get('update')
-        upsert = request.json.get('upsert', False)
-        multi = request.json.get('multi', False)
+        try:
+            query = request.json.get('query')
+            update = request.json.get('update')
+            upsert = request.json.get('upsert', False)
+            multi = request.json.get('multi', False)
+        except (InvalidId, TypeError) as e:
+            raise MWSServerError(400, e)
     if query is None or update is None:
         error = 'update requires spec and document arguments'
         raise MWSServerError(400, error)
@@ -250,7 +253,7 @@ def db_collection_update(res_id, collection_name):
             db[collection_name].update(query, update, upsert, multi=multi)
             return empty_success()
         except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
-            raise MWSServerError(400, e.message)
+            raise MWSServerError(400, e)
 
 
 @mws.route('/<res_id>/db/<collection_name>/save',
@@ -330,7 +333,7 @@ def db_collection_count(res_id, collection_name):
             count = cursor.count(use_skip_limit)
             return to_json({'count': count})
         except (InvalidId, TypeError, InvalidDocument) as e:
-            raise MWSServerError(400, e.message)
+            raise MWSServerError(400, e)
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
