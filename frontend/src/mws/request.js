@@ -66,10 +66,11 @@ mongo.request = (function () {
         }
       },
       error: function (jqXHR, textStatus, errorThrown) {
-        var response = $.parseJSON(jqXHR.responseText);
-        var message = 'ERROR: ' + response.reason;
-        if (response.detail) {
-          message += '\n' + response.detail;
+        try{
+            var response = $.parseJSON(jqXHR.responseText);
+            var message = 'ERROR: ' + response.reason;
+        } catch (e) {
+            var message = 'ERROR: The server experienced an unexpected error.' 
         }
         shell.insertResponseLine(message);
         console.error(name + ' fail:', textStatus, errorThrown);

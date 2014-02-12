@@ -329,7 +329,7 @@ def db_collection_count(res_id, collection_name):
             cursor = coll.find(query, skip=skip, limit=limit)
             count = cursor.count(use_skip_limit)
             return to_json({'count': count})
-            except (InvalidId, TypeError, InvalidDocument) as e:
+        except (InvalidId, TypeError, InvalidDocument) as e:
             raise MWSServerError(400, e.message)
 
 
