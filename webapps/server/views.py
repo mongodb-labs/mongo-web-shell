@@ -21,7 +21,7 @@ from bson import BSON
 from bson.json_util import dumps, loads
 from flask import Blueprint, current_app, make_response, request
 from flask import session
-from pymongo.errors import InvalidDocument, OperationFailure
+from pymongo.errors import InvalidDocument, OperationFailure, InvalidId
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
@@ -149,7 +149,10 @@ def db_collection_find(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
-        cursor = coll.find(query, projection, skip, limit)
+        try:
+            cursor = coll.find(query, projection, skip, limit)
+        except (InvalidId, TypeError) as e:
+            raise MWSServerError(400, e)
         if len(sort) > 0:
             cursor.sort(sort)
         documents = list(cursor)
@@ -188,8 +191,8 @@ def db_collection_insert(res_id, collection_name):
         try:
             get_db()[collection_name].insert(document)
             return empty_success()
-        except InvalidDocument as e:
-            raise MWSServerError(400, e.message)
+        except (InvalidDocument, InvalidId, TypeError) as e:
+            raise MWSServerError(400, e)
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
@@ -203,10 +206,13 @@ def db_collection_remove(res_id, collection_name):
 
     with UseResId(res_id):
         collection = get_db()[collection_name]
-        if just_one:
-            collection.find_and_modify(constraint, remove=True)
-        else:
-            collection.remove(constraint)
+        try:
+            if just_one:
+                collection.find_and_modify(constraint, remove=True)
+            else:
+                collection.remove(constraint)
+        except (InvalidDocument, InvalidId, TypeError) as e:
+            raise MWSServerError(400, e)
         return empty_success()
 
 
@@ -243,7 +249,7 @@ def db_collection_update(res_id, collection_name):
         try:
             db[collection_name].update(query, update, upsert, multi=multi)
             return empty_success()
-        except OperationFailure as e:
+        except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
             raise MWSServerError(400, e.message)
 
 
@@ -273,7 +279,7 @@ def db_collection_save(res_id, collection_name):
         try:
             get_db()[collection_name].save(document)
             return empty_success()
-        except InvalidDocument as e:
+        except (InvalidId, TypeError, InvalidDocument) as e:
             raise MWSServerError(400, e.message)
 
 
@@ -286,8 +292,11 @@ def db_collection_aggregate(res_id, collection_name):
     try:
         with UseResId(res_id):
             coll = get_db()[collection_name]
-            result = coll.aggregate(request.json)
-            return to_json(result)
+            try:
+                result = coll.aggregate(request.json)
+                return to_json(result)
+            except (InvalidId, TypeError, InvalidDocument) as e:
+                raise MWSServerError(400, e.message)
     except OperationFailure as e:
         raise MWSServerError(400, e.message)
 
@@ -316,9 +325,12 @@ def db_collection_count(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
-        cursor = coll.find(query, skip=skip, limit=limit)
-        count = cursor.count(use_skip_limit)
-        return to_json({'count': count})
+        try:
+            cursor = coll.find(query, skip=skip, limit=limit)
+            count = cursor.count(use_skip_limit)
+            return to_json({'count': count})
+            except (InvalidId, TypeError, InvalidDocument) as e:
+            raise MWSServerError(400, e.message)
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
