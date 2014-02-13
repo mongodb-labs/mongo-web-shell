@@ -30,12 +30,10 @@ DB_NAME = 'mongows'
 
 # Misc settings.
 HOST = '0.0.0.0'
-LOGGING_CONF = 'webapps/configs/logging.yaml'
 NO_FRONTEND = False
 NO_VALIDATION = False
 NO_INIT = False
 PORT = 5000
-CORS_ORIGIN = ''
 
 RATELIMIT_COLLECTION = 'ratelimit'
 RATELIMIT_QUOTA = 500  # requests per expiry
@@ -48,3 +46,7 @@ QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes
 # 0: user is unable to create additional collections
 # 1+: user may have up to # collections per res_id
 QUOTA_NUM_COLLECTIONS = 8
+
+# Loggin config
+ADMIN_EMAILS = 'internal-tools+mws@10gen.com'
+

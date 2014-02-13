@@ -149,7 +149,6 @@ More info
 See the project [wiki][].
 
 [wiki-config]: https://github.com/10gen-labs/mongo-web-shell/wiki/Configuration
-[foreman]: http://ddollar.github.io/foreman/
 [Grunt]: http://gruntjs.com/
 [jshint]: http://jshint.org/
 [mongoDB install]: http://docs.mongodb.org/manual/installation/
@@ -157,4 +156,3 @@ See the project [wiki][].
 [pep8]: https://github.com/jcrocholl/pep8
 [virtualenv]: http://www.virtualenv.org/en/latest/
 [wiki]: https://github.com/10gen-labs/mongo-web-shell/wiki
-[Python 2.7]: http://www.python.org/download/releases/2.7.5

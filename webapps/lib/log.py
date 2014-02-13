@@ -81,7 +81,7 @@ def configure_logging(app, environment):
     elif environment == "prod":
         eh = SMTPHandler('127.0.0.1',
             'noc+mws@10gen.com',
-            'internal-tools@10gen.com', 'MWS Failure')
+            app.config.get('ADMIN_EMAILS'), 'MWS Failure')
         eh.setLevel(logging.ERROR)
         eh.setFormatter(email)
         ch = logging.StreamHandler()

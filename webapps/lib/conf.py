@@ -15,18 +15,13 @@
 import os
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
+    ('ADMIN_EMAILS', str),
     ('DEBUG', bool),
-    ('LOGGING_CONF', str),
 ]
 _PREFIXED_ENVVAR = [
     # Web Shell server
-    ('CORS_ORIGIN', str),
     ('SERVER_HOST', str),
     ('SERVER_PORT', int),
-    # Try.mongodb.org frontend
-    ('TRY_HOST', str),
-    ('TRY_PORT', int),
-    ('TRY_MWS_HOST', str),
     # Init Verification service
     ('IVS_EDX_SHARED_KEY', str),
     ('IVS_GRADING_SERVER_URL', str),
