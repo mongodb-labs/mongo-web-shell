@@ -18,6 +18,7 @@ import logging
 
 from webapps.lib.log import configure_logging
 from webapps.server.views import mws
+import webapps.server.crontab as crontab
 
 from webapps.lib.conf import update_config
 
@@ -43,9 +44,10 @@ def create_app():
     app.config.from_object('webapps.configs.server')
     # Overrides the config with any environment variables that might
     # be set
-    update_config(app, 'SERVER')
+    update_config(app, 'SERVER', environment)
     configure_logging(app, environment)
     app.register_blueprint(mws)
+    crontab.run_scheduler(app)
     return app
 
 

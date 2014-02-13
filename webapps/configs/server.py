@@ -23,19 +23,15 @@ SECRET_KEY = 'A0gjhsd3678HK'
 
 
 #DB Settings
-DB_HOSTS = ["trymongo-1.10gen.cc", "trymongo-2.10gen.cc", "trymongo-arbiter.10gen.cc"]
+DB_HOSTS = ["localhost"]
 DB_PORT = 27017
 DB_NAME = 'mongows'
 
 
-# Misc settings.
-HOST = '0.0.0.0'
-NO_FRONTEND = False
-NO_VALIDATION = False
-NO_INIT = False
+HOST = "0.0.0.0"
 PORT = 5000
 
-RATELIMIT_COLLECTION = 'ratelimit'
+RATELIMIT_COLLECTION = 'server_ratelimit'
 RATELIMIT_QUOTA = 500  # requests per expiry
 RATELIMIT_EXPIRY = 60  # expiry in seconds
 
@@ -47,6 +43,6 @@ QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes
 # 1+: user may have up to # collections per res_id
 QUOTA_NUM_COLLECTIONS = 8
 
-# Loggin config
-ADMIN_EMAILS = 'internal-tools+mws@10gen.com'
-
+# Logging config
+ADMIN_EMAILS = ''
+LOG_FILE_PATH = ''

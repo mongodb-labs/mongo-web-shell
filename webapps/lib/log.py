@@ -1,14 +1,8 @@
-import sys
 import socket
 import logging
 import logging.handlers
-import yaml
-
-import logging
 from logging.handlers import SMTPHandler
 
-
-_logger = logging.getLogger(__name__)
 
 class ResponseContextFilter(logging.Filter):
     """
@@ -32,6 +26,7 @@ class ResponseContextFilter(logging.Filter):
             record.path = ""
         return True
 
+
 def configure_logging(app, environment):
     """Configures the logging module for the app.
     """
@@ -54,7 +49,7 @@ def configure_logging(app, environment):
 
         )
     )
-    fmt = '[%(asctime)s] %(name)s::%(levelname)s::%(funcName)s(): %(message)s'
+
     if environment == "devel":
         ch = logging.StreamHandler()
         ch.addFilter(ResponseContextFilter())
@@ -63,40 +58,33 @@ def configure_logging(app, environment):
         rl.setLevel(logging.DEBUG)
         rl.addHandler(ch)
     elif environment == "staging":
-        ch = logging.StreamHandler()
-        ch.addFilter(ResponseContextFilter())
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(simple)
-        fh = logging.handlers.TimedRotatingFileHandler(
-            '/var/log/trymongo-staging/trymongo.log',
-            when='midnight',
-            backupCount=30)
-        fh.addFilter(ResponseContextFilter())
-        fh.setFormatter(simple)
-        fh.setLevel(logging.INFO)
         rl = logging.getLogger()
         rl.setLevel(logging.DEBUG)
-        rl.addHandler(ch)
-        rl.addHandler(fh)
+        if 'LOG_FILE_PATH' in app.config:
+            fh = logging.handlers.TimedRotatingFileHandler(
+                app.config.get('LOG_FILE_PATH'),
+                when='midnight',
+                backupCount=30)
+            fh.addFilter(ResponseContextFilter())
+            fh.setFormatter(simple)
+            fh.setLevel(logging.INFO)
+            rl.addHandler(fh)
     elif environment == "prod":
-        eh = SMTPHandler('127.0.0.1',
-            'noc+mws@10gen.com',
-            app.config.get('ADMIN_EMAILS'), 'MWS Failure')
-        eh.setLevel(logging.ERROR)
-        eh.setFormatter(email)
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.DEBUG)
-        ch.setFormatter(simple)
-        ch.addFilter(ResponseContextFilter())
-        fh = logging.handlers.TimedRotatingFileHandler(
-            '/var/log/trymongo-prod/trymongo.log',
-            when='midnight',
-            backupCount=30)
-        fh.setFormatter(simple)
-        fh.setLevel(logging.INFO)
-        fh.addFilter(ResponseContextFilter())
         rl = logging.getLogger()
         rl.setLevel(logging.DEBUG)
-        rl.addHandler(ch)
-        rl.addHandler(fh)
-        rl.addHandler(eh)
+        if 'ADMIN_EMAILS' in app.config and app.config.get('ADMIN_EMAILS'):
+            eh = SMTPHandler('127.0.0.1',
+                'noc+mws@10gen.com',
+                app.config.get('ADMIN_EMAILS'), 'MWS Failure')
+            eh.setLevel(logging.ERROR)
+            eh.setFormatter(email)
+            rl.addHandler(eh)
+        if 'LOG_FILE_PATH' in app.config:
+            fh = logging.handlers.TimedRotatingFileHandler(
+                app.config.get('LOG_FILE_PATH'),
+                when='midnight',
+                backupCount=30)
+            fh.addFilter(ResponseContextFilter())
+            fh.setFormatter(simple)
+            fh.setLevel(logging.INFO)
+            rl.addHandler(fh)

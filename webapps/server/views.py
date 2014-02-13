@@ -36,10 +36,6 @@ from webapps.lib.util import (
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
-
-_logger = logging.getLogger('mongows.views')
-
-
 @mws.after_request
 def no_cache(response):
     response.cache_control.no_cache = True

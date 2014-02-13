@@ -13,10 +13,12 @@
 #    limitations under the License.
 
 import os
+import yaml
 # The environment variable name and the key in app.config[key].
 _ENVVAR = [
     ('ADMIN_EMAILS', str),
     ('DEBUG', bool),
+    ('DB_HOSTS', list)
 ]
 _PREFIXED_ENVVAR = [
     # Web Shell server
@@ -30,9 +32,34 @@ _PREFIXED_ENVVAR = [
     ('IVS_PORT', int),
 ]
 
+config_location_map = {
+    'staging': '/opt/10gen/trymongo-staging/shared/config.yml',
+    'prod':  '/opt/10gen/trymongo-prod/shared/config.yml'
+}
 
-def update_config(app, prefix):
+
+def update_config(app, prefix, environment):
     """Overrides the flask app's configuration with envvar where applicable."""
+    config = {}
+    if 'CONFIG_FILENAME' in os.environ:
+        path = os.environ.get('CONFIG_FILENAME')
+        try:
+            _here = os.path.dirname(os.path.abspath(__file__))
+            full_path = os.path.join(_here, path)
+            _config_file = open(full_path, 'r')
+            config = yaml.load(_config_file)
+        except IOError as e:
+                print("Expected to find a file at {0}, proceeding without.".format(full_path))
+    else:
+        try:
+            full_path = os.path.abspath(config_location_map[environment])
+            _config_file = open(full_path)
+            config = yaml.load(_config_file)
+        except IOError as e:
+            print("Expected to find a file at {0}, proceeding without.".format(full_path))
+    for key, value in config.items():
+        app.config[key] = value
+
     for envvar in _ENVVAR:
         key, t = envvar
         val = os.environ.get(key, app.config[key])
