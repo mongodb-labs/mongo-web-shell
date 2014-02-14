@@ -33,7 +33,7 @@ def get_db(MWSExceptions=True):
         return db
     try:
         client = pymongo.MongoClient(
-            config.get('DB_HOST'),
+            config.get('DB_HOSTS'),
             config.get('DB_PORT'))
         db = client[config.get('DB_NAME')]
         if 'username' in config:

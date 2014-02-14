@@ -19,9 +19,10 @@ import uuid
 
 from bson import BSON
 from bson.json_util import dumps, loads
-from flask import Blueprint, current_app, make_response, request
-from flask import session
-from pymongo.errors import InvalidDocument, OperationFailure
+from flask import Blueprint, current_app, make_response, request, session
+app = current_app
+from pymongo.errors import (InvalidDocument, OperationFailure,
+    InvalidId, DuplicateKeyError)
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
@@ -35,10 +36,6 @@ from webapps.lib.util import (
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
 
-
-_logger = logging.getLogger('mongows.views')
-
-
 @mws.after_request
 def no_cache(response):
     response.cache_control.no_cache = True
@@ -46,58 +43,7 @@ def no_cache(response):
     return response
 
 
-# TODO: Look over this method; remove unnecessary bits, check convention, etc.
-# via http://flask.pocoo.org/snippets/56/
-def crossdomain(origin=None, methods=None, headers=None,
-                max_age=21600, attach_to_all=True,
-                automatic_options=True):
-    if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
-    if isinstance(headers, list):
-        headers = ', '.join(x.upper() for x in headers)
-    if isinstance(origin, list):
-        origin = ', '.join(origin)
-    if isinstance(max_age, timedelta):
-        max_age = max_age.total_seconds()
-
-    def get_methods():
-        if methods is not None:
-            return methods
-
-        options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
-
-    def decorator(f):
-        def wrapped_function(*args, **kwargs):
-            cors_origin = origin or current_app.config.get('CORS_ORIGIN', '')
-
-            if automatic_options and request.method == 'OPTIONS':
-                resp = current_app.make_default_options_response()
-            else:
-                resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
-                return resp
-
-            h = resp.headers
-
-            h['Access-Control-Allow-Origin'] = cors_origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
-            h['Access-Control-Allow-Credentials'] = 'true'
-            if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
-            else:
-                reqh = request.headers.get('Access-Control-Request-Headers')
-                h['Access-Control-Allow-Headers'] = reqh
-            return resp
-
-        f.provide_automatic_options = False
-        return update_wrapper(wrapped_function, f)
-    return decorator
-
-
 @mws.route('/', methods=['POST', 'OPTIONS'])
-@crossdomain()
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
     session['session_id'] = session_id
@@ -122,7 +68,6 @@ def create_mws_resource():
 
 
 @mws.route('/<res_id>/keep-alive', methods=['POST', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 def keep_mws_alive(res_id):
     clients = get_db()[CLIENTS_COLLECTION]
@@ -132,14 +77,16 @@ def keep_mws_alive(res_id):
 
 
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_find(res_id, collection_name):
     # TODO: Should we specify a content type? Then we have to use an options
     # header, and we should probably get the return type from the content-type
     # header.
-    parse_get_json(request)
+    try:
+        parse_get_json(request)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     query = request.json.get('query')
     projection = request.json.get('projection')
     skip = request.json.get('skip', 0)
@@ -149,7 +96,10 @@ def db_collection_find(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
-        cursor = coll.find(query, projection, skip, limit)
+        try:
+            cursor = coll.find(query, projection, skip, limit)
+        except (InvalidId, TypeError) as e:
+            raise MWSServerError(400, str(e))
         if len(sort) > 0:
             cursor.sort(sort)
         documents = list(cursor)
@@ -158,11 +108,14 @@ def db_collection_find(res_id, collection_name):
 
 @mws.route('/<res_id>/db/<collection_name>/insert',
            methods=['POST', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_insert(res_id, collection_name):
     # TODO: Ensure request.json is not None.
+    try:
+        request.json = loads(request.data)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     if 'document' in request.json:
         document = request.json['document']
     else:
@@ -188,13 +141,12 @@ def db_collection_insert(res_id, collection_name):
         try:
             get_db()[collection_name].insert(document)
             return empty_success()
-        except InvalidDocument as e:
-            raise MWSServerError(400, e.message)
+        except (DuplicateKeyError, InvalidDocument, InvalidId, TypeError) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/remove',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_remove(res_id, collection_name):
@@ -203,15 +155,17 @@ def db_collection_remove(res_id, collection_name):
 
     with UseResId(res_id):
         collection = get_db()[collection_name]
-        if just_one:
-            collection.find_and_modify(constraint, remove=True)
-        else:
-            collection.remove(constraint)
+        try:
+            if just_one:
+                collection.find_and_modify(constraint, remove=True)
+            else:
+                collection.remove(constraint)
+        except (InvalidDocument, InvalidId, TypeError) as e:
+            raise MWSServerError(400, str(e))
         return empty_success()
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_update(res_id, collection_name):
@@ -243,13 +197,16 @@ def db_collection_update(res_id, collection_name):
         try:
             db[collection_name].update(query, update, upsert, multi=multi)
             return empty_success()
-        except OperationFailure as e:
-            raise MWSServerError(400, e.message)
+        except (DuplicateKeyError,
+            InvalidDocument,
+            InvalidId,
+            TypeError,
+            OperationFailure) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/save',
            methods=['POST', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_save(res_id, collection_name):
@@ -273,28 +230,29 @@ def db_collection_save(res_id, collection_name):
         try:
             get_db()[collection_name].save(document)
             return empty_success()
-        except InvalidDocument as e:
-            raise MWSServerError(400, e.message)
+        except (InvalidId, TypeError, InvalidDocument, DuplicateKeyError) as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/aggregate',
            methods=['GET', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 def db_collection_aggregate(res_id, collection_name):
     parse_get_json(request)
     try:
         with UseResId(res_id):
             coll = get_db()[collection_name]
-            result = coll.aggregate(request.json)
-            return to_json(result)
+            try:
+                result = coll.aggregate(request.json)
+                return to_json(result)
+            except (InvalidId, TypeError, InvalidDocument) as e:
+                raise MWSServerError(400, str(e))
     except OperationFailure as e:
-        raise MWSServerError(400, e.message)
+        raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_drop(res_id, collection_name):
@@ -304,11 +262,14 @@ def db_collection_drop(res_id, collection_name):
 
 
 @mws.route('/<res_id>/db/<collection_name>/count', methods=['GET', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 @ratelimit
 def db_collection_count(res_id, collection_name):
-    parse_get_json(request)
+    try:
+        parse_get_json(request)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
+
     query = request.json.get('query')
     skip = request.json.get('skip', 0)
     limit = request.json.get('limit', 0)
@@ -316,14 +277,16 @@ def db_collection_count(res_id, collection_name):
 
     with UseResId(res_id):
         coll = get_db()[collection_name]
-        cursor = coll.find(query, skip=skip, limit=limit)
-        count = cursor.count(use_skip_limit)
-        return to_json({'count': count})
+        try:
+            cursor = coll.find(query, skip=skip, limit=limit)
+            count = cursor.count(use_skip_limit)
+            return to_json({'count': count})
+        except InvalidDocument as e:
+            raise MWSServerError(400, str(e))
 
 
 @mws.route('/<res_id>/db/getCollectionNames',
            methods=['GET', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 def db_get_collection_names(res_id):
     return to_json({'result': get_collection_names(res_id)})
@@ -331,7 +294,6 @@ def db_get_collection_names(res_id):
 
 @mws.route('/<res_id>/db',
            methods=['DELETE', 'OPTIONS'])
-@crossdomain()
 @check_session_id
 def db_drop(res_id):
     DB = get_db()
@@ -379,7 +341,7 @@ def get_collection_size(res_id, collection_name):
     try:
         return get_db().command({'collstats': coll})['size']
     except OperationFailure as e:
-        if 'ns not found' in e.message:
+        if 'ns not found' in str(e):
             return 0
         else:
-            raise MWSServerError(500, e.message)
+            raise MWSServerError(500, str(e))

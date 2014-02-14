@@ -11,6 +11,12 @@ frontend/dist/
 _SpecRunner.html
 *.pyc
 
+# env!
+webapps/*/devel
+webapps/*/staging
+webapps/*/prod
+
+
 # scripts
 webapps/ivs/initializers/scripts
 webapps/ivs/verify/scripts
