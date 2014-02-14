@@ -78,10 +78,6 @@ The server webapp can be run with:
 
     python -m webapps.server.app
 
-To enable Flask debug mode, which restarts the server whenever any source files
-change, set the `DEBUG` environment variable to any value.
-
-    DEBUG=1 python -m webapp.server.app
 
 ### The Tutorial
 
