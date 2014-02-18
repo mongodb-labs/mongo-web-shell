@@ -1,2 +1,3 @@
 DB_HOSTS:
     - localhost
+SECRET_KEY: 'lumberjack'

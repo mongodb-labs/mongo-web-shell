@@ -19,7 +19,7 @@ app configuration by default.
 """
 # flask.config settings.
 DEBUG = False
-SECRET_KEY = 'A0gjhsd3678HK'
+SECRET_KEY = 'foo'
 
 
 #DB Settings

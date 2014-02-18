@@ -76,7 +76,7 @@ Make sure that you have activated your virtualenv
 
 The server webapp can be run with:
 
-    python -m webapps.server.app
+    export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml && python -m webapps.server.app
 
 
 ### The Tutorial

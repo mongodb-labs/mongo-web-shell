@@ -14,7 +14,7 @@
 
 # flask.config settings.
 DEBUG = True
-SECRET_KEY = 'A0gjhsd3678HK'
+SECRET_KEY = 'foo'
 
 # Misc settings.
 HOST = '0.0.0.0'
