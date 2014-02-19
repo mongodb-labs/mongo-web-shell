@@ -76,7 +76,7 @@ Make sure that you have activated your virtualenv
 
 The server webapp can be run with:
 
-    export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml && python -m webapps.server.app
+    env CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml python -m webapps.server.app
 
 
 ### The Tutorial
@@ -125,7 +125,7 @@ Lint via pep8.
 Configuration
 -------------
 
-In a development environment, you can specify configration in a number of ways.
+In a development environment, you can specify configuration in a number of ways.
 
 You can choose to specify configurations by
 
@@ -134,7 +134,7 @@ I specify this:
     export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml
 
 In staging and production, because apache doesn't play well with environment
-varaibles, we default to /opt/10gen/trymongo-<env>/shared/config.yml
+variables, we default to /opt/10gen/trymongo-<env>/shared/config.yml
 
  2. Any of the variables that appear in `webapps/lib/conf.py` can be
  overridden with environment variables - they will override anything in the

@@ -59,6 +59,9 @@ def update_config(app, prefix, environment):
             config = yaml.load(_config_file)
         except IOError as e:
             print("Expected to find a file at {0}, proceeding without.".format(full_path))
+        except KeyError:
+            print("No default config file path set for the {0} environment, proceeding without".format(environment))
+
     for key, value in config.items():
         app.config[key] = value
 
