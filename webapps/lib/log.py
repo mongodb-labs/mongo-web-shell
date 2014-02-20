@@ -60,7 +60,7 @@ def configure_logging(app, environment):
     elif environment == "staging":
         rl = logging.getLogger()
         rl.setLevel(logging.DEBUG)
-        if 'LOG_FILE_PATH' in app.config:
+        if app.config.get('LOG_FILE_PATH', None):
             fh = logging.handlers.TimedRotatingFileHandler(
                 app.config.get('LOG_FILE_PATH'),
                 when='midnight',
@@ -72,14 +72,14 @@ def configure_logging(app, environment):
     elif environment == "prod":
         rl = logging.getLogger()
         rl.setLevel(logging.DEBUG)
-        if 'ADMIN_EMAILS' in app.config and app.config.get('ADMIN_EMAILS'):
+        if app.config.get('ADMIN_EMAILS', None):
             eh = SMTPHandler('127.0.0.1',
                 'noc+mws@10gen.com',
                 app.config.get('ADMIN_EMAILS'), 'MWS Failure')
             eh.setLevel(logging.ERROR)
             eh.setFormatter(email)
             rl.addHandler(eh)
-        if 'LOG_FILE_PATH' in app.config:
+        if app.config.get('LOG_FILE_PATH', None):
             fh = logging.handlers.TimedRotatingFileHandler(
                 app.config.get('LOG_FILE_PATH'),
                 when='midnight',

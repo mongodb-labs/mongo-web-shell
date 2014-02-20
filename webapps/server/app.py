@@ -38,6 +38,11 @@ elif _staging:
     environment = "staging"
 elif _prod:
     environment = "prod"
+else:
+    # we need a default value for the environment, or the server will fail
+    # to start when none of the above cases are true.
+    environment = ""
+
 
 def create_app():
     app = Flask(__name__)
