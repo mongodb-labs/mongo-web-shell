@@ -72,16 +72,20 @@ accessed by the back-end server:
 
 Make sure that you have activated your virtualenv
 
-### The Server Webapp
 
-The server webapp can be run with:
+### Environment variables
 
-    env CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml python -m webapps.server.app
+`CONFIG_FILENAME` - the configuration file that Flask will use to start the server, see `sample.yml` for an example.
+Also see `webapps/lib/conf.py` for different default configuration paths depending on environment. This path is resolved
+relative to the root directory of the git repo, and can either be a relative or absolute filepath.
+
+`MWS_FLASK_STATIC` - if set, this will have Flask serve static the static files, note that this should only be used
+for development, and production webservers such as apache (see below) or nginx should be used for production.
 
 
 ### The Tutorial
 
-Consider using apache with a configuration similar to this:
+For production, consider using apache with a configuration similar to this:
 
     <VirtualHost *:80>
         DocumentRoot [path to mongo-web-shell]/frontend
@@ -97,6 +101,21 @@ Consider using apache with a configuration similar to this:
         ProxyPassReverse /server http://127.0.0.1:5000
 
     </VirtualHost>
+
+For development, set the `MWS_FLASK_STATIC` environment variable to enable Flask to serve static files automatically.
+
+Note that only one of these options, and not both should be used.
+
+### The Server Webapp
+
+The server webapp can be run with:
+
+    python -m webapps.server.app
+
+To set any environment variables for the script, use the `env` command. For example to run the server using the sample
+configuration file and to use Flask to serve static files, use the following command from the root of the git repo:
+
+    env CONFIG_FILENAME=sample.yml MWS_FLASK_STATIC='' python -m webapps.server.app
 
 Make sure that you've run `grunt` to build the assets first.
 
@@ -131,7 +150,7 @@ You can choose to specify configurations by
 
  1. Specify a yaml file containing configuration.  For example, on my system
 I specify this:
-    export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml
+        export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml
 
 In staging and production, because apache doesn't play well with environment
 variables, we default to /opt/10gen/trymongo-<env>/shared/config.yml
