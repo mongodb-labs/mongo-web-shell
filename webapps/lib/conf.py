@@ -46,17 +46,17 @@ def update_config(app, prefix, environment):
     if 'CONFIG_FILENAME' in os.environ:
         path = os.environ.get('CONFIG_FILENAME')
         try:
-            _config_file = open(path, 'r')
-            config = yaml.load(_config_file)
+            with open(path, 'r') as _config_file:
+                config = yaml.load(_config_file)
         except IOError as e:
-                print("Expected to find a file at {0}, proceeding without, relative to {1}".format(path, os.getcwd()))
+                print("Expected to find a file at {0}, or {1}; proceeding without".format(path, os.path.join(os.getcwd(), path)))
     else:
         try:
-            full_path = os.path.abspath(config_location_map[environment])
-            _config_file = open(full_path)
-            config = yaml.load(_config_file)
+            path = config_location_map[environment]
+            with open(path, 'r') as f:
+                config = yaml.load(f)
         except IOError as e:
-            print("Expected to find a file at {0}, proceeding without.".format(full_path))
+            print("Expected to find a file at {0}, proceeding without.".format(path))
         except KeyError:
             print("No default config file path set for the {0} environment, proceeding without".format(environment))
 
