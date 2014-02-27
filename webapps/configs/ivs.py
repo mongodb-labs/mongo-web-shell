@@ -27,7 +27,7 @@ RATELIMIT_QUOTA = 3    # requests per expiry
 RATELIMIT_EXPIRY = 10  # expiry in seconds
 
 # DB Settings
-DB_HOST = 'localhost'
+DB_HOSTS = ['localhost']
 DB_PORT = 27017
 DB_NAME = 'mongows'
 

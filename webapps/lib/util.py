@@ -20,6 +20,8 @@ from flask import current_app
 from . import CLIENTS_COLLECTION
 
 import logging
+import os
+
 _logger = logging.getLogger(__name__)
 
 
@@ -37,6 +39,18 @@ def get_collection_names(res_id):
     )
     _logger.info("first result: {0}".format(one))
     return one['collections']
+
+
+def get_environment(basedir):
+    """Get the application environment context (e.g., devel, staging, prod).
+
+Determines the context by looking for a corresponding file under basedir.
+If there are multiple files, we prefer devel, then staging, and then prod.
+If no file exists, then returns the empty string."""
+    for env in ('devel', 'staging', 'prod'):
+        if os.path.exists(os.path.join(basedir, env)):
+            return env
+    return ''
 
 
 class UseResId:
