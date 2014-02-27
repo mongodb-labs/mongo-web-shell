@@ -40,6 +40,7 @@ config_location_map = {
 }
 
 
+
 def update_config(app, prefix, environment):
     """Overrides the flask app's configuration with envvar where applicable."""
     config = {}

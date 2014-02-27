@@ -12,15 +12,22 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 
+import logging
+import os
+
 from flask import Flask
 
 from webapps.lib.log import configure_logging
 from webapps.lib.conf import update_config
-
+from webapps.lib.util import get_environment
 from webapps.ivs.views import ivs
 
-import logging
+
 _logger = logging.getLogger(__name__)
+
+
+_here = os.path.dirname(os.path.abspath(__file__))
+environment = get_environment(_here)
 
 
 def create_app():
@@ -28,8 +35,8 @@ def create_app():
     app.config.from_object('webapps.configs.ivs')
     # Overrides the config with any environment variables that might
     # be set
-    update_config(app, 'IVS')
-    configure_logging(app)
+    update_config(app, 'IVS', environment)
+    configure_logging(app, environment)
     _logger.info('test')
     app.register_blueprint(ivs)
     return app

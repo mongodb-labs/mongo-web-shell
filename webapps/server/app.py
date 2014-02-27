@@ -16,32 +16,21 @@ import os
 from flask import Flask, redirect
 import logging
 
-from webapps.lib.log import configure_logging
-from webapps.server.views import mws
-import webapps.server.crontab as crontab
-
 from webapps.lib.conf import update_config
+from webapps.lib.log import configure_logging
+from webapps.lib.util import get_environment
+from webapps.server import crontab
+from webapps.server.views import mws
+
 
 _logger = logging.getLogger(__name__)
 
-_here = os.path.dirname(os.path.abspath(__file__))
-_testing = 'MWS_SERVER_TESTING' in os.environ
-_devel = os.path.exists(os.path.join(_here, 'devel'))
-_staging = os.path.exists(os.path.join(_here, 'staging'))
-_prod = os.path.exists(os.path.join(_here, 'prod'))
 
-if _testing:
-    environment = "test"
-elif _devel:
-    environment = "devel"
-elif _staging:
-    environment = "staging"
-elif _prod:
-    environment = "prod"
+if 'MWS_SERVER_TESTING' in os.environ:
+    environment = 'test'
 else:
-    # we need a default value for the environment, or the server will fail
-    # to start when none of the above cases are true.
-    environment = ""
+    _here = os.path.dirname(os.path.abspath(__file__))
+    environment = get_environment(_here)
 
 _flask_serve_static = 'MWS_FLASK_STATIC' in os.environ
 if _flask_serve_static:
