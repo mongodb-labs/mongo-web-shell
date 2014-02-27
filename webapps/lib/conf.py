@@ -50,7 +50,7 @@ def update_config(app, prefix, environment):
             with open(path, 'r') as _config_file:
                 config = yaml.load(_config_file)
         except IOError as e:
-                print("Expected to find a file at {0}, or {1}; proceeding without".format(path, os.path.join(os.getcwd(), path)))
+            print("Expected to find a file at {0}, or {1}; proceeding without".format(path, os.path.join(os.getcwd(), path)))
     else:
         try:
             path = config_location_map[environment]
