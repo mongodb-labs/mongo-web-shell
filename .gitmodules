@@ -19,3 +19,6 @@
 [submodule "frontend/lib/suspend.js"]
 	path = frontend/lib/suspend.js
 	url = git://github.com/FuegoFro/suspend.js.git
+[submodule "frontend/lib/bootstrap"]
+	path = frontend/lib/bootstrap
+	url = git@github.com:twbs/bootstrap.git

@@ -1,0 +1,56 @@
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    margin-top: 4em;
+    padding: 20px 0;
+    background-color: white;
+}
+
+.social {
+    height: 21px;
+    margin-top: 8px;
+    float: right;
+}
+
+.footer .social .img {
+    background-repeat: no-repeat;
+    background-size: 21px 21px;
+    width: 21px;
+    height: 21px;
+    display: inline-block;
+}
+
+.footer .social .twitter-icon .img {
+    background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-twitter.png);
+}
+
+.footer .social .youtube-icon .img {
+    background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-youtube.png);
+}
+
+.footer .social .facebook-icon .img {
+    background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-facebook.png);
+}
+
+.footer .social .gplus-icon .img {
+    background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-gplus.png);
+}
+
+@media only screen and (-webkit-min-device-pixel-ratio: 2) {
+    .footer .social .twitter-icon .img {
+        background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-twitter@2x.png);
+    }
+
+    .footer .social .youtube-icon .img {
+        background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-youtube@2x.png);
+    }
+
+    .footer .social .facebook-icon .img {
+        background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-facebook@2x.png);
+    }
+
+    .footer .social .gplus-icon .img {
+        background-image: url(http://media.mongodb.org.s3.amazonaws.com/social-gplus@2x.png);
+    }
+}

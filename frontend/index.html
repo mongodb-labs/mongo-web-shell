@@ -19,250 +19,291 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta http-equiv="x-ua-compatible" content="IE=8">
-  <title>Try MongoDB</title>
-  <link rel="stylesheet" type="text/css" href="dist/mongoWebShell.min.css" />
-  <style type="text/css">
-  </style>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="IE=8">
+    <title>Try MongoDB</title>
+    <link rel="stylesheet" type="text/css" href="lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="dist/mongoWebShell.min.css" />
+    <link rel="stylesheet" type="text/css" href="header.css" />
+    <link rel="stylesheet" type="text/css" href="footer.css" />
+
+    <style type="text/css">
+    </style>
 </head>
 <body>
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push(
-  {'gtm.start': new Date().getTime(),event:'gtm.js'}
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push(
+    {'gtm.start': new Date().getTime(),event:'gtm.js'}
 
-  );var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-N94BVD');</script>
-  <!-- End Google Tag Manager -->
-  <div class="content-wrapper">
-    <h1>A Tiny MongoDB Browser Shell!</h1>
-    <h2>Just enough to scratch the surface.</h2>
-    <div class="mongo-web-shell">
-      <p>connecting to database...</p>
-      <br />
-      <p>Welcome to a self guided tour of the MongoDB shell.</p>
-      <br />
-      <p>
-     </p>
+    );var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-N94BVD');</script>
+    <!-- End Google Tag Manager -->
+    <header id="header-db" role="navigation">
+    <div class="container">
+      <div id="logo">
+        <a href="/"><img class="logo" src="http://media.mongodb.org/logo-mongodb-header.png" alt="MongoDB Logo"/></a>
+      </div>
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-header-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse navbar-header-collapse" id="etp">
+        <ul class="nav navbar-nav">
+          <li><a href="http://docs.mongodb.org">Docs</a></li>
+          <li><a href="http://try.mongodb.org">Try It Out</a></li>
+          <li><a href="/downloads">Downloads</a></li>
+          <li><a href="/get-involved">Community</a></li>
+          <li><a href="http://blog.mongodb.org">Blog</a></li>
+          <li class="search-db narrow"><gcse:searchbox-only resultsUrl="http://docs.mongodb.org/manual/search/" queryParameterName="query"></gcse:searchbox-only></li>
+        </ul>
+      </div>
     </div>
-  </div>
+    </header>
+    <div class="container content-wrapper">
+      <h1>A MongoDB Shell in your browser <small>Just enough to scratch the surface.</small></h1>
+      <div class="mongo-web-shell">
+        <p>Welcome to a self guided tour of the MongoDB shell.</p>
+        <br />
+        <p>
+       </p>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="container">
+        <div class="row">
+          <div class="copyright col-xs-10">
+            <p>Copyright &copy; 2013 <a class="smalltext" href="http://www.mongodb.com">MongoDB, Inc</a>. Licensed under <a href="http://creativecommons.org/licenses/by-nc-sa/3.0/ ">Creative Commons</a>. MongoDB, Mongo, and the leaf logo are registered trademarks of MongoDB, Inc.</p>
+          </div>
+          <div class="col-xs-2">
+            <div class="social">
+              <a class="twitter-icon" href="https://twitter.com/mongodbinc"><div class="img"></div></a>
+              <a class="youtube-icon" href="http://www.youtube.com/user/MongoDB"><div class="img"></div></a>
+              <a class="facebook-icon" href="https://www.facebook.com/mongodb"><div class="img"></div></a>
+              <a class="gplus-icon" href="https://plus.google.com/u/1/101024085748034940765/posts?cfem=1"><div class="img"></div></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    <div style='display: none;'>
+      <form class="lpeRegForm formNotEmpty" method="post" enctype="application/x-www-form-urlencoded" action="http://info.mongodb.com/index.php/leadCapture/save" id="mktForm_1115" name="mktForm_1115"><ul class='mktLblLeft'><li  class='mktField' ><label>First Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="FirstName" id="FirstName" type='text' value=""  maxlength='255' tabIndex='1' /><span class='mktFormMsg'></span></span></li>
+      <li  class='mktField' ><label>Last Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="LastName" id="LastName" type='text' value=""  maxlength='255' tabIndex='2' /><span class='mktFormMsg'></span></span></li>
+      <li  class='mktField' ><label>Email Address:</label><span class='mktInput'><input class='mktFormText mktFormEmail' name="Email" id="Email" type='text' value=""  maxlength='255' tabIndex='3' /><span class='mktFormMsg'></span></span></li>
+      <li  class='mktField' ><label>Company Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="Company" id="Company" type='text' value=""  maxlength='255' tabIndex='4' /><span class='mktFormMsg'></span></span></li>
+      <li id='mktFrmButtons'><label>&nbsp;</label><input id='mktFrmSubmit' type='submit' style="width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;" value='Submit' name='submitButton' onclick='formSubmit(document.getElementById("mktForm_1115")); return false;' />&nbsp;<input style='width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;' id='mktFrmReset' type='reset'
+                    value='Clear' name='resetButton' onclick='formReset(document.getElementById("mktForm_1115")); return false;' /></li>  </ul>
+        <span style="display:none;"><input type="text" name="_marketo_comments" value="" /></span>
+        <input type="hidden" name="lpId" value="1861" />
+        <input type="hidden" name="subId" value="158" />
+        <input type="hidden" name="munchkinId" value="017-HGS-593" />
+        <input type="hidden" name="kw" value="" />
+        <input type="hidden" name="cr" value="" />
+        <input type="hidden" name="searchstr" value="" />
+        <input type="hidden" name="lpurl" value="http://info.mongodb.com/Trymongodborg_form.html?cr={creative}&kw={keyword}" />
+        <input type="hidden" name="formid" value="1115" />
+        <input type="hidden" name="returnURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
+        <input type="hidden" name="retURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
+        <input type="hidden" name="returnLPId" value="1861" />
+        <input type="hidden" name="_mkt_disp" value="return" />
+            <input type="hidden" name="_mkt_trk" value="id:017-HGS-593&token:_mch-mongodb.com-1377711905212-62158" />
+        </form>
+      <script type="text/javascript" src="http://info.mongodb.com/js/mktFormSupport.js"></script>
+      <script type="text/javascript">
+      function formSubmit(elt) {
+        return Mkto.formSubmit(elt);
+      }
+      function formReset(elt) {
+        return Mkto.formReset(elt);
+      }
+      </script>
+    </div>
 
-  <div style='display: none;'>
-    <form class="lpeRegForm formNotEmpty" method="post" enctype="application/x-www-form-urlencoded" action="http://info.mongodb.com/index.php/leadCapture/save" id="mktForm_1115" name="mktForm_1115"><ul class='mktLblLeft'><li  class='mktField' ><label>First Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="FirstName" id="FirstName" type='text' value=""  maxlength='255' tabIndex='1' /><span class='mktFormMsg'></span></span></li>
-    <li  class='mktField' ><label>Last Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="LastName" id="LastName" type='text' value=""  maxlength='255' tabIndex='2' /><span class='mktFormMsg'></span></span></li>
-    <li  class='mktField' ><label>Email Address:</label><span class='mktInput'><input class='mktFormText mktFormEmail' name="Email" id="Email" type='text' value=""  maxlength='255' tabIndex='3' /><span class='mktFormMsg'></span></span></li>
-    <li  class='mktField' ><label>Company Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="Company" id="Company" type='text' value=""  maxlength='255' tabIndex='4' /><span class='mktFormMsg'></span></span></li>
-    <li id='mktFrmButtons'><label>&nbsp;</label><input id='mktFrmSubmit' type='submit' style="width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;" value='Submit' name='submitButton' onclick='formSubmit(document.getElementById("mktForm_1115")); return false;' />&nbsp;<input style='width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;' id='mktFrmReset' type='reset'
-                  value='Clear' name='resetButton' onclick='formReset(document.getElementById("mktForm_1115")); return false;' /></li>  </ul>
-      <span style="display:none;"><input type="text" name="_marketo_comments" value="" /></span>
-      <input type="hidden" name="lpId" value="1861" />
-      <input type="hidden" name="subId" value="158" />
-      <input type="hidden" name="munchkinId" value="017-HGS-593" />
-      <input type="hidden" name="kw" value="" />
-      <input type="hidden" name="cr" value="" />
-      <input type="hidden" name="searchstr" value="" />
-      <input type="hidden" name="lpurl" value="http://info.mongodb.com/Trymongodborg_form.html?cr={creative}&kw={keyword}" />
-      <input type="hidden" name="formid" value="1115" />
-      <input type="hidden" name="returnURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
-      <input type="hidden" name="retURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
-      <input type="hidden" name="returnLPId" value="1861" />
-      <input type="hidden" name="_mkt_disp" value="return" />
-          <input type="hidden" name="_mkt_trk" value="id:017-HGS-593&token:_mch-mongodb.com-1377711905212-62158" />
-      </form>
-    <script type="text/javascript" src="http://info.mongodb.com/js/mktFormSupport.js"></script>
-    <script type="text/javascript">
-    function formSubmit(elt) {
-      return Mkto.formSubmit(elt);
-    }
-    function formReset(elt) {
-      return Mkto.formReset(elt);
-    }
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="dist/mongoWebShell.js"></script>
+    <script type='text/javascript'>
+      $(window).load(function(){
+          $.extend(mongo.keyword, {
+              'tutorial': function(shell){
+                  mongo.events.functionTrigger(shell, 'tutorial');
+              },
+              'next': function(shell){
+                  mongo.events.functionTrigger(shell, 'next');
+              }
+          });
+          var shell = mongo.shells[0];
+          shell.insertResponseLine("Get started with `help`");
+          shell.insertResponseLine("To try out an interactive tutorial type `tutorial`");
+          mongo.events.bindOnce(shell, 'tutorial', advanceTutorial);
+          mongo.events.bind(shell, 'next', advanceTutorial);
+          mongo.events.bind(shell, 'db.collection.insert', checkSubmission);
+          mongo.events.bind(shell, 'db.collection.save', checkSubmission);
+          var turn = 0;
+          function checkSubmission(data){
+              if(data['collection'] === "contest"){
+                  var doc = data['arguments'][0];
+                  var firstName = doc['first_name'];
+                  var lastName = doc['last_name'];
+                  var email = doc['email'];
+                  if(firstName && firstName.length && lastName && lastName.length && email && email.length){
+                      $('#FirstName').val(firstName);
+                      $('#LastName').val(lastName);
+                      $('#Email').val(email);
+                      $.post($('form').attr('action'), $('form').serialize())
+                      $('#mktFrm_1115').submit();
+                      shell.insertResponseLine("Excellent!  You've been entered in a contest to win a MongoDB prize!");
+                      mongo.events.unbind(shell, 'db.collection.insert', checkSubmission);
+                      mongo.events.unbind(shell, 'db.collection.save', checkSubmission);
+                  }
+              }
+          }
+          function advanceTutorial(){
+              var nextTurn = tutorial[turn];
+              if(nextTurn){
+                  nextTurn();
+                  turn += 1;
+              }else{
+                  shell.insertResponseLine("You've reached the end of the tutorial!");
+              }
+          }
+          tutorial = {
+              0: function (){
+                 var intro = "This shell is a (limited) javascript interpreter, so any commands you are familiar from javascript should work here.  Try out: "
+                 var outro = "You can move onto the next step anytime by typing `next` "
+                 shell.insertResponseLine(intro);
+                 shell.insertResponseLine("  var a = 5;", []);
+                 shell.insertResponseLine("  a * 10;", []);
+                 shell.insertResponseLine("  for(i=0; i<10; i++) { print('hello'); };", []);
+                 shell.insertResponseLine(outro);
+              },
+              1: function(){
+                  var intro = "MongoDB is a document database. This means that we store data as documents, which are similar to JavaScript objects. Here below are a few sample JS objects:";
+                  var a = "  var a = {age: 25};";
+                  var n = "  var n = {name: 'Ed', languages: ['c', 'ruby', 'js']};";
+                  var student = "  var student = {name: 'Jim', scores: [75, 99, 87.2]};";
+                  var outro = "Go ahead and create some documents, then enter 'next'";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(a, []);
+                  shell.insertResponseLine(n, []);
+                  shell.insertResponseLine(student, []);
+                  shell.insertResponseLine(outro);
+              },
+              2: function(){
+                  var intro = "Here's how you save a document to MongoDB:";
+                  var save = "  db.scores.save({a: 99});";
+                  var saveExplain = "This says, \"save the document '{a: 99}' to the 'scores' collection.\".";
+                  var findExplain = "To confirm that it's been saved properly:";
+                  var find = "db.scores.find();";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(save, []);
+                  shell.insertResponseLine(saveExplain);
+                  shell.insertResponseLine(findExplain);
+                  shell.insertResponseLine(find, []);
+              },
+              3: function(){
+                  var intro = "Try adding some documents to the scores collection:";
+                  var forLoop = "  for(i=0; i<20; i++) { db.scores.save({a: i, exam: 5}) };";
+                  var mid = "Try that, then enter";
+                  var find = "  db.scores.find();";
+                  var outro = "to see if the save succeeded. Since the shell only displays 10 results at time, you'll need to enter the 'it' command to iterate over the rest.";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(forLoop, []);
+                  shell.insertResponseLine(mid);
+                  shell.insertResponseLine(find, []);
+                  shell.insertResponseLine(outro);
+
+              },
+              4: function(){
+                  var intro = "You've already tried a few queries, but let's make them more specific.";
+                  var a2 = "Let's find all documents where a == 2:";
+                  var a2Query = "  db.scores.find({a: 2});";
+                  var a15 = "Or we could find all documents where a > 15:";
+                  var a15Query = "  db.scores.find({a: {'$gt': 15}})";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(a2);
+                  shell.insertResponseLine(a2Query, []);
+                  shell.insertResponseLine(a15);
+                  shell.insertResponseLine(a15Query, []);
+
+              },
+              5: function(){
+                  var intro = "`$gt` is one of many special query operators. Here are few others:";
+                  var ltQuery = "  {a: {$lt: 5}} // Less Than"
+                  var gteQuery = "  {a: {$gte: 10}} // Greater than or equal to";
+                  var neQuery = "  {a: {$ne: 'b'}} // Not Equal To";
+                  var innQuery = "  {a: {$in: ['a', 'b', 'c']}} // Exists in array";
+                  var outro = "Try out a few queries, before moving onto the next step.";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(ltQuery, []);
+                  shell.insertResponseLine(gteQuery, []);
+                  shell.insertResponseLine(neQuery, []);
+                  shell.insertResponseLine(innQuery, []);
+                  shell.insertResponseLine(outro);
+              },
+              6: function(){
+                  var intro = "Now create a couple documents like these for updating:";
+                  var insertOne = "  db.users.insert({name: 'Johnny', languages: ['ruby', 'c']});";
+                  var insertTwo = "  db.users.insert({name: 'Sue', languages: ['scala', 'lisp']});";
+                  var confirmSave = "Confirm they were saved - with our favorite:";
+                  var confirmQuery = "  db.users.find()";
+                  var update = "Update Johnny's name and languages: ";
+                  var updateQuery = "  db.users.update({name: 'Johnny'}, {name: 'Cash', languages: ['English']});";
+                  var confirmUpdate = "Use our favorite find query to inspect the resulting documents.  Notice that the array update overwrote Johnny's languages!";
+                  var outro = "Play with some more updates, before continuing on.";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(insertOne, []);
+                  shell.insertResponseLine(insertTwo, []);
+                  shell.insertResponseLine(confirmSave);
+                  shell.insertResponseLine(confirmQuery, []);
+                  shell.insertResponseLine(update);
+                  shell.insertResponseLine(updateQuery, []);
+                  shell.insertResponseLine(confirmUpdate);
+                  shell.insertResponseLine(outro);
+
+              },
+              7: function(){
+                  var intro = "Update has the sometimes unexpected behavior of replacing the entire document.  However, we can use update operators to only modify parts of our documents."
+                  var update = "Update Sue's languages without overwriting them:";
+                  var updateQuery = "  db.users.update({name: 'Sue'}, { $addToSet: {languages: ['ruby']}});";
+                  var updateCash = "Or we can add a new field to Cash";
+                  var updateCashQuery = "  db.users.update({name: 'Cash'}, {'$set': {'age': 50} });";
+                  var pushPull = "You can also push and pull items from arrays:";
+                  var pullQuery = "  db.users.update({name: 'Sue'}, {'$pull': {'languages': 'scala'} });";
+                  var pushQuery = "  db.users.update({name: 'Sue'}, {'$push': {'languages': 'ruby'} });";
+                  var outro = "Give these a try, check the results, and then enter 'next',"
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(update);
+                  shell.insertResponseLine(updateQuery, []);
+                  shell.insertResponseLine(updateCash);
+                  shell.insertResponseLine(updateCashQuery, []);
+                  shell.insertResponseLine(pushPull);
+                  shell.insertResponseLine(pushQuery, []);
+                  shell.insertResponseLine(pullQuery, []);
+                  shell.insertResponseLine(outro);
+              },
+              8: function(){
+                  var intro = "To delete matching documents only, add a query selector to the remove method:"
+                  var removeQuery = "  db.users.remove({name: 'Sue'});";
+                  var removeAll = "To delete everything from a collection:";
+                  var removeAllQuery = "  db.scores.remove();";
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(removeQuery, []);
+                  shell.insertResponseLine(removeAll);
+                  shell.insertResponseLine(removeAllQuery, []);
+              },
+              9: function(){
+                  var intro = "You've reached the end of this simple tutorial."
+                  var outro = "Sign up for a chance to win a MongoDB t-shirt or mug by inserting a document (into the 'contest' collection) with three fields: 'email', 'first_name', and 'last_name'."
+                  shell.insertResponseLine(intro);
+                  shell.insertResponseLine(outro);
+              }
+          };
+      });
     </script>
-  </div>
-
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-  <script src="dist/mongoWebShell.js"></script>
-  <script type='text/javascript'>
-    $(window).load(function(){
-        $.extend(mongo.keyword, {
-            'tutorial': function(shell){
-                mongo.events.functionTrigger(shell, 'tutorial');
-            },
-            'next': function(shell){
-                mongo.events.functionTrigger(shell, 'next');
-            }
-        });
-        var shell = mongo.shells[0];
-        shell.insertResponseLine("Get started with `help`");
-        shell.insertResponseLine("To try out an interactive tutorial type `tutorial`");
-        mongo.events.bindOnce(shell, 'tutorial', advanceTutorial);
-        mongo.events.bind(shell, 'next', advanceTutorial);
-        mongo.events.bind(shell, 'db.collection.insert', checkSubmission);
-        mongo.events.bind(shell, 'db.collection.save', checkSubmission);
-        var turn = 0;
-        function checkSubmission(data){
-            if(data['collection'] === "contest"){
-                var doc = data['arguments'][0];
-                var firstName = doc['first_name'];
-                var lastName = doc['last_name'];
-                var email = doc['email'];
-                if(firstName && firstName.length && lastName && lastName.length && email && email.length){
-                    $('#FirstName').val(firstName);
-                    $('#LastName').val(lastName);
-                    $('#Email').val(email);
-                    $.post($('form').attr('action'), $('form').serialize())
-                    $('#mktFrm_1115').submit();
-                    shell.insertResponseLine("Excellent!  You've been entered in a contest to win a MongoDB prize!");
-                    mongo.events.unbind(shell, 'db.collection.insert', checkSubmission);
-                    mongo.events.unbind(shell, 'db.collection.save', checkSubmission);
-                }
-            }
-        }
-        function advanceTutorial(){
-            var nextTurn = tutorial[turn];
-            if(nextTurn){
-                nextTurn();
-                turn += 1;
-            }else{
-                shell.insertResponseLine("You've reached the end of the tutorial!");
-            }
-        }
-        tutorial = {
-            0: function (){
-               var intro = "This shell is a (limited) javascript interpreter, so any commands you are familiar from javascript should work here.  Try out: "
-               var outro = "You can move onto the next step anytime by typing `next` "
-               shell.insertResponseLine(intro);
-               shell.insertResponseLine("  var a = 5;", []);
-               shell.insertResponseLine("  a * 10;", []);
-               shell.insertResponseLine("  for(i=0; i<10; i++) { print('hello'); };", []);
-               shell.insertResponseLine(outro);
-            },
-            1: function(){
-                var intro = "MongoDB is a document database. This means that we store data as documents, which are similar to JavaScript objects. Here below are a few sample JS objects:";
-                var a = "  var a = {age: 25};";
-                var n = "  var n = {name: 'Ed', languages: ['c', 'ruby', 'js']};";
-                var student = "  var student = {name: 'Jim', scores: [75, 99, 87.2]};";
-                var outro = "Go ahead and create some documents, then enter 'next'";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(a, []);
-                shell.insertResponseLine(n, []);
-                shell.insertResponseLine(student, []);
-                shell.insertResponseLine(outro);
-            },
-            2: function(){
-                var intro = "Here's how you save a document to MongoDB:";
-                var save = "  db.scores.save({a: 99});";
-                var saveExplain = "This says, \"save the document '{a: 99}' to the 'scores' collection.\".";
-                var findExplain = "To confirm that it's been saved properly:";
-                var find = "db.scores.find();";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(save, []);
-                shell.insertResponseLine(saveExplain);
-                shell.insertResponseLine(findExplain);
-                shell.insertResponseLine(find, []);
-            },
-            3: function(){
-                var intro = "Try adding some documents to the scores collection:";
-                var forLoop = "  for(i=0; i<20; i++) { db.scores.save({a: i, exam: 5}) };";
-                var mid = "Try that, then enter";
-                var find = "  db.scores.find();";
-                var outro = "to see if the save succeeded. Since the shell only displays 10 results at time, you'll need to enter the 'it' command to iterate over the rest.";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(forLoop, []);
-                shell.insertResponseLine(mid);
-                shell.insertResponseLine(find, []);
-                shell.insertResponseLine(outro);
-
-            },
-            4: function(){
-                var intro = "You've already tried a few queries, but let's make them more specific.";
-                var a2 = "Let's find all documents where a == 2:";
-                var a2Query = "  db.scores.find({a: 2});";
-                var a15 = "Or we could find all documents where a > 15:";
-                var a15Query = "  db.scores.find({a: {'$gt': 15}})";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(a2);
-                shell.insertResponseLine(a2Query, []);
-                shell.insertResponseLine(a15);
-                shell.insertResponseLine(a15Query, []);
-
-            },
-            5: function(){
-                var intro = "`$gt` is one of many special query operators. Here are few others:";
-                var ltQuery = "  {a: {$lt: 5}} // Less Than"
-                var gteQuery = "  {a: {$gte: 10}} // Greater than or equal to";
-                var neQuery = "  {a: {$ne: 'b'}} // Not Equal To";
-                var innQuery = "  {a: {$in: ['a', 'b', 'c']}} // Exists in array";
-                var outro = "Try out a few queries, before moving onto the next step.";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(ltQuery, []);
-                shell.insertResponseLine(gteQuery, []);
-                shell.insertResponseLine(neQuery, []);
-                shell.insertResponseLine(innQuery, []);
-                shell.insertResponseLine(outro);
-            },
-            6: function(){
-                var intro = "Now create a couple documents like these for updating:";
-                var insertOne = "  db.users.insert({name: 'Johnny', languages: ['ruby', 'c']});";
-                var insertTwo = "  db.users.insert({name: 'Sue', languages: ['scala', 'lisp']});";
-                var confirmSave = "Confirm they were saved - with our favorite:";
-                var confirmQuery = "  db.users.find()";
-                var update = "Update Johnny's name and languages: ";
-                var updateQuery = "  db.users.update({name: 'Johnny'}, {name: 'Cash', languages: ['English']});";
-                var confirmUpdate = "Use our favorite find query to inspect the resulting documents.  Notice that the array update overwrote Johnny's languages!";
-                var outro = "Play with some more updates, before continuing on.";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(insertOne, []);
-                shell.insertResponseLine(insertTwo, []);
-                shell.insertResponseLine(confirmSave);
-                shell.insertResponseLine(confirmQuery, []);
-                shell.insertResponseLine(update);
-                shell.insertResponseLine(updateQuery, []);
-                shell.insertResponseLine(confirmUpdate);
-                shell.insertResponseLine(outro);
-
-            },
-            7: function(){
-                var intro = "Update has the sometimes unexpected behavior of replacing the entire document.  However, we can use update operators to only modify parts of our documents."
-                var update = "Update Sue's languages without overwriting them:";
-                var updateQuery = "  db.users.update({name: 'Sue'}, { $addToSet: {languages: ['ruby']}});";
-                var updateCash = "Or we can add a new field to Cash";
-                var updateCashQuery = "  db.users.update({name: 'Cash'}, {'$set': {'age': 50} });";
-                var pushPull = "You can also push and pull items from arrays:";
-                var pullQuery = "  db.users.update({name: 'Sue'}, {'$pull': {'languages': 'scala'} });";
-                var pushQuery = "  db.users.update({name: 'Sue'}, {'$push': {'languages': 'ruby'} });";
-                var outro = "Give these a try, check the results, and then enter 'next',"
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(update);
-                shell.insertResponseLine(updateQuery, []);
-                shell.insertResponseLine(updateCash);
-                shell.insertResponseLine(updateCashQuery, []);
-                shell.insertResponseLine(pushPull);
-                shell.insertResponseLine(pushQuery, []);
-                shell.insertResponseLine(pullQuery, []);
-                shell.insertResponseLine(outro);
-            },
-            8: function(){
-                var intro = "To delete matching documents only, add a query selector to the remove method:"
-                var removeQuery = "  db.users.remove({name: 'Sue'});";
-                var removeAll = "To delete everything from a collection:";
-                var removeAllQuery = "  db.scores.remove();";
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(removeQuery, []);
-                shell.insertResponseLine(removeAll);
-                shell.insertResponseLine(removeAllQuery, []);
-            },
-            9: function(){
-                var intro = "You've reached the end of this simple tutorial."
-                var outro = "Sign up for a chance to win a MongoDB t-shirt or mug by inserting a document (into the 'contest' collection) with three fields: 'email', 'first_name', and 'last_name'."
-                shell.insertResponseLine(intro);
-                shell.insertResponseLine(outro);
-            }
-        };
-    });
-  </script>
 </body>
 </html>
 

@@ -12,9 +12,11 @@
  *    See the License for the specific language governing permissions and
  *    limitations under the License.
  */
+body {
+    background-color: #f3f4eb
+}
 
 .mongo-web-shell {
-  border-radius: 10px;
   height: 30em;
   padding: 8px 16px;
   font-size: 15px;
@@ -51,7 +53,7 @@
 
 .mws-scroll-wrapper {
   overflow-y: auto;
-  height: inherit;
+  height: 100%;
 }
 
 /* Try to make the scrollbar less ugly, at least on IE and WebKit */
