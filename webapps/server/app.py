@@ -13,7 +13,7 @@
 #    limitations under the License.
 
 import os
-from flask import Flask
+from flask import Flask, redirect
 import logging
 
 from webapps.lib.conf import update_config
@@ -32,9 +32,18 @@ else:
     _here = os.path.dirname(os.path.abspath(__file__))
     environment = get_environment(_here)
 
+_flask_serve_static = 'MWS_FLASK_STATIC' in os.environ
+if _flask_serve_static:
+    static_options = {'static_folder': '../../frontend',
+                      'static_url_path': ''}
+else:
+    static_options = {}
+
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, **static_options)
+    if _flask_serve_static:
+        app.add_url_rule(rule='/', view_func=lambda: redirect('index.html', 302))
     app.config.from_object('webapps.configs.server')
     # Overrides the config with any environment variables that might
     # be set

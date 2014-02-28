@@ -72,33 +72,31 @@ accessed by the back-end server:
 
 Make sure that you have activated your virtualenv
 
+
+### Environment variables
+
+`CONFIG_FILENAME` - the configuration file that Flask will use to start the server, see `sample.yml` for an example.
+Also see `webapps/lib/conf.py` for different default configuration paths depending on environment. This path is resolved
+relative to the root directory of the repo unless it begins with a /, in which case it will be evaluated as absolute.
+
+`MWS_FLASK_STATIC` - if set, this will have Flask serve static the static files, note that this should only be used
+for development, and production webservers such as apache (see below) or nginx should be used for production.
+
 ### The Server Webapp
 
 The server webapp can be run with:
 
-    env CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml python -m webapps.server.app
+    python -m webapps.server.app
 
+To set any environment variables for the script, use the `env` command. For example to run the server using the sample
+configuration file and to use Flask to serve static files, use the following command from the root of the git repo:
 
-### The Tutorial
-
-Consider using apache with a configuration similar to this:
-
-    <VirtualHost *:80>
-        DocumentRoot [path to mongo-web-shell]/frontend
-
-        DirectoryIndex index.html
-        <Directory "[path to mongo-web-shell]">
-            Order deny,allow
-            Allow from all
-            Require all granted
-        </Directory>
-
-        ProxyPass /server http://127.0.0.1:5000
-        ProxyPassReverse /server http://127.0.0.1:5000
-
-    </VirtualHost>
+    env CONFIG_FILENAME=sample.yml MWS_FLASK_STATIC='' python -m webapps.server.app
 
 Make sure that you've run `grunt` to build the assets first.
+
+Note - for production, both for performance and security concerns, static assets should be served
+through apache or nginx, not Flask.
 
 Tests
 -----
@@ -131,6 +129,9 @@ You can choose to specify configurations by
 
  1. Specify a yaml file containing configuration.  For example, on my system
 I specify this:
+    export CONFIG_FILENAME=sample.yml
+
+Alternatively, you can specify an absolute path:
     export CONFIG_FILENAME=/home/ian/development/mongo-web-shell/sample.yml
 
 In staging and production, because apache doesn't play well with environment
