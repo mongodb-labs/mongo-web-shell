@@ -71,6 +71,10 @@ mongo.util = (function () {
     return obj.__methodMissing(field);
   }
 
+  // used in a few places as a return object of __methodMissing
+  var noOp = function(){};
+  noOp.toString = function(){ return ''; };
+
   return {
     enableConsoleProtection: enableConsoleProtection,
     isNumeric: isNumeric,
@@ -78,6 +82,7 @@ mongo.util = (function () {
     getDBCollectionResURL: getDBCollectionResURL,
     getDBResURL: getDBResURL,
     toString: toString,
+    noOp: noOp,
     __get: objectMemberGetter
   };
 }());

@@ -200,7 +200,5 @@ mongo.Coll.prototype.__methodMissing = function (field) {
     msg = ' is not a function on collections.';
   }
   this.shell.insertError(field + msg);
-  var noop = function(){};
-  noop.toString = function(){ return ''; };
-  return noop;
+  return mongo.util.noOp;
 };
