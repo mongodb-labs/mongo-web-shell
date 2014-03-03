@@ -21,11 +21,16 @@ body {
   padding: 8px 16px;
   font-size: 15px;
   font-family: monospace;
+  margin-top: 25px;
 }
 
 .mongo-web-shell p {
   padding: 0;
   margin: 0;
+}
+
+.content-wrapper {
+    padding-top: 15px;
 }
 
 .mws-responses {
