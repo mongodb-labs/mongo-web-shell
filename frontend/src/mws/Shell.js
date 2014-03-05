@@ -59,7 +59,7 @@ mongo.Shell.prototype.injectHTML = function () {
     lineWrapping: true,
     readOnly: 'nocursor',
     theme: 'solarized dark',
-    extraKeys: {"Tab": "autocomplete"}
+    extraKeys: {"Tab": "autocomplete", "Ctrl-U": function(cm) { cm.setValue(''); }}
   });
   $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
 
