@@ -100,11 +100,41 @@ mongo.init = (function(){
 
       CodeMirror.registerHelper("hint", "show_collections", function(editor, callback, options) {
         var cur = editor.getCursor();
-      //    var token = editor.getTokenAt(cur);
-      //    console.log(token);
-        var start = cur.ch, end = start;
+        var token = editor.getTokenAt(cur);
+        var from, to;
+        var startsWith = "";
+        if (/\b(?:string|comment)\b/.test(token.type)) return;
+        else if (token.type === "property") {
+          // started typing the property, so we need to restrict results based on those that only start with this
+          startsWith = token.string;
+
+          from = token.start;
+          to = token.end;
+          cur = CodeMirror.Pos(cur.line, token.start);
+          token = editor.getTokenAt(cur);
+        } else {
+          from = cur.ch;
+          to = cur.ch;
+        }
+
+        console.log(token.state);
+        token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
+        console.log(token.state);
+
+        if (token.string === ".") {
+          // accumulate string back as much as needed until start of expression
+          // then test if it evals to the db object
+          // we probably need esprima/falafel for this
+        } else {
+          // nothing to autocomplete
+          return;
+        }
         mongo.shells[index].db.getCollectionNames(function(obj){
-          callback({list: obj.result, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)});
+          var list = $.grep(obj.result, function(name, i) {
+            return name.indexOf(startsWith) === 0;
+          });
+
+          callback({list: list, from: CodeMirror.Pos(cur.line, from), to: CodeMirror.Pos(cur.line, to)});
         });
       });
 
