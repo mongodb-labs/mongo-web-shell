@@ -28,7 +28,6 @@ mongo.Readline = function (codemirror, submitFunction) {
 };
 
 mongo.Readline.prototype.keydown = function (event) {
-  //TODO: if typing of letters occurs with the autocomplete open, it should close it
   // check if the autocomplete window is open, if it is, just return, that gets priority
   if (this.inputBox.state.completionActive) {
     return;

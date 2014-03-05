@@ -56,7 +56,9 @@ mongo.Shell.prototype.autocomplete = function(cm) {
     };
 
     var context = [];
-    // TODO: doesn't work with bracket notation (properties or object at index) or functions
+    // TODO: doesn't work with bracket notation (properties or object at index)
+    // Theoretically, we should be able to parse any composition of properties, brackets [], (including array indices)
+    // Functions, however, we won't try to eval, because those could modify state which we don't want
     // If it is a property, find out what it is a property of.
     while (tprop.type == "property") {
       tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
