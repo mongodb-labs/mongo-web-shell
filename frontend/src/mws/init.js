@@ -97,6 +97,20 @@ mongo.init = (function(){
         initJsonUrls.push(jsonAttr);
       }
       mongo.shells[index] = new mongo.Shell(shellElement, index);
+
+      CodeMirror.registerHelper("hint", "show_collections", function(editor, callback, options) {
+        var cur = editor.getCursor();
+      //    var token = editor.getTokenAt(cur);
+      //    console.log(token);
+        var start = cur.ch, end = start;
+        mongo.shells[index].db.getCollectionNames(function(obj){
+          callback({list: obj.result, from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, end)});
+        });
+      });
+
+      CodeMirror.commands.autocomplete = function (cm) {
+        CodeMirror.showHint(cm, CodeMirror.hint.show_collections, {async: true});
+      };
     });
 
     // Request a resource ID, give it to all the shells, and keep it alive

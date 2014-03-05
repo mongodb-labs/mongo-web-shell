@@ -54,12 +54,12 @@ mongo.Shell.prototype.injectHTML = function () {
   // We want the response box to be hidden until there is a response to show
   // (it gets shown in insertResponseLine).
   this.$responseWrapper.css({display: 'none'});
-
   this.inputBox = CodeMirror(this.$rootElement.find('.mws-input').get(0), {
     matchBrackets: true,
     lineWrapping: true,
     readOnly: 'nocursor',
-    theme: 'solarized dark'
+    theme: 'solarized dark',
+    extraKeys: {"Tab": "autocomplete"}
   });
   $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
 
