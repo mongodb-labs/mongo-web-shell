@@ -33,18 +33,6 @@ mongo.Shell = function (rootElement, shellID) {
 mongo.Shell.prototype.autocomplete = function(cm) {
   var shell = this;
   var showCollections = function(editor, callback, options) {
-    var cur = editor.getCursor();
-    var token = editor.getTokenAt(cur);
-    var tprop = token;
-    if (/\b(?:string|comment)\b/.test(token.type)) return;
-    token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
-
-    // If it's not a 'word-style' token, ignore the token.
-    if (!/^[\w$_]*$/.test(token.string)) {
-      token = tprop = {start: cur.ch, end: cur.ch, string: "", state: token.state,
-                       type: token.string == "." ? "property" : null};
-    }
-
     // this callback needs to be called regardless of if any autocompletions are available to make sure not to
     // break anything. if it isn't called, the autocomplete window is assumed to be up, even though it isn't, and
     // then the shell doesn't receive the correct keystrokes for submitting commands, etc
@@ -54,6 +42,21 @@ mongo.Shell.prototype.autocomplete = function(cm) {
       }
       callback({list: list, from: CodeMirror.Pos(cur.line, token.start), to: CodeMirror.Pos(cur.line, token.end)});
     };
+
+    var cur = editor.getCursor();
+    var token = editor.getTokenAt(cur);
+    var tprop = token;
+    if (token.type === "string" || token.type === "comment") {
+      ret();
+      return;
+    }
+    token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
+
+    // If it's not a 'word-style' token, ignore the token.
+    if (!/^[\w$_]*$/.test(token.string)) {
+      token = tprop = {start: cur.ch, end: cur.ch, string: "", state: token.state,
+                       type: token.string == "." ? "property" : null};
+    }
 
     var context = [];
     // TODO: doesn't work with bracket notation (properties or object at index)
