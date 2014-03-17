@@ -43,6 +43,18 @@ def no_cache(response):
     return response
 
 
+def validate_document(document):
+    if not isinstance(document, dict):
+        raise MWSServerError(400,
+            u"Could not validate '{0}', expected a document".format(document))
+    try:
+        BSON.encode(document)
+    except (InvalidDocument, TypeError, InvalidId) as e:
+        raise MWSServerError(400, str(e))
+
+def calculate_document_size(document):
+    return len(BSON.encode(document))
+
 @mws.route('/', methods=['POST', 'OPTIONS'])
 def create_mws_resource():
     session_id = session.get('session_id', str(uuid.uuid4()))
@@ -98,11 +110,11 @@ def db_collection_find(res_id, collection_name):
         coll = get_db()[collection_name]
         try:
             cursor = coll.find(query, projection, skip, limit)
-        except (InvalidId, TypeError) as e:
+            if len(sort) > 0:
+                cursor.sort(sort)
+            documents = list(cursor)
+        except (InvalidId, TypeError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-        if len(sort) > 0:
-            cursor.sort(sort)
-        documents = list(cursor)
         return to_json({'result': documents})
 
 
@@ -129,9 +141,11 @@ def db_collection_insert(res_id, collection_name):
     if isinstance(document, list):
         req_size = 0
         for d in document:
-            req_size += len(BSON.encode(d))
+            validate_document(d)
+            req_size += calculate_document_size(d)
     else:
-        req_size = len(BSON.encode(document))
+        validate_document(document)
+        req_size = calculate_document_size(document)
 
     if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
         raise MWSServerError(403, 'Collection size exceeded')
@@ -150,6 +164,10 @@ def db_collection_insert(res_id, collection_name):
 @check_session_id
 @ratelimit
 def db_collection_remove(res_id, collection_name):
+    try:
+        request.json = loads(request.data)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     constraint = request.json.get('constraint') if request.json else {}
     just_one = request.json and request.json.get('just_one', False)
 
@@ -160,7 +178,7 @@ def db_collection_remove(res_id, collection_name):
                 collection.find_and_modify(constraint, remove=True)
             else:
                 collection.remove(constraint)
-        except (InvalidDocument, InvalidId, TypeError) as e:
+        except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
         return empty_success()
 
@@ -211,6 +229,10 @@ def db_collection_update(res_id, collection_name):
 @ratelimit
 def db_collection_save(res_id, collection_name):
     # TODO: Ensure request.json is not None.
+    try:
+        request.json = loads(request.data)
+    except (InvalidId, TypeError) as e:
+        raise MWSServerError(400, str(e))
     if 'document' in request.json:
         document = request.json['document']
     else:
@@ -220,7 +242,8 @@ def db_collection_save(res_id, collection_name):
     # Check quota
     size = get_collection_size(res_id, collection_name)
 
-    req_size = len(BSON.encode(document))
+    validate_document(document)
+    req_size = calculate_document_size(document)
 
     if size + req_size > current_app.config['QUOTA_COLLECTION_SIZE']:
         raise MWSServerError(403, 'Collection size exceeded')
