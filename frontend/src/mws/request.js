@@ -49,11 +49,15 @@ mongo.request = (function () {
     shell.enableInput(false);
     var context = shell.evaluator.pause();
     console.debug(name + ' request:', url, params);
+    data = JSON.stringify(params);
+    if(type == "GET"){
+        data = {'data': data}
+    }
     $.ajax({
       async: !!async,
       type: type,
       url: url,
-      data: JSON.stringify(params),
+      data: data,
       dataType: 'json',
       contentType: 'application/json',
       success: function (data, textStatus, jqXHR) {

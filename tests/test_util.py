@@ -26,12 +26,9 @@ from tests import MongoWSTestCase
 class UseResIdTestCase(MongoWSTestCase):
     def test_mangles_collection_names_automatically(self):
         with self.real_app.app_context():
-            db = get_db()
-            with UseResId('myresid.'):
+            with UseResId('myresid.') as db:
                 coll = db.foo
                 self.assertEqual(coll.name, 'myresid.foo')
-            coll = db.foo
-            self.assertEqual(coll.name, 'foo')
 
     def test_updates_collection_list(self):
         with self.real_app.app_context():
@@ -46,34 +43,21 @@ class UseResIdTestCase(MongoWSTestCase):
                 'collections': []
             })
 
-            def get_collections():
-                # Can't use the util function because we would be using it
-                # inside the with, so the collection name would be mangled
-                return clients_collection.find(
-                    {'res_id': res_id},
-                    {'_id': 0, 'collections': 1}
-                )[0]['collections']
-
-            with UseResId(res_id):
-                self.assertItemsEqual(get_collections(), [])
+            with UseResId(res_id) as db:
+                self.assertItemsEqual(get_collection_names(res_id), [])
                 db.foo.insert({'message': 'test'})
-                self.assertItemsEqual(get_collections(), ['foo'])
+                self.assertItemsEqual(get_collection_names(res_id), ['foo'])
                 self.assertItemsEqual(list(db.foo.find({}, {'_id': 0})),
                                       [{'message': 'test'}])
 
-                db.bar.update({}, {'message': 'test'})
-                self.assertItemsEqual(get_collections(), ['foo'])
                 db.bar.update({}, {'message': 'test'}, upsert=True)
-                self.assertItemsEqual(get_collections(), ['foo', 'bar'])
+                self.assertItemsEqual(get_collection_names(res_id), ['foo', 'bar'])
                 self.assertItemsEqual(list(db.bar.find({}, {'_id': 0})),
                                       [{'message': 'test'}])
 
                 db.foo.drop()
-                self.assertItemsEqual(get_collections(), ['bar'])
-                self.assertNotIn(res_id + 'foo', db.collection_names())
-                db.drop_collection('bar')
-                self.assertItemsEqual(get_collections(), [])
-                self.assertNotIn(res_id + 'bar', db.collection_names())
+                self.assertItemsEqual(get_collection_names(res_id), ['bar'])
+                self.assertNotIn(res_id + 'foo', get_collection_names(res_id))
 
 
 class QuotaCollectionsTestCase(UseResIdTestCase):
@@ -82,11 +66,10 @@ class QuotaCollectionsTestCase(UseResIdTestCase):
         self.old_quota = self.real_app.config['QUOTA_NUM_COLLECTIONS']
         self.res_id = 'myresid.'
         with self.real_app.app_context():
-            self.db = get_db()
             collections = get_collection_names(self.res_id)
-            with UseResId(self.res_id):
+            with UseResId(self.res_id) as db:
                 for c in collections:
-                    self.db.drop_collection(c)
+                    db.drop_collection(c)
 
     def tearDown(self):
         self.real_app.config['QUOTA_NUM_COLLECTIONS'] = self.old_quota
@@ -95,25 +78,23 @@ class QuotaCollectionsTestCase(UseResIdTestCase):
         self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 2
 
         with self.real_app.app_context():
-            with UseResId(self.res_id):
-                self.db.a.insert({'a': 1})
-                self.db.b.insert({'a': 1})
+            with UseResId(self.res_id) as db:
+                db.a.insert({'a': 1})
+                db.b.insert({'b': 1})
                 with self.assertRaises(MWSServerError) as cm:
-                    self.db.c.insert({'a': 1})
-
-                self.assertEqual(cm.exception.error, 429)
+                    db.c.insert({'c': 1})
+                    self.assertEqual(cm.exception.error, 429)
 
                 for c in ['a', 'b']:
-                    self.db.drop_collection(c)
+                    db.drop_collection(c)
 
     def test_quota_collections_zero(self):
         self.real_app.config['QUOTA_NUM_COLLECTIONS'] = 0
 
         with self.real_app.app_context():
-            with UseResId(self.res_id):
+            with UseResId(self.res_id) as db:
                 with self.assertRaises(MWSServerError) as cm:
-                    self.db.a.insert({'a': 1})
+                    db.a.insert({'a': 1})
+                    self.assertEqual(cm.exception.error, 429)
 
-                self.assertEqual(cm.exception.error, 429)
-
-                self.db.drop_collection('a')
+                db.drop_collection('a')
