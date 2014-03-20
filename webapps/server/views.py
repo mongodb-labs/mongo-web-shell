@@ -172,15 +172,11 @@ def db_collection_count(res_id, collection_name):
     parse_get_json()
 
     query = request.json.get('query')
-    skip = request.json.get('skip', 0)
-    limit = request.json.get('limit', 0)
-    use_skip_limit = bool(skip or limit)
 
     with UseResId(res_id) as db:
         coll = db[collection_name]
         try:
-            cursor = coll.find(query, skip=skip, limit=limit)
-            count = cursor.count(use_skip_limit)
+            count = coll.find(query).count()
             return to_json({'count': count})
         except InvalidDocument as e:
             raise MWSServerError(400, str(e))
