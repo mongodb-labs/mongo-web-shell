@@ -30,87 +30,153 @@ mongo.Shell = function (rootElement, shellID) {
   this.attachClickListener();
 };
 
-mongo.Shell.prototype.autocomplete = function(cm) {
-  var shell = this;
-  var showCollections = function(editor, callback, options) {
-    // this callback needs to be called regardless of if any autocompletions are available to make sure not to
-    // break anything. if it isn't called, the autocomplete window is assumed to be up, even though it isn't, and
-    // then the shell doesn't receive the correct keystrokes for submitting commands, etc
-    var ret = function(list) {
-      if (list === undefined) {
-        list = [];
-      }
-      callback({list: list, from: CodeMirror.Pos(cur.line, token.start), to: CodeMirror.Pos(cur.line, token.end)});
-    };
 
-    var cur = editor.getCursor();
-    var token = editor.getTokenAt(cur);
-    var tprop = token;
-    if (token.type === "string" || token.type === "comment") {
-      ret();
-      return;
-    }
-    token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
-
-    // If it's not a 'word-style' token, ignore the token.
-    if (!/^[\w$_]*$/.test(token.string)) {
-      token = tprop = {start: cur.ch, end: cur.ch, string: "", state: token.state,
-                       type: token.string == "." ? "property" : null};
-    }
-
-    var context = [];
-    // TODO: doesn't work with bracket notation (properties or object at index)
-    // Theoretically, we should be able to parse any composition of properties, brackets [], (including array indices)
-    // Functions, however, we won't try to eval, because those could modify state which we don't want
-    // If it is a property, find out what it is a property of.
-    while (tprop.type == "property") {
-      tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
-      if (tprop.string != ".") return;
-      tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
-      context.push(tprop);
-    }
-    if (context.length === 0) {
-      ret();
-      return;
-    }
-    context.reverse();
-    var stringToEval = "";
-    for (var idx in context) {
-      var tok = context[idx];
-      stringToEval += tok.string;
-      if (idx != context.length - 1) {
-        stringToEval += ".";
-      }
-    }
-
-    try {
-      shell.evaluator.eval(stringToEval, function(out, isError){
-        if (isError) {
-          ret();
-          return;
-        }
-        // check if this is the db object that was the output
-        if (out === shell.db) {
-          var startsWith = token.string;
+mongo.Shell.autocomplete = {
+  /**
+ * Rules follow the following form:
+ * each entry is an object with two properties:
+ * the first: canAutocomplete is a function that takes in an object and returns whether or not the rule can handle this
+ * object
+ * the second: executeAutocomplete is a function that takes in the same object, the string that has been typed so far, and
+ * the callback function, and expects that the callback function is called once the autocomplete is done.
+ * The callback has one parameter, the list of options, as strings, to be presented to the user as completion options
+ * Rules are evaluated in order they are listed here, and once one rule returns true for canAutocomplete, no further
+ * rules will be evaluated.
+ * @type {Array}
+ */
+  rules: [
+    {
+      identifier: "DB --> collections",
+      canAutocomplete: function(context_object, shell) {
+        return context_object === shell.db;
+      },
+      executeAutocomplete: function(context_object, shell, startsWith, callback) {
+        // check one more time
+        if (this.canAutocomplete(context_object, shell)) {
           shell.db.getCollectionNames(function(obj){
             var list = $.grep(obj.result, function(name, i) {
               return name.indexOf(startsWith) === 0;
             });
 
-            ret(list);
+            callback(list);
           });
         }
-      });
-    } catch (err) {
-      // esprima might throw an except when parsing the stringToEval, which means there definitely isn't an
-      // autocompletion to do. This would happen for any token that ends in ) or ], since codemirror isn't smart
-      // enough to pick these up
-      ret();
-    }
-  };
+      }
+    },
+    {
+      identifier: "collection --> commands",
+      canAutocomplete: function(context_object, shell) {
+        return context_object.constructor === mongo.Coll;
+      },
+      executeAutocomplete: function(context_object, shell, startsWith, callback) {
+        // check one more time
+        if (this.canAutocomplete(context_object, shell)) {
+          // TODO: we could potentially not only list the name of the function, but also present its method signature
+          // or autocomplete with blank parameters to begin with
+          var proto = Object.getPrototypeOf(context_object);
+          var list = $.grep(Object.keys(proto), function(fn, i) {
+            return fn !== "toString" && fn.indexOf(startsWith) === 0 && fn.indexOf("__") !== 0;
+          });
 
-  CodeMirror.showHint(cm, showCollections, {async: true});
+          callback(list);
+        }
+      }
+    }
+  ],
+  // this is the autocomplete function that gets triggered on the tab keystroke, where cm is the relevant codemirror object
+  fn: function(shell, cm) {
+    var rules = this.rules;
+    var autocomplete = function(editor, callback, options) {
+      // this callback needs to be called regardless of if any autocompletions are available to make sure not to
+      // break anything. if it isn't called, the autocomplete window is assumed to be up, even though it isn't, and
+      // then the shell doesn't receive the correct keystrokes for submitting commands, etc
+      var claimedCallbackResponsibility = false;
+      var ret = function(list) {
+        if (list === undefined) {
+          list = [];
+        }
+        callback({list: list, from: CodeMirror.Pos(cur.line, token.start), to: CodeMirror.Pos(cur.line, token.end)});
+      };
+
+      // it is surprisingly hard to be careful to call the autocomplete callback in every single return path
+      // no matter how many times I thought I got it right, I still messed up. So, we wrap the entire thing
+      // in a try .. finally clause, and call the callback in the finally clause.
+      // the only exception is when find a rule that matches and give responsibility to that function to call the callback
+      // in this case, we flip the claimedCallbackResponsibility boolean to true, which will verify that the callback isn't
+      // called in the finally clause.
+      try {
+        var cur = editor.getCursor();
+        var token = editor.getTokenAt(cur);
+        var tprop = token;
+        if (token.type === "string" || token.type === "comment") {
+          return;
+        }
+        token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
+
+        // If it's not a 'word-style' token, ignore the token.
+        if (!/^[\w$_]*$/.test(token.string)) {
+          token = tprop = {start: cur.ch, end: cur.ch, string: "", state: token.state,
+                           type: token.string == "." ? "property" : null};
+        }
+
+        var context = [];
+        // TODO: doesn't work with bracket notation (properties or object at index)
+        // Theoretically, we should be able to parse any composition of properties, brackets [], (including array indices)
+        // Functions, however, we won't try to eval, because those could modify state which we don't want
+        // If it is a property, find out what it is a property of.
+        while (tprop.type == "property") {
+          tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
+          if (tprop.string != ".") return ret();
+          tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
+          context.push(tprop);
+        }
+        if (context.length === 0) {
+          return;
+        }
+        context.reverse();
+        var stringToEval;
+        for (var idx in context) {
+          var tok = context[idx];
+          if (idx == 0) {
+            stringToEval = tok.string;
+          } else {
+            // Note, dot notation is needed because collection names are lazily evaluated
+            stringToEval += "." + tok.string; //"[\"" + tok.string + "\"]";
+          }
+        }
+
+        try {
+          shell.evaluator.eval(stringToEval, function(out, isError){
+            if (isError) {
+              return;
+            }
+            for (var idx in rules) {
+              var rule = rules[idx];
+              if (rule.canAutocomplete !== undefined) {
+                if (rule.canAutocomplete(out, shell) && rule.executeAutocomplete !== undefined) {
+                  claimedCallbackResponsibility = true;
+                  rule.executeAutocomplete(out, shell, token.string, ret);
+                  return;
+                }
+              }
+            }
+          });
+        } catch (err) {
+          // esprima might throw an except when parsing the stringToEval, which means there definitely isn't an
+          // autocompletion to do. This would happen for any token that ends in ) or ], since codemirror isn't smart
+          // enough to pick these up
+        }
+      } finally {
+        if (!claimedCallbackResponsibility) {
+          ret();
+        }
+      }
+    };
+
+    CodeMirror.showHint(cm, autocomplete, {async: true});
+  }
 };
+
 
 mongo.Shell.prototype.injectHTML = function () {
   // TODO: Use client-side templating instead.
@@ -141,7 +207,10 @@ mongo.Shell.prototype.injectHTML = function () {
     lineWrapping: true,
     readOnly: 'nocursor',
     theme: 'solarized dark',
-    extraKeys: {"Tab": this.autocomplete.bind(this), "Ctrl-U": function(cm) { cm.setValue(''); }}
+    extraKeys: {
+      "Tab": function(cm) { return mongo.Shell.autocomplete.fn(this, cm);}.bind(this),
+      "Ctrl-U": function(cm) { cm.setValue(''); }
+    }
   });
   $(this.inputBox.getWrapperElement()).css({background: 'transparent'});
 
