@@ -111,9 +111,13 @@ mongo.Shell.autocomplete = {
         if (token.type === "string" || token.type === "comment") {
           return;
         }
-        token.state = CodeMirror.innerMode(editor.getMode(), token.state).state;
 
         // If it's not a 'word-style' token, ignore the token.
+        // The reg-ex matches anything that starts with a character that matches \w, $, or _ and that there are
+        // 0 or more of these in the entire string from start to end of the string in the token
+        // if the token's string does not match this, then we ignore the token altogether, unless the token's string
+        // was just a period, then we set its type to a property, which facilitates the context parsing to skip
+        // the last token
         if (!/^[\w$_]*$/.test(token.string)) {
           token = tprop = {start: cur.ch, end: cur.ch, string: "", state: token.state,
                            type: token.string == "." ? "property" : null};
@@ -126,7 +130,7 @@ mongo.Shell.autocomplete = {
         // If it is a property, find out what it is a property of.
         while (tprop.type == "property") {
           tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
-          if (tprop.string != ".") return ret();
+          if (tprop.string != ".") return;
           tprop = editor.getTokenAt(CodeMirror.Pos(cur.line, tprop.start));
           context.push(tprop);
         }
@@ -199,6 +203,7 @@ mongo.Shell.prototype.injectHTML = function () {
     lineWrapping: true,
     theme: 'solarized dark'
   });
+
   // We want the response box to be hidden until there is a response to show
   // (it gets shown in insertResponseLine).
   this.$responseWrapper.css({display: 'none'});
