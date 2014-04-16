@@ -33,6 +33,10 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.autocomplete = {
   /**
+   * Cached version of each class's mapping from method name to JSDOC info, keyed by the path to the file
+   */
+  jsDocs: {},
+  /**
    * Parse the JSDoc for the given file, and return a list of all available autocompletions. The JSDoc will be used
    * as contextual information in the autocomplete menu.
    * @param pathToFile
@@ -80,47 +84,11 @@ mongo.Shell.autocomplete = {
 
       return ret;
     };
-    $.get(pathToFile, function (data) {
-      // TODO: cache the get response for some number of seconds
 
-      var method_docs = {};
-      var x = [];
-      // using falafel doesn't work because it conveniently ignore comments
-      // so we use esprima's comment option
-      var result = esprima.parse(data, {comment: true});
-      for (var idx in result.comments) {
-        var comment_info = result.comments[idx];
-        if (comment_info.type !== 'Block') {
-          continue;
-        }
-        var doc = comment_info.value;
-        var jsdoc = doctrine.parse(doc, {unwrap: true, recoverable: true});
-        var description = jsdoc.description || doc; // favor just the description, but if there isn't anything take everything
-        var method_name = null;
-        var return_type = 'void';
-        var params = []; // a list of the types of all the parameters, as strings
-        for (var tag_idx in jsdoc.tags) {
-          var tag = jsdoc.tags[tag_idx];
-          if (method_name === null && tag.title === "name") {
-            method_name = tag.name;
-          } else if(tag.title === "param") {
-            var type = tag.type;
-            if (type == null) {
-              params.push(tag.name);
-            } else {
-              params.push('{' + tag.type.name + '} ' + tag.name);
-            }
-          } else if(tag.title === "return" || tag.title === "returns") {
-            return_type = tag.type.name;
-          }
-        }
-
-        if (method_name != null) {
-          // as long as we found a method name for this JSDOC, then we're good
-          method_docs[method_name] = {returnType: return_type, params: params, description: description};
-        }
-      }
-
+    // a function that takes in the method docs, which is a mapping from method name to documentation info
+    // and takes care of completing the list of autocompletions by matching up method_list to the methods listed in the
+    // docs
+    var handleMethodDocs = function(method_docs) {
       var autocompletion_hints = [];
 
       for (var idx in method_list) {
@@ -137,7 +105,58 @@ mongo.Shell.autocomplete = {
         }
       }
       callback(autocompletion_hints);
-    });
+    };
+
+    // first check to see if its cached
+    var cachedDocumentation = mongo.Shell.autocomplete.jsDocs[pathToFile];
+    if (cachedDocumentation === undefined) {
+      $.get(pathToFile, function (data) {
+
+        var method_docs = {};
+        // using falafel doesn't work because it conveniently ignore comments
+        // so we use esprima's comment option
+        var result = esprima.parse(data, {comment: true});
+        for (var idx in result.comments) {
+          var comment_info = result.comments[idx];
+          if (comment_info.type !== 'Block') {
+            continue;
+          }
+          var doc = comment_info.value;
+          var jsdoc = doctrine.parse(doc, {unwrap: true, recoverable: true});
+          var description = jsdoc.description || doc; // favor just the description, but if there isn't anything take everything
+          var method_name = null;
+          var return_type = 'void';
+          var params = []; // a list of the types of all the parameters, as strings
+          for (var tag_idx in jsdoc.tags) {
+            var tag = jsdoc.tags[tag_idx];
+            if (method_name === null && tag.title === "name") {
+              method_name = tag.name;
+            } else if(tag.title === "param") {
+              var type = tag.type;
+              if (type == null) {
+                params.push(tag.name);
+              } else {
+                params.push('{' + tag.type.name + '} ' + tag.name);
+              }
+            } else if(tag.title === "return" || tag.title === "returns") {
+              return_type = tag.type.name;
+            }
+          }
+
+          if (method_name != null) {
+            // as long as we found a method name for this JSDOC, then we're good
+            method_docs[method_name] = {returnType: return_type, params: params, description: description};
+          }
+        }
+        mongo.Shell.autocomplete.jsDocs[pathToFile] = method_docs;
+        handleMethodDocs(method_docs);
+
+      });
+    } else {
+      // the docs are cached, so we just need to do this:
+      handleMethodDocs(cachedDocumentation);
+    }
+
 
   },
   /**
