@@ -17,7 +17,7 @@ import mock
 from webapps.server import crontab
 from webapps.server.crontab import run_scheduler, EXPIRE_SESSION_EVERY
 from webapps.lib.db import get_db
-from webapps.lib.util import get_internal_coll_name
+from webapps.lib.util import to_coll_name
 from tests import MongoWSTestCase
 
 
@@ -52,7 +52,7 @@ class ExpireSessionsTestCase(MongoWSTestCase):
             collections = []
             for collection in xrange(3):
                 collections.append(collection)
-                collection_name = get_internal_coll_name(session_res_id,
+                collection_name = to_coll_name(session_res_id,
                                                          collection)
                 self.db[collection_name].insert({'foo': 'barr'})
 

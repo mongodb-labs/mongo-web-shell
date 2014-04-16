@@ -19,7 +19,7 @@ import mock
 import webapps.server
 from webapps.server.views import ratelimit
 from webapps.lib.db import get_db
-from webapps.lib.util import get_internal_coll_name, get_collection_names
+from webapps.lib.util import to_coll_name, get_collection_names
 from flask import session
 
 from pymongo.errors import OperationFailure
@@ -161,7 +161,7 @@ class DBTestCase(MongoWSTestCase):
             else:
                 data = dumps(data)
             if method == self.app.get:
-                url = '%s?%s' % (url, data)
+                url = '%s?data=%s' % (url, data)
                 data = None
         result = method(url, data=data, content_type='application/json')
         actual_status = result.status_code
@@ -188,7 +188,7 @@ class DBCollectionTestCase(DBTestCase):
 
 
         self.coll_name = 'test_collection'
-        self.internal_coll_name = get_internal_coll_name(self.res_id,
+        self.internal_coll_name = to_coll_name(self.res_id,
                                                          self.coll_name)
         self.db = get_db()
         self.db_collection = self.db[self.internal_coll_name]
@@ -211,7 +211,7 @@ class DBCollectionTestCase(DBTestCase):
         return self._make_request('find', data, self.app.get,
                                   expected_status)
 
-    def make_insert_request(self, document, expected_status=204):
+    def make_insert_request(self, document, expected_status=200):
         data = {'document': document}
         return self._make_request('insert', data, self.app.post,
                                   expected_status)
@@ -317,7 +317,7 @@ class InsertUnitTestCase(DBCollectionTestCase):
         limit = self.real_app.config['QUOTA_COLLECTION_SIZE'] = 150
         self.make_insert_request([
             {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
-        ], expected_status=204)
+        ], expected_status=200)
 
         result = self.make_insert_request([
             {'name': 'Mongo'}, {'name': 'Mongo'}, {'name': 'NotMongo'}
@@ -578,19 +578,19 @@ class DropDBUnitTestCase(DBTestCase):
         colls = ['a', 'b', 'c']
         update = {'$addToSet': {'collections': {'$each': colls}}}
         self.db[CLIENTS_COLLECTION].update({'res_id': self.res_id}, update)
-        colls = [get_internal_coll_name(self.res_id, c) for c in colls]
-        for c in colls:
-            self.db[c].insert(testdoc)
+        colls = [to_coll_name(self.res_id, c) for c in colls]
+        for col in colls:
+            self.db[col].insert(testdoc)
 
         actual_colls = self.db.collection_names()
-        for c in colls:
-            self.assertIn(c, actual_colls)
+        for col in colls:
+            self.assertIn(col, actual_colls)
 
         self.make_db_drop_request()
 
         actual_colls = self.db.collection_names()
-        for c in colls:
-            self.assertNotIn(c, actual_colls)
+        for col in colls:
+            self.assertNotIn(col, actual_colls)
 
         self.assertItemsEqual(get_collection_names(self.res_id), [])
 

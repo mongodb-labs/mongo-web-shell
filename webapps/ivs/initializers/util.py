@@ -29,11 +29,8 @@ _logger = logging.getLogger(__name__)
 
 
 def cleanup_collections(res_id):
-    db = get_db()
-    for coll in get_collection_names(res_id):
-        with UseResId(res_id):
-            _logger.info('dropping %s', coll)
-            db.drop_collection(coll)
+    with UseResId(res_id) as db:
+            db.drop_database()
 
 
 def load_data_from_mongoexport(res_id, export_location, collection_name,
@@ -59,8 +56,8 @@ def load_data_from_mongoexport(res_id, export_location, collection_name,
         if remove_id:
             _remove_id(documents)
 
-        with UseResId(res_id):
-            get_db()[collection_name].insert(documents)
+        with UseResId(res_id) as db:
+            db[collection_name].insert(documents)
 
 
 def load_data_from_json(res_id, file_name, remove_id=False):
@@ -71,9 +68,7 @@ def load_data_from_json(res_id, file_name, remove_id=False):
     file_name = _data_file_path(file_name)
     with open(file_name) as json_file:
         collections = loads(json_file.read())
-        db = get_db()
-        _logger.info(db.collection_names())
-        with UseResId(res_id):
+        with UseResId(res_id) as db:
             for collection, documents in collections.iteritems():
                 if remove_id:
                     _remove_id(documents)
@@ -98,7 +93,8 @@ def load_data_from_mongodump(res_id, dump_location, collection_name):
     p.communicate()  # Wait for process to finish
     if p.poll() != 0:
         raise InternalServerError('Loading dumped data failed')
-    UseResId(res_id).insert_client_collection(collection_name)
+    with UseResId(res_id) as db:
+        db.ensure_client_collection(collection_name)
 
 
 def _remove_id(documents):

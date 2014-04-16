@@ -15,7 +15,7 @@
 from datetime import datetime, timedelta
 from apscheduler.scheduler import Scheduler
 from webapps.lib.db import get_db
-from webapps.lib.util import get_internal_coll_name
+from webapps.lib.util import to_coll_name
 
 EXPIRE_SESSION_EVERY = 600
 EXPIRE_SESSION_DURATION = 1800
@@ -42,5 +42,5 @@ def expire_sessions(app):
             # Todo: Only remove collections if no one else is using this res_id
             res_id = sess['res_id']
             for c in sess['collections']:
-                db.drop_collection(get_internal_coll_name(res_id, c))
+                db.drop_collection(to_coll_name(res_id, c))
         app.logger.info('Timed out expired sessions dead before %s' % exp)
