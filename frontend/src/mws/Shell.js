@@ -33,6 +33,114 @@ mongo.Shell = function (rootElement, shellID) {
 
 mongo.Shell.autocomplete = {
   /**
+   * Parse the JSDoc for the given file, and return a list of all available autocompletions. The JSDoc will be used
+   * as contextual information in the autocomplete menu.
+   * @param pathToFile
+   * @param context_object the validated context object, that is an instance of the class declared in pathToFile
+   * @param callback the function to pass the returned list of the autocompletion objects to, to then pass to CodeMirror,
+   * with custom render functions
+   */
+  autocompletionsForObject: function(pathToFile, context_object, startsWith, callback) {
+    var proto = Object.getPrototypeOf(context_object);
+    var method_list = $.grep(Object.keys(proto), function(fn, i) {
+      return fn !== "toString" && fn.indexOf(startsWith) === 0 && fn.indexOf("__") !== 0;
+    });
+
+    var render = function(Element, self, data) {
+      var signature = document.createElement('span');
+      signature.className = 'signature';
+
+      var obj = data.object;
+      if (obj !== undefined) {
+        var return_type = document.createElement('span');
+        return_type.className = 'return-type';
+
+        return_type.textContent = obj.returnType;
+        signature.textContent = obj.signature || data.displayText || data.text;
+        Element.appendChild(return_type);
+      } else {
+        signature.textContent = data.displayText || data.text;
+      }
+      Element.appendChild(signature);
+      if (data.description !== undefined) {
+        Element.setAttribute('title', data.description);
+      }
+    };
+
+    var autocompletionObject = function(text, obj) {
+      var ret = {render: render, className: 'CodeMirror-hint-styled'};
+
+      ret.text = text;
+      if (obj !== undefined) {
+        ret.object = obj;
+        if (obj.description !== undefined) {
+          ret.description = obj.description;
+        }
+      }
+
+      return ret;
+    };
+    $.get(pathToFile, function (data) {
+      // TODO: cache the get response for some number of seconds
+
+      var method_docs = {};
+      var x = [];
+      // using falafel doesn't work because it conveniently ignore comments
+      // so we use esprima's comment option
+      var result = esprima.parse(data, {comment: true});
+      for (var idx in result.comments) {
+        var comment_info = result.comments[idx];
+        if (comment_info.type !== 'Block') {
+          continue;
+        }
+        var doc = comment_info.value;
+        var jsdoc = doctrine.parse(doc, {unwrap: true, recoverable: true});
+        var description = jsdoc.description || doc; // favor just the description, but if there isn't anything take everything
+        var method_name = null;
+        var return_type = 'void';
+        var params = []; // a list of the types of all the parameters, as strings
+        for (var tag_idx in jsdoc.tags) {
+          var tag = jsdoc.tags[tag_idx];
+          if (method_name === null && tag.title === "name") {
+            method_name = tag.name;
+          } else if(tag.title === "param") {
+            var type = tag.type;
+            if (type == null) {
+              params.push(tag.name);
+            } else {
+              params.push('{' + tag.type.name + '} ' + tag.name);
+            }
+          } else if(tag.title === "return" || tag.title === "returns") {
+            return_type = tag.type.name;
+          }
+        }
+
+        if (method_name != null) {
+          // as long as we found a method name for this JSDOC, then we're good
+          method_docs[method_name] = {returnType: return_type, params: params, description: description};
+        }
+      }
+
+      var autocompletion_hints = [];
+
+      for (var idx in method_list) {
+        var method = method_list[idx];
+        var documentation = method_docs[method];
+        if (documentation !== undefined) {
+
+          var params = documentation.params;
+          var signature = method + '(' + params.join(', ') + ')';
+          var text = method + '(';
+          autocompletion_hints.push(autocompletionObject(text, {description: documentation.description, returnType: documentation.returnType, signature: signature}));
+        } else {
+          autocompletion_hints.push(method);
+        }
+      }
+      callback(autocompletion_hints);
+    });
+
+  },
+  /**
  * Rules follow the following form:
  * each entry is an object with two properties:
  * the first: canAutocomplete is a function that takes in an object and returns whether or not the rule can handle this
@@ -71,14 +179,10 @@ mongo.Shell.autocomplete = {
       executeAutocomplete: function(context_object, shell, startsWith, callback) {
         // check one more time
         if (this.canAutocomplete(context_object, shell)) {
+          mongo.Shell.autocomplete.autocompletionsForObject('src/mws/Coll.js', context_object, startsWith, callback);
           // TODO: we could potentially not only list the name of the function, but also present its method signature
           // or autocomplete with blank parameters to begin with
-          var proto = Object.getPrototypeOf(context_object);
-          var list = $.grep(Object.keys(proto), function(fn, i) {
-            return fn !== "toString" && fn.indexOf(startsWith) === 0 && fn.indexOf("__") !== 0;
-          });
-
-          callback(list);
+          // todo: list autocomplete in gray text as scrolling through
         }
       }
     }

@@ -111,3 +111,41 @@ div.CodeMirror-vscrollbar {
 .mws-cm-plain-text, .mws-cm-plain-text span {
   color: inherit !important;
 }
+
+
+.CodeMirror-hint-styled {
+    max-width: none;
+}
+
+.CodeMirror-hint-styled .return-type {
+    font-size: 12px;
+    padding-left: 5px;
+    padding-right: 3px;
+    text-align: right;
+    float: left;
+    width: 110px;
+}
+
+.CodeMirror-hint-styled:not(.CodeMirror-hint-active) .return-type  {
+    color: rgb(74, 132, 204);
+}
+
+.CodeMirror-hint-styled .signature {
+    padding-left: 3px;
+    padding-right: 5px;
+    text-align: left;
+    min-width: 100px;
+}
+
+.CodeMirror-hint-styled .autocompletion-type {
+
+}
+
+.CodeMirror-hint-autocompletion-description {
+    line-height: 25px;
+    border-top: 10px;
+    border-top-color: rgb(200, 200, 200);
+    font-size: 11px;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
