@@ -24,9 +24,66 @@ mongo.DB.prototype.toString = function () {
   return this.name;
 };
 
+mongo.DB.prototype.listCollections = function () {
+  mongo.keyword.show(this.shell, ['collections']);
+};
+
+mongo.DB.prototype.getName = function() {
+  return this.name;
+};
+
 mongo.DB.prototype.__methodMissing = function (field) {
-  this[field] = new mongo.Coll(this, field);
-  return this[field];
+  var unsupported = {
+    'addUser': 0,
+    'adminCommand': 0,
+    'auth': 0,
+    'cloneDatabase': 0,
+    'commandHelp': 0,
+    'copyDatabase': 0,
+    'createCollection': 0,
+    'currentOp': 0,
+    'dropDatabase': 0,
+    'eval': 0,
+    'fsyncLock': 0,
+    'fsyncUnlock': 0,
+    'getCollection': 0,
+    'getLastError': 0,
+    'getLastErrorObj': 0,
+    'getMongo': 0,
+    'getPrevError': 0,
+    'getProfilingLevel': 0,
+    'getProfilingStatus': 0,
+    'getReplicationInfo': 0,
+    'getSiblingDB': 0,
+    'hostInfo': 0,
+    'isMaster': 0,
+    'killOp': 0,
+    'listCommands': 0,
+    'loadServerScripts': 0,
+    'logout': 0,
+    'printCollectionStats': 0,
+    'printReplicationInfo': 0,
+    'printShardingStatus': 0,
+    'printSlaveReplicationInfo': 0,
+    'removeUser': 0,
+    'repairDatabase': 0,
+    'resetError': 0,
+    'runCommand': 0,
+    'serverStatus': 0,
+    'setProfilingLevel': 0,
+    'setVerboseShell': 0,
+    'shutdownServer': 0,
+    'stats': 0,
+    'version': 0
+  };
+
+  if (unsupported.hasOwnProperty(field)) {
+    this.shell.insertError('The web shell does not support db.'+ field + '()');
+    return mongo.util.noOp;
+  } else {
+    this[field] = new mongo.Coll(this, field);
+    return this[field];
+  }
 };
 
 mongo.DB.prototype.getCollectionNames = function (callback) {

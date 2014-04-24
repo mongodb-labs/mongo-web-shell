@@ -55,6 +55,9 @@ mongo.keyword = (function () {
         });
       });
       break;
+    case 'dbs':
+      shell.insertResponseLine('The web shell only allows one db');
+      break;
     default:
       shell.insertResponseLine('ERROR: Not yet implemented');
     }
