@@ -21,6 +21,10 @@ body {
     background-color: #f3f4eb;
     margin: 0;
 }
+h1 {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
 .scroll-wrapper {
     height: 100%;
     min-height: 780px;
@@ -32,7 +36,7 @@ body {
   padding: 8px 16px;
   font-size: 15px;
   font-family: monospace;
-  margin-top: 25px;
+  margin-top: 15px;
 }
 
 .mongo-web-shell p {
