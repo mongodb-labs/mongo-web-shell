@@ -80,6 +80,9 @@ class WrappedCollection(object):
     def find(self, *args, **kwargs):
         return self.coll.find(*args, **kwargs)
 
+    def find_one(self, *args, **kwargs):
+        return self.coll.find_one(*args, **kwargs)
+
     def find_and_modify(self, *args, **kwargs):
         return self.coll.find_and_modify(*args, **kwargs)
 
