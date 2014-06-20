@@ -300,7 +300,7 @@
               7: function(){
                   var intro = "Update has the sometimes unexpected behavior of replacing the entire document.  However, we can use update operators to only modify parts of our documents."
                   var update = "Update Sue's languages without overwriting them:";
-                  var updateQuery = "  db.users.update({name: 'Sue'}, { $addToSet: {languages: ['ruby']}});";
+                  var updateQuery = "  db.users.update({name: 'Sue'}, { $addToSet: {languages: 'ruby'}});";
                   var updateCash = "Or we can add a new field to Cash";
                   var updateCashQuery = "  db.users.update({name: 'Cash'}, {'$set': {'age': 50} });";
                   var pushPull = "You can also push and pull items from arrays:";
