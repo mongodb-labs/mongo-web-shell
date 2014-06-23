@@ -81,7 +81,10 @@ mongo.Coll.prototype.insert = function (doc) {
   var params = {document: doc};
   mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell,
+    function(data){
+        this.shell.insertResponseLine(data['pretty']);
+    });
 };
 
 mongo.Coll.prototype.save = function (doc) {

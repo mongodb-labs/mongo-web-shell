@@ -225,7 +225,9 @@ def db_collection_insert(res_id, collection_name):
             _id = db[collection_name].insert(document)
         except (DuplicateKeyError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-    return to_json({'_id': _id})
+        if _id:
+            pretty_response = 'WriteResult({ "nInserted" : 1 })'
+    return to_json({'_id': _id, 'pretty': pretty_response})
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT'])
