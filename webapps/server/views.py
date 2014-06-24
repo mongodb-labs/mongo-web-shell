@@ -91,7 +91,6 @@ def create_cursor(collection, query=None, projection=None, sort=None, skip=0,
     if sort is None:
         sort = {}
 
-    print(collection)
     if batch_size == -1:
         cursor = collection.find(query=query, projection=projection, skip=skip,
                                  limit=limit)
@@ -112,6 +111,7 @@ def recreate_cursor(collection, cursor_id, conn_id, retrieved, batch_size,
     OperationFailure on read. If batch_size is -1, then all remaining documents
     on the cursor are returned.
     """
+    import pdb; pdb.set_trace()
     if cursor_id == 0:
         return None
 
@@ -126,7 +126,6 @@ def recreate_cursor(collection, cursor_id, conn_id, retrieved, batch_size,
         limit = (total_count - retrieved) + retrieved
 
     cursor_info = {'id': cursor_id, 'firstBatch': []}
-    print("EHRIEOR")
     cursor = CommandCursor(collection, cursor_info, conn_id,
                            retrieved=retrieved)
 
@@ -218,9 +217,6 @@ def keep_mws_alive(res_id):
 @check_session_id
 @ratelimit
 def db_collection_find(res_id, collection_name):
-    # TODO: Should we specify a content type? Then we have to use an options
-    # header, and we should probably get the return type from the content-type
-    # header.
     with UseResId(res_id, db=get_keepalive_db()) as db:
         parse_get_json()
         cursor_id = int(request.json.get('cursor_id', 0))
@@ -229,11 +225,12 @@ def db_collection_find(res_id, collection_name):
         drain_cursor = request.json.get('drain_cursor', False)
         batch_size = -1 if drain_cursor else current_app.config['CURSOR_BATCH_SIZE']
         count = request.json.get('count', 0)
+        _logger.info("id {0} limit {1} retrieved {2} drain {3} batch {4} count {5}".format(cursor_id, limit, retrieved, drain_cursor, batch_size, count))
 
         result = {}
         coll = db[collection_name]
 
-        cursor = recreate_cursor(coll, cursor_id, 0, retrieved, batch_size, 
+        cursor = recreate_cursor(coll, cursor_id, 0, retrieved, batch_size,
                                  count)
         if cursor is None:
             query = request.json.get('query')
@@ -246,8 +243,6 @@ def db_collection_find(res_id, collection_name):
                 projection=projection,
                 skip=skip, limit=limit,
                 batch_size=batch_size)
-            print(dir(cursor))
-            print(cursor.count())
             # count is only available before cursor is read so we include it
             # in the first response
             result['count'] = cursor.count(with_limit_and_skip=True)

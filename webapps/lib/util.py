@@ -69,6 +69,14 @@ class WrappedCollection(object):
     def name(self):
         return self.coll.name
 
+    @property
+    def full_name(self):
+        return self.coll.full_name
+
+    @property
+    def uuid_subtype(self):
+        return self.coll.uuid_subtype
+
     def insert(self, *args, **kwargs):
         return self.coll.insert(*args, **kwargs)
 
@@ -114,6 +122,13 @@ class WrappedDatabase(object):
 
     def __getattr__(self, name):
         return WrappedCollection(self, name, self.res_id)
+
+    @property
+    def connection(self):
+        return self.db.connection
+
+    def _fix_incoming(self, *args, **kwargs):
+        return self.db._fix_incoming(*args, **kwargs)
 
     def drop_database(self):
         collections = self.db[CLIENTS_COLLECTION].find_one(
