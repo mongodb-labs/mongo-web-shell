@@ -29,6 +29,9 @@ db = None
 class KeepAliveCursorManager(CursorManager):
     """A cursor manager that does not kill cursors
     """
+    def __init__(self, connection):
+        super(KeepAliveCursorManager, self).__init__(connection)
+
     def close(self, cursor_id):
         # refuse to kill the cursor
         pass
