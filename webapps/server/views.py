@@ -33,8 +33,25 @@ from webapps.lib.util import (
     get_collection_names
 )
 
+_logger = logging.getLogger(__name__)
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
+
+pretty_insert = 'WriteResult({{ "nInserted" : {0} }})'
+pretty_bulk_insert = """BulkWriteResult({{
+    "writeErrors" : [ ],
+    "writeConcernErrors" : [ ],
+    "nInserted" : {0},
+    "nUpserted" : 0,
+    "nMatched" : 0,
+    "nModified" : 0,
+    "nRemoved" : 0,
+    "upserted" : [ ]
+}})"""
+pretty_update = 'WriteResult({{ "nMatched" : {0}, "nUpserted" : 0, "nModified" : {1} }})'
+pretty_upsert = 'WriteResult({{ "nMatched" : {0}, "nUpserted" : {1}, "nModified" : {2}, "_id": {3} }})'
+pretty_remove = 'WriteResult({{ "nRemoved" : {0} }})'
+
 
 
 def generate_res_id():
@@ -222,12 +239,14 @@ def db_collection_insert(res_id, collection_name):
 
         # Attempt Insert
         try:
-            _id = db[collection_name].insert(document)
+            res = db[collection_name].insert(document)
         except (DuplicateKeyError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-        if _id:
-            pretty_response = 'WriteResult({ "nInserted" : 1 })'
-    return to_json({'_id': _id, 'pretty': pretty_response})
+        if isinstance(res, list):
+            pretty_response = pretty_bulk_insert.format(len(res))
+        else:
+            pretty_response = pretty_insert.format(1)
+    return to_json({'pretty': pretty_response})
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT'])
@@ -263,8 +282,17 @@ def db_collection_update(res_id, collection_name):
 
         # Attempt Update
         try:
-            db[collection_name].update(query, update, upsert, multi=multi)
-            return empty_success()
+            res = db[collection_name].update(query, update, upsert, multi=multi)
+            _logger.info("res: {0}".format(res))
+            n_matched = 0 if res.get('upserted') else res.get('n') 
+            n_upserted = 1 if res.get('upserted') else 0
+            n_modified = res.get('nModified', 0)
+            if n_upserted:
+                _id = res.get('upserted')[0].get('_id')
+                pretty_response = pretty_upsert.format(n_matched, n_upserted, n_modified, _id)
+            else:
+                pretty_response = pretty_update.format(n_matched, n_modified)
+            return to_json({'pretty': pretty_response})
         except (DuplicateKeyError,
             InvalidDocument,
             InvalidId,
@@ -298,8 +326,23 @@ def db_collection_save(res_id, collection_name):
 
         # Save document
         try:
-            db[collection_name].save(document)
-            return empty_success()
+            if "_id" not in document:
+                res = db[collection_name].insert(document)
+                if res:
+                    res_len = len(res) if isinstance(res, list) else 1
+                    pretty_response = pretty_insert.format(res_len)
+            else:
+                res = db[collection_name].update({"_id": document["_id"]},
+                    document, True)
+                n_matched = 0 if res.get('upserted') else 1
+                n_upserted = 1 if res.get('upserted') else 0
+                n_modified = res.get('nModified', 0)
+                if n_upserted:
+                    _id = res.get('upserted')[0].get('_id')
+                    pretty_response = pretty_upsert.format(n_matched, n_upserted, n_modified, _id)
+                else:
+                    pretty_response = pretty_update.format(n_matched, n_modified)
+            return to_json({'pretty': pretty_response})
         except (InvalidId, TypeError, InvalidDocument, DuplicateKeyError) as e:
             raise MWSServerError(400, str(e))
 
@@ -310,18 +353,17 @@ def db_collection_save(res_id, collection_name):
 def db_collection_remove(res_id, collection_name):
     parse_get_json()
     constraint = request.json.get('constraint') if request.json else {}
-    just_one = request.json and request.json.get('just_one', False)
+    options = request.json and request.json.get('options', False)
+    multi = not options.get('justOne')
 
     with UseResId(res_id) as db:
         collection = db[collection_name]
         try:
-            if just_one:
-                collection.find_and_modify(constraint, remove=True)
-            else:
-                collection.remove(constraint)
+            res = collection.remove(constraint, multi=multi)
+            pretty_response = pretty_remove.format(res.get('n'))
         except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-        return empty_success()
+        return to_json({'pretty': pretty_response})
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop', methods=['DELETE'])

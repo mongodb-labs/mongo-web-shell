@@ -85,10 +85,10 @@ mongo.Shell.prototype.injectHTML = function () {
   this.evaluator.setGlobal('db', this.db);
 };
 
-mongo.Shell.prototype.clear = function () {                                                         
-    this.responseBlock.setValue("");                                                                
-    this.hasShownResponse = false;                                                                  
-};  
+mongo.Shell.prototype.clear = function () {
+    this.responseBlock.setValue("");
+    this.hasShownResponse = false;
+};
 
 mongo.Shell.prototype.attachClickListener = function () {
   this.$rootElement.click(function () {

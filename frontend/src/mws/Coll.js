@@ -79,20 +79,25 @@ mongo.Coll.prototype.count = function (query, projection) {
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
+  var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell,
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', shell,
     function(data){
-        this.shell.insertResponseLine(data['pretty']);
+        shell.insertResponseLine(data['pretty']);
     });
 };
 
 mongo.Coll.prototype.save = function (doc) {
   var url = this.urlBase + 'save';
   var params = {document: doc};
+  var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.save', arguments,
     {collection: this.name});
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionSave', this.shell);
+  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionSave', shell,
+    function(data){
+        shell.insertResponseLine(data['pretty']);
+    });
 };
 
 /**
@@ -100,12 +105,24 @@ mongo.Coll.prototype.save = function (doc) {
  * success, the item(s) are removed from the collection, otherwise a failure
  * message is printed and an error is thrown.
  */
-mongo.Coll.prototype.remove = function (constraint, justOne) {
+mongo.Coll.prototype.remove = function (constraint, options) {
+  var shell = this.shell;
+  if (typeof(options) != "object"){
+    var justOne = options
+    options = {'justOne': !!justOne}
+  }
+  if (!constraint) {
+    shell.insertError("remove needs a query");
+    return;
+  }
   var url = this.urlBase + 'remove';
-  var params = {constraint: constraint, just_one: justOne};
+  var params = {constraint: constraint, options: options};
   mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', this.shell);
+  mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', shell,
+    function(data){
+        shell.insertResponseLine(data['pretty']);
+    });
 };
 
 /**
@@ -119,6 +136,7 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
  */
 mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   var url = this.urlBase + 'update';
+  var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.update', arguments,
                                {collection: this.name});
 
@@ -126,8 +144,7 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   if (typeof upsert === 'object'){
     if (multi !== undefined){
       var msg = 'Fourth argument must be empty when specifying upsert and multi with an object';
-      this.shell.insertResponseLine('ERROR: ' + msg);
-      console.error('dbCollectionUpdate fail: ' + msg);
+      this.shell.insertError(msg);
       throw {message: 'dbCollectionUpdate: Syntax error'};
     }
     multi = upsert.multi;
@@ -135,7 +152,10 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   }
 
   var params = {query: query, update: update, upsert: !!upsert, multi: !!multi};
-  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', this.shell);
+  mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', shell,
+    function(data){
+        shell.insertResponseLine(data['pretty']);
+    });
 };
 
 /**
@@ -145,9 +165,13 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
+  var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', this.shell);
+  mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', shell,
+    function(){
+        shell.insertResponseLine("true");
+    });
 };
 
 /**

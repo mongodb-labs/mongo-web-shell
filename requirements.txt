@@ -4,7 +4,7 @@ PyYAML==3.10
 Werkzeug==0.8.3
 distribute==0.6.35
 wsgiref==0.1.2
-pymongo==2.5
+pymongo==2.7
 mock==1.0.1
 APScheduler==2.1.0
 requests==2.0.0
