@@ -55,6 +55,7 @@ class WrappedCollection(object):
 
     def __init__(self, db, coll_name, res_id):
         self.res_id = res_id
+        self.database = db
         self.db = db
         self.unqualified_name = coll_name
 
@@ -153,11 +154,16 @@ class WrappedDatabase(object):
 
 
 class UseResId:
-    def __init__(self, res_id):
+    def __init__(self, res_id, db=None):
         self.res_id = str(res_id)
+        self.db = db
 
     def __enter__(self):
-        return WrappedDatabase(get_db(), self.res_id)
+        if self.db is None:
+            db = get_db()
+        else:
+            db = self.db
+        return WrappedDatabase(db, self.res_id)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass

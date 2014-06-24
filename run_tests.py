@@ -16,9 +16,4 @@ import nose
 
 if __name__ == '__main__':
     result = nose.runmodule(name='tests', argv=[
-           '',
-           '-s',
-           '--verbose',
-           '--logging-level=INFO',
-           '--rednose',
-           ])
+        '', '-s', '--verbose', '--logging-level=INFO', '--rednose', ])

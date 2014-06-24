@@ -32,6 +32,9 @@ mongo.Cursor = function (collection, query, projection) {
   this._query = query || null;
   this._fields = projection || null;
   this._executed = false;
+  this._cursorId = 0;
+  this._count = 0; // total docs to return with skip and limit
+  this._retrieved = 0;
   this._result = [];
   console.debug('Created mongo.Cursor:', this);
 };
@@ -41,11 +44,14 @@ mongo.Cursor = function (collection, query, projection) {
  * methods such as sort() and enabling result set iteration methods such as
  * next(). Will execute onSuccess on query success, or instantly if the query
  * was previously successful. onSuccess will be called asynchronously by
- * default, or synchronously if given false for the async parameter.
+ * default, or synchronously if given false for the async parameter. drainCursor
+ * specifies whether the all remaining results on cursor should be returned.
  */
-mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
+mongo.Cursor.prototype._executeQuery = function (onSuccess, async, drainCursor) {
   async = typeof async !== 'undefined' ? async : true;
-  if (!this._executed) {
+  drainCursor = typeof drainCursor !== 'undefined' ? drainCursor : false;
+  if ((!this._executed || this._retrieved < this._count) &&
+      (this._result.length === 0 || drainCursor)) {
     console.debug('Executing query:', this);
 
     var url = this._coll.urlBase + 'find';
@@ -54,10 +60,17 @@ mongo.Cursor.prototype._executeQuery = function (onSuccess, async) {
     if (this._fields) { params.projection = this._fields; }
     if (this._skip) { params.skip = this._skip; }
     if (this._limit) { params.limit = this._limit; }
-    if (this._sort) {params.sort = this._sort; }
+    if (this._sort) { params.sort = this._sort; }
+    if (this._cursorId) { params.cursor_id = this._cursorId; }
+    if (this._retrieved) { params.retrieved = this._retrieved; }
+    if (this._count) { params.count = this._count; }
+    if (drainCursor) { params.drain_cursor = drainCursor; }
     var wrappedSuccess = function (data) {
       mongo.events.callbackTrigger(this._shell, 'cursor.execute', data.result.slice());
       this._storeQueryResult(data.result);
+      this._cursorId = data.cursor_id || this._cursorId;
+      this._count = data.count || this._count;
+      this._retrieved += data.result.length;
       if (onSuccess) {
         onSuccess();
       }
@@ -189,6 +202,10 @@ mongo.Cursor.prototype.limit = function (limit) {
   return this;
 };
 
+mongo.Cursor.prototype.batchSize = function () {
+  throw new Error('batchSize() is disallowed in the web shell');
+};
+
 mongo.Cursor.prototype.toArray = function (callback) {
   var context = this._shell.evaluator.pause();
   if (this._arr) {
@@ -215,7 +232,7 @@ mongo.Cursor.prototype.toArray = function (callback) {
     if (callback) {
       callback(this._arr);
     }
-  }.bind(this));
+  }.bind(this), true, true);
 };
 
 mongo.Cursor.prototype.count = function (useSkipLimit) {
