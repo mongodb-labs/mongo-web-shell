@@ -1,31 +1,17 @@
-<!-----------------------------------------------------------------------------
-    Copyright 2013 10gen Inc.
-
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
------------------------------------------------------------------------------->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="IE=8">
     <title>Try MongoDB</title>
-    <link rel="stylesheet" type="text/css" href="lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" type="text/css" href="dist/mongoWebShell.min.css" />
+    <link rel="stylesheet" type="text/css" href="src/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="src/lib/codemirror/lib/codemirror.css" />
+    <link rel="stylesheet" type="text/css" href="src/lib/codemirror/theme/solarized.css" />
+    <!-- build:css webshell.css -->
+    <link rel="stylesheet" type="text/css" href="mongoWebShell.css" />
     <link rel="stylesheet" type="text/css" href="header.css" />
     <link rel="stylesheet" type="text/css" href="footer.css" />
+    <!-- endbuild -->
 
     <style type="text/css">
     </style>
@@ -155,8 +141,37 @@
       </script>
     </div>
 
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
-    <script src="dist/mongoWebShell.js"></script>
+    <!-- vendor scripts -->
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script type="text/javascript" src="src/lib/es5-shim/es5-shim.min.js"></script>
+    <script type="text/javascript" src="src/lib/esprima/esprima.js"></script>
+    <script type="text/javascript" src="src/lib/falafel/falafel.browser.js"></script>
+    <script type="text/javascript" src="src/lib/noty/js/noty/jquery.noty.js"></script>
+    <script type="text/javascript" src="src/lib/noty/js/noty/layouts/top.js"></script>
+    <script type="text/javascript" src="src/lib/noty/js/noty/layouts/topCenter.js"></script>
+    <script type="text/javascript" src="src/lib/noty/js/noty/themes/default.js"></script>
+    <script type="text/javascript" src="src/lib/codemirror/lib/codemirror.js"></script>
+    <script type="text/javascript" src="src/lib/codemirror/mode/javascript/javascript.js"></script>
+    <script type="text/javascript" src="src/lib/codemirror/addon/edit/matchbrackets.js"></script>
+    <script type="text/javascript" src="src/lib/suspend.js/dist/suspend.js"></script>
+    <!-- build:js webshell.js -->
+    <script type="text/javascript" src="src/head.js"></script>
+    <script type="text/javascript" src="src/mws/Coll.js"></script>
+    <script type="text/javascript" src="src/mws/CollectionNameError.js"></script>
+    <script type="text/javascript" src="src/mws/Cursor.js"></script>
+    <script type="text/javascript" src="src/mws/Readline.js"></script>
+    <script type="text/javascript" src="src/mws/Shell.js"></script>
+    <script type="text/javascript" src="src/mws/config.js"></script>
+    <script type="text/javascript" src="src/mws/db.js"></script>
+    <script type="text/javascript" src="src/mws/events.js"></script>
+    <script type="text/javascript" src="src/mws/init.js"></script>
+    <script type="text/javascript" src="src/mws/jsonUtils.js"></script>
+    <script type="text/javascript" src="src/mws/keyword.js"></script>
+    <script type="text/javascript" src="src/mws/mutateSource.js"></script>
+    <script type="text/javascript" src="src/mws/request.js"></script>
+    <script type="text/javascript" src="src/mws/util.js"></script>
+    <script type="text/javascript" src="src/tail.js"></script>
+    <!-- endbuild -->
     <script type='text/javascript'>
       $(window).load(function(){
           $.extend(mongo.keyword, {
