@@ -48,7 +48,6 @@ def deploy(refspec):
 
 @task
 def swap_deploy(releasedir_map):
-    import pdb; pdb.set_trace()
     ## releasedir_map is a dict that maps host to releasedir
     releasedir = releasedir_map[env['host']]
 
