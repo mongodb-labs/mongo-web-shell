@@ -95,7 +95,6 @@ module.exports = function(grunt) {
         'usemin'
     ]);
 
-    grunt.registerTask('test', ['karma']);
-};
 /*
         'filerev', */
+};
