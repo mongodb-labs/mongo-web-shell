@@ -85,6 +85,8 @@ def load_deploy(refspec):
 
         with cd(basedir + releasedir):
             run('git checkout {0}'.format(refspec))
+            run('git submodule init')
+            run('git submodule update')
             run('virtualenv venv')
             with nested(
                 prefix('source venv/bin/activate'),
