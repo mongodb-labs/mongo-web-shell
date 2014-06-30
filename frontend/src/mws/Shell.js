@@ -136,7 +136,7 @@ mongo.Shell.prototype.eval = function (src) {
     } else {
       if (out instanceof mongo.Cursor) {
         out._printBatch();
-      } else if (out !== undefined) {
+      } else {
         this.insertResponseLine(out);
       }
     }

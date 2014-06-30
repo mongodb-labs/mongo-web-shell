@@ -17,20 +17,20 @@
 /* global mongo, console */
 mongo.Coll = function (db, name) {
   if (name.length > 80){
-		throw new mongo.CollectionNameError('Collection name must be 80 characters or less');
-	}
+    throw new mongo.CollectionNameError('Collection name must be 80 characters or less');
+  }
 
-	if (name.match(/(\$|\0)/)){
-		throw new mongo.CollectionNameError('Collection name may not contain $ or \\0');
-	}
+  if (name.match(/(\$|\0)/)){
+    throw new mongo.CollectionNameError('Collection name may not contain $ or \\0');
+  }
 
-	if (name.match(/^system\./)){
-		throw new mongo.CollectionNameError('Collection name may not begin with system.*');
-	}
+  if (name.match(/^system\./)){
+    throw new mongo.CollectionNameError('Collection name may not begin with system.*');
+  }
 
-	if (name === ''){
-		throw new mongo.CollectionNameError('Collection name may not be empty');
-	}
+  if (name === ''){
+    throw new mongo.CollectionNameError('Collection name may not be empty');
+  }
 
   this.name = name;
   this.db = db;
@@ -42,38 +42,69 @@ mongo.Coll.prototype.toString = function () {
   return this.db.toString() + '.' + this.name;
 };
 
-// Todo: rewrite documentation in this file to reflect it's new location
 
 /**
- * Makes a Cursor that is the result of a find request on the mongod backing
- * server.
+ * Prepare a cursor iterator that implements next() in a way the shell can
+ * utilize.
  */
 mongo.Coll.prototype.find = function (query, projection) {
+  var url = this.urlBase + 'find';
+  var shell = this.shell;
+  query = query || null;
+  projection = projection || null;
+  var cursor;
+
   mongo.events.functionTrigger(this.shell, 'db.collection.find', arguments,
                                {collection: this.name});
-  return new mongo.Cursor(this, query, projection);
+  params = {
+    query: query,
+    projection: projection
+  };
+
+  function findRequest(onSuccess, extraParams){
+    $.extend(params, extraParams);
+    mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFind', shell,
+      onSuccess);
+  }
+
+  cursor = new mongo.Cursor(this, findRequest);
+  return cursor;
 };
 
 mongo.Coll.prototype.findOne = function (query, projection) {
+  var self = this;
+  var url = this.urlBase + 'find_one';
+  var shell = this.shell;
+  query = query || null;
+  projection = projection || null;
+  var params = {
+    query: query,
+    projection: projection
+  };
+
+
   mongo.events.functionTrigger(this.shell, 'db.collection.findOne', arguments,
                                {collection: this.name});
-  var cursor = this.find(query, projection).limit(1);
-  var context = this.shell.evaluator.pause();
-  cursor.hasNext(function (hasNext) {
-    if (hasNext) {
-      cursor.next(function (next) {
-        this.shell.evaluator.resume(context, next);
-      }.bind(this));
-    } else {
-      this.shell.evaluator.resume(context, null);
-    }
-  }.bind(this));
+  var context = shell.evaluator.pause();
+  mongo.request.makeRequest(url, params, 'GET', 'dbCollectionFindOne', shell,
+        function(data){
+            shell.evaluator.resume(context, data);
+        });
 };
 
-mongo.Coll.prototype.count = function (query, projection) {
-  mongo.events.functionTrigger(this.shell, 'db.collection.count', arguments,
+mongo.Coll.prototype.count = function (query) {
+  var self = this;
+  var url = this.urlBase + 'count';
+  var shell = this.shell;
+  query = query || null;
+  var params = {query: query};
+  mongo.events.functionTrigger(shell, 'db.collection.count', arguments,
                                {collection: this.name});
-  return new mongo.Cursor(this, query, projection).count();
+  var context = shell.evaluator.pause();
+  mongo.request.makeRequest(url, params,'GET', 'dbCollectionCount', shell,
+      function(data){
+        shell.evaluator.resume(context, data);
+      });
 };
 
 mongo.Coll.prototype.insert = function (doc) {
@@ -82,9 +113,10 @@ mongo.Coll.prototype.insert = function (doc) {
   var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.insert', arguments,
                                {collection: this.name});
-  mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', shell,
+  var context = shell.evaluator.pause();
+  tst = mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', shell,
     function(data){
-        shell.insertResponseLine(data['pretty']);
+        shell.evaluator.resume(context, data['pretty']);
     });
 };
 
@@ -94,9 +126,10 @@ mongo.Coll.prototype.save = function (doc) {
   var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.save', arguments,
     {collection: this.name});
+  var context = shell.evaluator.pause();
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionSave', shell,
     function(data){
-        shell.insertResponseLine(data['pretty']);
+        shell.evaluator.resume(context, data['pretty']);
     });
 };
 
@@ -107,7 +140,7 @@ mongo.Coll.prototype.save = function (doc) {
  */
 mongo.Coll.prototype.remove = function (constraint, options) {
   var shell = this.shell;
-  if (typeof(options) != "object"){
+  if (typeof(options) !== "object"){
     var justOne = options
     options = {'justOne': !!justOne}
   }
@@ -119,9 +152,10 @@ mongo.Coll.prototype.remove = function (constraint, options) {
   var params = {constraint: constraint, options: options};
   mongo.events.functionTrigger(this.shell, 'db.collection.remove', arguments,
                                {collection: this.name});
+  var context = shell.evaluator.pause();
   mongo.request.makeRequest(url, params, 'DELETE', 'dbCollectionRemove', shell,
     function(data){
-        shell.insertResponseLine(data['pretty']);
+        shell.evaluator.resume(context, data['pretty']);
     });
 };
 
@@ -152,9 +186,10 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   }
 
   var params = {query: query, update: update, upsert: !!upsert, multi: !!multi};
+  var context = shell.evaluator.pause();
   mongo.request.makeRequest(url, params, 'PUT', 'dbCollectionUpdate', shell,
     function(data){
-        shell.insertResponseLine(data['pretty']);
+        shell.evaluator.resume(context, data['pretty']);
     });
 };
 
@@ -168,18 +203,19 @@ mongo.Coll.prototype.drop = function () {
   var shell = this.shell;
   mongo.events.functionTrigger(this.shell, 'db.collection.drop', arguments,
                                {collection: this.name});
+  var context = shell.evaluator.pause();
   mongo.request.makeRequest(url, null, 'DELETE', 'dbCollectionDrop', shell,
     function(){
-        shell.insertResponseLine("true");
+        shell.evaluator.resume(context, true);
     });
 };
 
 /**
  * Makes an aggregation request to the mongod instance on the backing server.
- * On success, the result of the aggregation is returned, otherwise a failure
- * message is printed and an error is thrown.
+ * A cursor object is created, and returned to the shell.
  */
 mongo.Coll.prototype.aggregate = function() {
+  var shell = this.shell;
   var query;
   if (arguments.length === 1 && $.isArray(arguments[0])) {
     query = arguments[0];
@@ -187,13 +223,14 @@ mongo.Coll.prototype.aggregate = function() {
     query = $.makeArray(arguments);
   }
   var url = this.urlBase + 'aggregate';
-  var context = this.shell.evaluator.pause();
-  var onSuccess = function(data){
-    this.shell.evaluator.resume(context, data);
-  }.bind(this);
-  mongo.events.functionTrigger(this.shell, 'db.collection.aggregate', arguments,
-                               {collection: this.name});
-  mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', this.shell, onSuccess);
+  mongo.events.functionTrigger(this.shell, 'db.collection.aggregate',
+                               arguments, {collection: this.name});
+  function aggregateRequest(onSuccess){
+    mongo.request.makeRequest(url, query, 'GET', 'dbCollectionAggregate', shell, onSuccess);
+  }
+
+  cursor = new mongo.Cursor(this, aggregateRequest);
+  return cursor;
 };
 
 mongo.Coll.prototype.__methodMissing = function (field) {

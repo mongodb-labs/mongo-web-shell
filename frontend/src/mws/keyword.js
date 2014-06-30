@@ -31,11 +31,10 @@ mongo.keyword = (function () {
 
   function it(shell) {
     var cursor = shell.lastUsedCursor;
-    if (cursor) {
+    if (cursor && cursor.hasNext()) {
       cursor._printBatch();
     } else {
       shell.insertResponseLine('no cursor');
-      console.warn('no cursor');
     }
   }
 

@@ -83,51 +83,25 @@ def to_json(result):
                 'JSON format.'
         raise MWSServerError(500, error)
 
-def create_cursor(collection, query=None, projection=None, sort=None, skip=0,
-                  limit=0, batch_size=-1):
-    # Need the below since mutable default values persist between calls
-    if query is None:
-        query = {}
-    if sort is None:
-        sort = {}
-
-    if batch_size == -1:
-        cursor = collection.find(query=query, projection=projection, skip=skip,
-                                 limit=limit)
-    else:
-        cursor = collection.find(query=query, projection=projection, skip=skip,
-                                 limit=limit).batch_size(batch_size)
-
-    if len(sort) > 0:
-        cursor.sort(sort)
-    return cursor
 
 
-def recreate_cursor(collection, cursor_id, conn_id, retrieved, batch_size,
-                    total_count):
+def recreate_cursor(collection, cursor_id, retrieved, batch_size):
     """
     Creates and returns a Cursor object based on an existing cursor in the
     in the server. If cursor_id is invalid, the returned cursor will raise
     OperationFailure on read. If batch_size is -1, then all remaining documents
     on the cursor are returned.
     """
-    import pdb; pdb.set_trace()
     if cursor_id == 0:
         return None
 
-    # since batch_size is not available when recreating a cursor, we have
-    # to make some decisions so that limit represents both batch_size and
-    # limit, and also accounts for pymongo subtracting retrieved from limit.
-    if batch_size == -1:
-        limit = (total_count - retrieved) + retrieved
-    elif total_count - retrieved > batch_size:
-        limit = batch_size + retrieved
-    else:
-        limit = (total_count - retrieved) + retrieved
-
     cursor_info = {'id': cursor_id, 'firstBatch': []}
-    cursor = CommandCursor(collection, cursor_info, conn_id,
+    _logger.info(
+        "collection: {0} cursor_info: {1} retrieved {2} batch_size {3}"
+        .format(collection, cursor_id, retrieved, batch_size))
+    cursor = CommandCursor(collection, cursor_info, 0,
                            retrieved=retrieved)
+    cursor.batch_size(batch_size)
 
     return cursor
 
@@ -213,68 +187,127 @@ def keep_mws_alive(res_id):
 
 # Read Methods
 
+
+@mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_count(res_id, collection_name):
+    parse_get_json()
+    with UseResId(res_id) as db:
+        query = request.json.get('query')
+        coll = db[collection_name]
+        count = coll.find(query).count()
+        return to_json(count)
+
+
+@mws.route('/<res_id>/db/<collection_name>/find_one', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_find_one(res_id, collection_name):
+    parse_get_json()
+    with UseResId(res_id) as db:
+        query = request.json.get('query')
+        projection = request.json.get('projection')
+        coll = db[collection_name]
+        doc = coll.find_one(query, projection)
+        return to_json(doc)
+
+
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @check_session_id
 @ratelimit
 def db_collection_find(res_id, collection_name):
+    parse_get_json()
+    result = {}
+    batch_size = current_app.config['CURSOR_BATCH_SIZE']
     with UseResId(res_id, db=get_keepalive_db()) as db:
-        parse_get_json()
-        cursor_id = int(request.json.get('cursor_id', 0))
         limit = request.json.get('limit', 0)
-        retrieved = request.json.get('retrieved', 0)
-        drain_cursor = request.json.get('drain_cursor', False)
-        batch_size = -1 if drain_cursor else current_app.config['CURSOR_BATCH_SIZE']
-        count = request.json.get('count', 0)
-        _logger.info("id {0} limit {1} retrieved {2} drain {3} batch {4} count {5}".format(cursor_id, limit, retrieved, drain_cursor, batch_size, count))
-
-        result = {}
         coll = db[collection_name]
+        query = request.json.get('query')
+        projection = request.json.get('projection')
+        skip = request.json.get('skip', 0)
+        sort = request.json.get('sort', {})
+        sort = sort.items()
 
-        cursor = recreate_cursor(coll, cursor_id, 0, retrieved, batch_size,
-                                 count)
-        if cursor is None:
-            query = request.json.get('query')
-            projection = request.json.get('projection')
-            skip = request.json.get('skip', 0)
-            sort = request.json.get('sort', {})
-            sort = sort.items()
-            cursor = create_cursor(
-                coll, query=query,
-                projection=projection,
-                skip=skip, limit=limit,
-                batch_size=batch_size)
-            # count is only available before cursor is read so we include it
-            # in the first response
-            result['count'] = cursor.count(with_limit_and_skip=True)
-            count = result['count']
+        cursor = coll.find(spec=query, fields=projection, skip=skip,
+                           limit=limit)
+        cursor.batch_size(batch_size)
 
-        if batch_size == -1:
-            num_to_return = count - retrieved
-        else:
-            num_to_return = batch_size if limit > batch_size or limit == 0 else limit
-        if num_to_return == 0:
-            result['result'] = [x for x in cursor]
-        else:
-            try:
-                result['result'] = []
-                for i in range(num_to_return):
-                    try:
-                        result['result'].append(cursor.next())
-                    except StopIteration:
-                        break
-            except OperationFailure as e:
-                return MWSServerError(400, 'Cursor not found')
+        if len(sort) > 0:
+            cursor.sort(sort)
+
+        # count is only available before cursor is read so we include it
+        # in the first response
+        result['count'] = cursor.count(with_limit_and_skip=True)
+        count = result['count']
+
+
+        num_to_return = min(limit, batch_size) if limit else batch_size
+
+        try:
+            result['result'] = []
+            for i in range(num_to_return):
+                try:
+                    result['result'].append(cursor.next())
+                except StopIteration:
+                    break
+        except OperationFailure as e:
+            return MWSServerError(400, 'Cursor not found')
 
         # cursor_id is too big as a number, use a string instead
         result['cursor_id'] = str(cursor.cursor_id)
         # close the Cursor object, but keep the cursor alive on the server
         del cursor
 
+        return to_json(result)
+
+
+@mws.route('/<res_id>/db/<collection_name>/next', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_cursor_next(res_id, collection_name):
+    parse_get_json()
+    result = {}
+    batch_size = current_app.config['CURSOR_BATCH_SIZE']
+    with UseResId(res_id, db=get_keepalive_db()) as db:
+        coll = db[collection_name]
+        cursor_id = int(request.json.get('cursor_id'))
+        retrieved = request.json.get('retrieved', 0)
+        drain_cursor = request.json.get('drain_cursor', False)
+        batch_size = -1 if drain_cursor else current_app.config['CURSOR_BATCH_SIZE']
+
+        cursor = recreate_cursor(coll, cursor_id, retrieved, batch_size)
+        try:
+            result['result'] = []
+            for i in range(batch_size):
+                try:
+                    result['result'].append(cursor.next())
+                except StopIteration:
+                    result['empty_cursor'] = True
+                    break
+        except OperationFailure as e:
+            return MWSServerError(400, 'Cursor not found')
+
         # kill cursor on server if all results are returned
-        if count == retrieved + len(result['result']):
-            kill_cursor(coll, long(result['cursor_id']))
+        if result.get('empty_cursor'):
+            kill_cursor(coll, long(cursor_id))
 
         return to_json(result)
+
+@mws.route('/<res_id>/db/<collection_name>/aggregate', methods=['GET'])
+@check_session_id
+def db_collection_aggregate(res_id, collection_name):
+    parse_get_json()
+    _logger.info("json: {0}".format(request.json))
+    with UseResId(res_id) as db:
+        try:
+            result = db[collection_name].aggregate(request.json)
+        except (InvalidId,
+            TypeError,
+            InvalidDocument,
+            OperationFailure) as e:
+            raise MWSServerError(400, str(e))
+    return to_json(result)
 
 
 @mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
@@ -293,20 +326,6 @@ def db_collection_count(res_id, collection_name):
         except InvalidDocument as e:
             raise MWSServerError(400, str(e))
 
-
-@mws.route('/<res_id>/db/<collection_name>/aggregate', methods=['GET'])
-@check_session_id
-def db_collection_aggregate(res_id, collection_name):
-    parse_get_json()
-    with UseResId(res_id) as db:
-        try:
-            result = db[collection_name].aggregate(request.json)
-        except (InvalidId,
-            TypeError,
-            InvalidDocument,
-            OperationFailure) as e:
-            raise MWSServerError(400, str(e))
-    return to_json(result)
 
 # Write Methods
 

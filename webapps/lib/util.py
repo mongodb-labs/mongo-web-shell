@@ -46,7 +46,7 @@ def get_environment(basedir):
     for env in ('devel', 'staging', 'prod'):
         if os.path.exists(os.path.join(basedir, env)):
             return env
-    return ''
+    return 'devel'
 
 def to_coll_name(res_id, name):
     return "{0}{1}".format(res_id, name)
@@ -91,6 +91,9 @@ class WrappedCollection(object):
 
     def find_one(self, *args, **kwargs):
         return self.coll.find_one(*args, **kwargs)
+
+    def count(self, *args, **kwargs):
+        return self.coll.count(*args, **kwargs)
 
     def find_and_modify(self, *args, **kwargs):
         return self.coll.find_and_modify(*args, **kwargs)
