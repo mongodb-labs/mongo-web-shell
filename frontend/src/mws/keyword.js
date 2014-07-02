@@ -63,8 +63,7 @@ mongo.keyword = (function () {
   }
 
   function use(shell) {
-    console.debug('cannot change db: functionality disabled.');
-    shell.insertResponseLine('Cannot change db: functionality disabled.');
+    shell.insertResponseLine('Cannot change db: the web shell only allows one db');
   }
 
   function reset(shell){
