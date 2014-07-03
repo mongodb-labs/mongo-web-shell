@@ -92,9 +92,8 @@ module.exports = function(grunt) {
         'concat',
         'uglify',
         'cssmin',
+        'filerev',
         'usemin'
     ]);
 
-/*
-        'filerev', */
 };
