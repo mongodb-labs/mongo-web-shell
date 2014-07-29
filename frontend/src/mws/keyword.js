@@ -96,6 +96,8 @@ mongo.keyword = (function () {
     shell.insertResponseLine('    List objects in collection foo.');
     shell.insertResponseLine('db.foo.find(query)', []);
     shell.insertResponseLine('    List objects in foo matching query.');
+    shell.insertResponseLine('db.foo.insert(object)', []);
+    shell.insertResponseLine('    Insert a new object into the collection foo');
     shell.insertResponseLine('db.foo.update(query, update, upsert, multi)', []);
     shell.insertResponseLine('    Updates an object matching query with the given ' +
         'update if no documents match and upsert is true, update is inserted if ' +

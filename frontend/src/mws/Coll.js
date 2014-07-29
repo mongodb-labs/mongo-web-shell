@@ -47,6 +47,10 @@ mongo.Coll.prototype.toString = function () {
 /**
  * Makes a Cursor that is the result of a find request on the mongod backing
  * server.
+ * @name find
+ * @param {object} query
+ * @param {object} projection
+ * @returns {mongo.Cursor}
  */
 mongo.Coll.prototype.find = function (query, projection) {
   mongo.events.functionTrigger(this.shell, 'db.collection.find', arguments,
@@ -54,6 +58,13 @@ mongo.Coll.prototype.find = function (query, projection) {
   return new mongo.Cursor(this, query, projection);
 };
 
+/**
+ * Finds a single document based on the query
+ * @name findOne
+ * @param {object} query
+ * @param {object} projection
+ * @returns {object}
+ */
 mongo.Coll.prototype.findOne = function (query, projection) {
   mongo.events.functionTrigger(this.shell, 'db.collection.findOne', arguments,
                                {collection: this.name});
@@ -70,12 +81,24 @@ mongo.Coll.prototype.findOne = function (query, projection) {
   }.bind(this));
 };
 
+/**
+ * Count number of matching documents in the db to a query.
+ * @name count
+ * @param {object} query
+ * @param {object} projection
+ * @returns {number}
+ */
 mongo.Coll.prototype.count = function (query, projection) {
   mongo.events.functionTrigger(this.shell, 'db.collection.count', arguments,
                                {collection: this.name});
   return new mongo.Cursor(this, query, projection).count();
 };
 
+/**
+ * Inserts a single document into MongoDB.
+ * @name insert
+ * @param {object} doc
+ */
 mongo.Coll.prototype.insert = function (doc) {
   var url = this.urlBase + 'insert';
   var params = {document: doc};
@@ -84,6 +107,11 @@ mongo.Coll.prototype.insert = function (doc) {
   mongo.request.makeRequest(url, params, 'POST', 'dbCollectionInsert', this.shell);
 };
 
+/**
+ * Save a document. Simple full document replacement function.
+ * @name save
+ * @param {object} doc
+ */
 mongo.Coll.prototype.save = function (doc) {
   var url = this.urlBase + 'save';
   var params = {document: doc};
@@ -96,6 +124,9 @@ mongo.Coll.prototype.save = function (doc) {
  * Makes a remove request to the mongod instance on the backing server. On
  * success, the item(s) are removed from the collection, otherwise a failure
  * message is printed and an error is thrown.
+ * @name remove
+ * @param {object} constraint
+ * @param {boolean} justOne
  */
 mongo.Coll.prototype.remove = function (constraint, justOne) {
   var url = this.urlBase + 'remove';
@@ -113,6 +144,12 @@ mongo.Coll.prototype.remove = function (constraint, justOne) {
  * Optionally, an object which specifies whether to perform an upsert and/or
  * a multiple update may be used instead of the individual upsert and multi
  * parameters.
+ *
+ * @name update
+ * @param {object} query
+ * @param update
+ * @param {object} upsert
+ * @param {object} multi
  */
 mongo.Coll.prototype.update = function (query, update, upsert, multi) {
   var url = this.urlBase + 'update';
@@ -139,6 +176,8 @@ mongo.Coll.prototype.update = function (query, update, upsert, multi) {
  * Makes a drop request to the mongod instance on the backing server. On
  * success, the collection is dropped from the database, otherwise a failure
  * message is printed and an error is thrown.
+ *
+ * @name drop
  */
 mongo.Coll.prototype.drop = function () {
   var url = this.urlBase + 'drop';
@@ -151,6 +190,9 @@ mongo.Coll.prototype.drop = function () {
  * Makes an aggregation request to the mongod instance on the backing server.
  * On success, the result of the aggregation is returned, otherwise a failure
  * message is printed and an error is thrown.
+ *
+ * @name aggregate
+ * @param {object} query
  */
 mongo.Coll.prototype.aggregate = function() {
   var query;

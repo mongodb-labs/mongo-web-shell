@@ -22,3 +22,6 @@
 [submodule "frontend/lib/bootstrap"]
 	path = frontend/lib/bootstrap
 	url = git@github.com:twbs/bootstrap.git
+[submodule "frontend/lib/doctrine"]
+	path = frontend/lib/doctrine
+	url = git@github.com:Constellation/doctrine.git

@@ -31,6 +31,8 @@ var JS_LIB = [
   LIB_DIR + 'codemirror/lib/codemirror.js',
   LIB_DIR + 'codemirror/mode/javascript/javascript.js',
   LIB_DIR + 'codemirror/addon/edit/matchbrackets.js',
+  LIB_DIR + 'codemirror/addon/hint/show-hint.js',
+  LIB_DIR + 'doctrine/doctrine.js',
   LIB_DIR + 'suspend.js/dist/suspend.js'
 ];
 
@@ -163,6 +165,7 @@ module.exports = function (grunt) {
           'frontend/dist/mongoWebShell.min.css': [
             LIB_DIR + 'codemirror/lib/codemirror.css',
             LIB_DIR + 'codemirror/theme/solarized.css',
+            LIB_DIR + 'codemirror/addon/hint/show-hint.css',
             FRONTEND_DIR + 'mongoWebShell.css'
           ]
         }

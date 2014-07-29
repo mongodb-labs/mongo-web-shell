@@ -28,20 +28,24 @@ mongo.Readline = function (codemirror, submitFunction) {
 };
 
 mongo.Readline.prototype.keydown = function (event) {
+  // check if the autocomplete window is open, if it is, just return, that gets priority
+  if (this.inputBox.state.completionActive) {
+    return;
+  }
   var key = mongo.config.keycodes;
   var line;
   switch (event.keyCode) {
-  case key.up:
-    line = this.getOlderHistoryEntry();
-    break;
-  case key.down:
-    line = this.getNewerHistoryEntry();
-    break;
-  case key.enter:
-    this.submit(this.inputBox.getValue());
-    break;
-  default:
-    return;
+    case key.up:
+      line = this.getOlderHistoryEntry();
+      break;
+    case key.down:
+      line = this.getNewerHistoryEntry();
+      break;
+    case key.enter:
+      this.submit(this.inputBox.getValue());
+      break;
+    default:
+      return;
   }
 
   if (line !== undefined && line !== null) {
