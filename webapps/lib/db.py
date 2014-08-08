@@ -41,7 +41,7 @@ def get_keepalive_db(MWSExceptions=True):
     config = current_app.config
     try:
         client = pymongo.MongoClient(
-            config.get('DB_HOST'),
+            ', '.join(config.get('DB_HOSTS')),
             config.get('DB_PORT'))
         client.set_cursor_manager(KeepAliveCursorManager)
         db = client[config.get('DB_NAME')]
@@ -50,6 +50,7 @@ def get_keepalive_db(MWSExceptions=True):
         return db
     except Exception as e:
         if MWSExceptions:
+            _logger.error(e)
             debug = config['DEBUG']
             msg = str(e) if debug else 'An unexpected error occurred.'
             raise MWSServerError(500, msg)
@@ -64,7 +65,7 @@ def get_db(MWSExceptions=True):
         return db
     try:
         client = pymongo.MongoClient(
-            config.get('DB_HOSTS'),
+            ', '.join(config.get('DB_HOSTS')),
             config.get('DB_PORT'))
         db = client[config.get('DB_NAME')]
         if 'username' in config:
@@ -72,6 +73,7 @@ def get_db(MWSExceptions=True):
         return db
     except Exception as e:
         if MWSExceptions:
+            _logger.error(e)
             debug = config['DEBUG']
             msg = str(e) if debug else 'An unexpected error occurred.'
             raise MWSServerError(500, msg)
