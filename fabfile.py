@@ -97,7 +97,7 @@ def load_deploy(refspec):
             run('npm cache clean')
             run('npm install --production')
             run('grunt build')
-            run('touch {0}'.format(role))
+            run('touch webapps/server/{0}'.format(role))
 
             # Upgrade ownership and permissions
             run('chgrp -R {0} .'.format(project_user))
