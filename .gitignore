@@ -1,15 +1,16 @@
 # local settings
 .env
+deploy.yml
 
 # packages
 node_modules/
 venv/
 
 # build
-frontend/dist/
 .grunt/
 _SpecRunner.html
 *.pyc
+.tmp/
 
 # env!
 webapps/*/devel

@@ -46,7 +46,7 @@ def get_environment(basedir):
     for env in ('devel', 'staging', 'prod'):
         if os.path.exists(os.path.join(basedir, env)):
             return env
-    return ''
+    return 'devel'
 
 def to_coll_name(res_id, name):
     return "{0}{1}".format(res_id, name)
@@ -55,6 +55,7 @@ class WrappedCollection(object):
 
     def __init__(self, db, coll_name, res_id):
         self.res_id = res_id
+        self.database = db
         self.db = db
         self.unqualified_name = coll_name
 
@@ -67,6 +68,14 @@ class WrappedCollection(object):
     @property
     def name(self):
         return self.coll.name
+
+    @property
+    def full_name(self):
+        return self.coll.full_name
+
+    @property
+    def uuid_subtype(self):
+        return self.coll.uuid_subtype
 
     def insert(self, *args, **kwargs):
         return self.coll.insert(*args, **kwargs)
@@ -82,6 +91,9 @@ class WrappedCollection(object):
 
     def find_one(self, *args, **kwargs):
         return self.coll.find_one(*args, **kwargs)
+
+    def count(self, *args, **kwargs):
+        return self.coll.count(*args, **kwargs)
 
     def find_and_modify(self, *args, **kwargs):
         return self.coll.find_and_modify(*args, **kwargs)
@@ -113,6 +125,13 @@ class WrappedDatabase(object):
 
     def __getattr__(self, name):
         return WrappedCollection(self, name, self.res_id)
+
+    @property
+    def connection(self):
+        return self.db.connection
+
+    def _fix_incoming(self, *args, **kwargs):
+        return self.db._fix_incoming(*args, **kwargs)
 
     def drop_database(self):
         collections = self.db[CLIENTS_COLLECTION].find_one(
@@ -153,11 +172,16 @@ class WrappedDatabase(object):
 
 
 class UseResId:
-    def __init__(self, res_id):
+    def __init__(self, res_id, db=None):
         self.res_id = str(res_id)
+        self.db = db
 
     def __enter__(self):
-        return WrappedDatabase(get_db(), self.res_id)
+        if self.db is None:
+            db = get_db()
+        else:
+            db = self.db
+        return WrappedDatabase(db, self.res_id)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass

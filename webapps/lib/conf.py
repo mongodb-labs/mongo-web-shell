@@ -40,6 +40,11 @@ config_location_map = {
 }
 
 
+def get_deploy_config():
+    with open('deploy.yml', 'r') as conf_file:
+        conf = yaml.load(conf_file)
+    return conf
+
 
 def update_config(app, prefix, environment):
     """Overrides the flask app's configuration with envvar where applicable."""

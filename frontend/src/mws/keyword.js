@@ -31,11 +31,10 @@ mongo.keyword = (function () {
 
   function it(shell) {
     var cursor = shell.lastUsedCursor;
-    if (cursor) {
+    if (cursor && cursor.hasNext()) {
       cursor._printBatch();
     } else {
       shell.insertResponseLine('no cursor');
-      console.warn('no cursor');
     }
   }
 
@@ -64,8 +63,7 @@ mongo.keyword = (function () {
   }
 
   function use(shell) {
-    console.debug('cannot change db: functionality disabled.');
-    shell.insertResponseLine('Cannot change db: functionality disabled.');
+    shell.insertResponseLine('Cannot change db: the web shell only allows one db');
   }
 
   function reset(shell){

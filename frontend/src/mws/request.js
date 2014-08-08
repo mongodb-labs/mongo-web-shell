@@ -35,8 +35,7 @@ mongo.request = (function () {
       }
     }, 'json').fail(function (jqXHR, textStatus, errorThrown) {
         $.each(shells, function (i, shell) {
-          shell.insertResponseLine('Failed to create resources on DB on server');
-          console.error('AJAX request failed:', textStatus, errorThrown);
+          shell.insertError('Failed to create resources on DB on server');
         });
       });
   }
@@ -79,7 +78,7 @@ mongo.request = (function () {
         // Hack: suspend.js doesn't seem to handle errors for single command
         // evaluations.
         if(context == null){
-            shell.insertResponseLine("Error: " + message);
+            shell.insertError(message);
         }
         console.error(name + ' fail:', textStatus, errorThrown);
         shell.enableInput(true);

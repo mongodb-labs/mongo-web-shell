@@ -43,6 +43,9 @@ QUOTA_COLLECTION_SIZE = 5 * 1024 * 1024  # size quota in bytes
 # 1+: user may have up to # collections per res_id
 QUOTA_NUM_COLLECTIONS = 8
 
+# Cursors config
+CURSOR_BATCH_SIZE = 20  # default max docs to return for a query
+
 # Logging config
 ADMIN_EMAILS = ''
 LOG_FILE_PATH = ''

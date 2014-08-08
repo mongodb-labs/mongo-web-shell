@@ -23,18 +23,37 @@ from flask import Blueprint, current_app, make_response, request, session
 app = current_app
 from pymongo.errors import (InvalidDocument, OperationFailure,
     InvalidId, DuplicateKeyError)
+from pymongo.command_cursor import CommandCursor
+from pymongo.errors import InvalidDocument, OperationFailure
 
 from webapps.lib import CLIENTS_COLLECTION
 from webapps.lib.MWSServerError import MWSServerError
-from webapps.lib.db import get_db
+from webapps.lib.db import get_db, get_keepalive_db
 from webapps.lib.decorators import check_session_id, ratelimit
 from webapps.lib.util import (
     UseResId,
     get_collection_names
 )
 
+_logger = logging.getLogger(__name__)
 
 mws = Blueprint('mws', __name__, url_prefix='/mws')
+
+pretty_insert = 'WriteResult({{ "nInserted" : {0} }})'
+pretty_bulk_insert = """BulkWriteResult({{
+    "writeErrors" : [ ],
+    "writeConcernErrors" : [ ],
+    "nInserted" : {0},
+    "nUpserted" : 0,
+    "nMatched" : 0,
+    "nModified" : 0,
+    "nRemoved" : 0,
+    "upserted" : [ ]
+}})"""
+pretty_update = 'WriteResult({{ "nMatched" : {0}, "nUpserted" : 0, "nModified" : {1} }})'
+pretty_upsert = 'WriteResult({{ "nMatched" : {0}, "nUpserted" : {1}, "nModified" : {2}, "_id": {3} }})'
+pretty_remove = 'WriteResult({{ "nRemoved" : {0} }})'
+
 
 
 def generate_res_id():
@@ -63,6 +82,33 @@ def to_json(result):
         error = 'Error in find while trying to convert the results to ' + \
                 'JSON format.'
         raise MWSServerError(500, error)
+
+
+
+def recreate_cursor(collection, cursor_id, retrieved, batch_size):
+    """
+    Creates and returns a Cursor object based on an existing cursor in the
+    in the server. If cursor_id is invalid, the returned cursor will raise
+    OperationFailure on read. If batch_size is -1, then all remaining documents
+    on the cursor are returned.
+    """
+    if cursor_id == 0:
+        return None
+
+    cursor_info = {'id': cursor_id, 'firstBatch': []}
+    _logger.info(
+        "collection: {0} cursor_info: {1} retrieved {2} batch_size {3}"
+        .format(collection, cursor_id, retrieved, batch_size))
+    cursor = CommandCursor(collection, cursor_info, 0,
+                           retrieved=retrieved)
+    cursor.batch_size(batch_size)
+
+    return cursor
+
+
+def kill_cursor(collection, cursor_id):
+    client = collection.db.db.connection
+    client.kill_cursors([cursor_id])
 
 
 @mws.after_request
@@ -141,28 +187,127 @@ def keep_mws_alive(res_id):
 
 # Read Methods
 
+
+@mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_count(res_id, collection_name):
+    parse_get_json()
+    with UseResId(res_id) as db:
+        query = request.json.get('query')
+        coll = db[collection_name]
+        count = coll.find(query).count()
+        return to_json(count)
+
+
+@mws.route('/<res_id>/db/<collection_name>/find_one', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_find_one(res_id, collection_name):
+    parse_get_json()
+    with UseResId(res_id) as db:
+        query = request.json.get('query')
+        projection = request.json.get('projection')
+        coll = db[collection_name]
+        doc = coll.find_one(query, projection)
+        return to_json(doc)
+
+
 @mws.route('/<res_id>/db/<collection_name>/find', methods=['GET'])
 @check_session_id
 @ratelimit
 def db_collection_find(res_id, collection_name):
     parse_get_json()
-    query = request.json.get('query')
-    projection = request.json.get('projection')
-    skip = request.json.get('skip', 0)
-    limit = request.json.get('limit', 0)
-    sort = request.json.get('sort', {})
-    sort = sort.items()
-
-    with UseResId(res_id) as db:
+    result = {}
+    batch_size = current_app.config['CURSOR_BATCH_SIZE']
+    with UseResId(res_id, db=get_keepalive_db()) as db:
+        limit = request.json.get('limit', 0)
         coll = db[collection_name]
+        query = request.json.get('query')
+        projection = request.json.get('projection')
+        skip = request.json.get('skip', 0)
+        sort = request.json.get('sort', {})
+        sort = sort.items()
+
+        cursor = coll.find(spec=query, fields=projection, skip=skip,
+                           limit=limit)
+        cursor.batch_size(batch_size)
+
+        if len(sort) > 0:
+            cursor.sort(sort)
+
+        # count is only available before cursor is read so we include it
+        # in the first response
+        result['count'] = cursor.count(with_limit_and_skip=True)
+        count = result['count']
+
+
+        num_to_return = min(limit, batch_size) if limit else batch_size
+
         try:
-            cursor = coll.find(query, projection, skip, limit)
-            if len(sort) > 0:
-                cursor.sort(sort)
-            documents = list(cursor)
-        except (InvalidId, TypeError, OperationFailure) as e:
+            result['result'] = []
+            for i in range(num_to_return):
+                try:
+                    result['result'].append(cursor.next())
+                except StopIteration:
+                    break
+        except OperationFailure as e:
+            return MWSServerError(400, 'Cursor not found')
+
+        # cursor_id is too big as a number, use a string instead
+        result['cursor_id'] = str(cursor.cursor_id)
+        # close the Cursor object, but keep the cursor alive on the server
+        del cursor
+
+        return to_json(result)
+
+
+@mws.route('/<res_id>/db/<collection_name>/next', methods=['GET'])
+@check_session_id
+@ratelimit
+def db_cursor_next(res_id, collection_name):
+    parse_get_json()
+    result = {}
+    batch_size = current_app.config['CURSOR_BATCH_SIZE']
+    with UseResId(res_id, db=get_keepalive_db()) as db:
+        coll = db[collection_name]
+        cursor_id = int(request.json.get('cursor_id'))
+        retrieved = request.json.get('retrieved', 0)
+        drain_cursor = request.json.get('drain_cursor', False)
+        batch_size = -1 if drain_cursor else current_app.config['CURSOR_BATCH_SIZE']
+
+        cursor = recreate_cursor(coll, cursor_id, retrieved, batch_size)
+        try:
+            result['result'] = []
+            for i in range(batch_size):
+                try:
+                    result['result'].append(cursor.next())
+                except StopIteration:
+                    result['empty_cursor'] = True
+                    break
+        except OperationFailure as e:
+            return MWSServerError(400, 'Cursor not found')
+
+        # kill cursor on server if all results are returned
+        if result.get('empty_cursor'):
+            kill_cursor(coll, long(cursor_id))
+
+        return to_json(result)
+
+@mws.route('/<res_id>/db/<collection_name>/aggregate', methods=['GET'])
+@check_session_id
+def db_collection_aggregate(res_id, collection_name):
+    parse_get_json()
+    _logger.info("json: {0}".format(request.json))
+    with UseResId(res_id) as db:
+        try:
+            result = db[collection_name].aggregate(request.json)
+        except (InvalidId,
+            TypeError,
+            InvalidDocument,
+            OperationFailure) as e:
             raise MWSServerError(400, str(e))
-        return to_json({'result': documents})
+    return to_json(result)
 
 
 @mws.route('/<res_id>/db/<collection_name>/count', methods=['GET'])
@@ -181,20 +326,6 @@ def db_collection_count(res_id, collection_name):
         except InvalidDocument as e:
             raise MWSServerError(400, str(e))
 
-
-@mws.route('/<res_id>/db/<collection_name>/aggregate', methods=['GET'])
-@check_session_id
-def db_collection_aggregate(res_id, collection_name):
-    parse_get_json()
-    with UseResId(res_id) as db:
-        try:
-            result = db[collection_name].aggregate(request.json)
-        except (InvalidId,
-            TypeError,
-            InvalidDocument,
-            OperationFailure) as e:
-            raise MWSServerError(400, str(e))
-    return to_json(result)
 
 # Write Methods
 
@@ -222,10 +353,14 @@ def db_collection_insert(res_id, collection_name):
 
         # Attempt Insert
         try:
-            _id = db[collection_name].insert(document)
+            res = db[collection_name].insert(document)
         except (DuplicateKeyError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-    return to_json({'_id': _id})
+        if isinstance(res, list):
+            pretty_response = pretty_bulk_insert.format(len(res))
+        else:
+            pretty_response = pretty_insert.format(1)
+    return to_json({'pretty': pretty_response})
 
 
 @mws.route('/<res_id>/db/<collection_name>/update', methods=['PUT'])
@@ -261,8 +396,17 @@ def db_collection_update(res_id, collection_name):
 
         # Attempt Update
         try:
-            db[collection_name].update(query, update, upsert, multi=multi)
-            return empty_success()
+            res = db[collection_name].update(query, update, upsert, multi=multi)
+            _logger.info("res: {0}".format(res))
+            n_matched = 0 if res.get('upserted') else res.get('n') 
+            n_upserted = 1 if res.get('upserted') else 0
+            n_modified = res.get('nModified', 0)
+            if n_upserted:
+                _id = res.get('upserted')[0].get('_id')
+                pretty_response = pretty_upsert.format(n_matched, n_upserted, n_modified, _id)
+            else:
+                pretty_response = pretty_update.format(n_matched, n_modified)
+            return to_json({'pretty': pretty_response})
         except (DuplicateKeyError,
             InvalidDocument,
             InvalidId,
@@ -296,8 +440,23 @@ def db_collection_save(res_id, collection_name):
 
         # Save document
         try:
-            db[collection_name].save(document)
-            return empty_success()
+            if "_id" not in document:
+                res = db[collection_name].insert(document)
+                if res:
+                    res_len = len(res) if isinstance(res, list) else 1
+                    pretty_response = pretty_insert.format(res_len)
+            else:
+                res = db[collection_name].update({"_id": document["_id"]},
+                    document, True)
+                n_matched = 0 if res.get('upserted') else 1
+                n_upserted = 1 if res.get('upserted') else 0
+                n_modified = res.get('nModified', 0)
+                if n_upserted:
+                    _id = res.get('upserted')[0].get('_id')
+                    pretty_response = pretty_upsert.format(n_matched, n_upserted, n_modified, _id)
+                else:
+                    pretty_response = pretty_update.format(n_matched, n_modified)
+            return to_json({'pretty': pretty_response})
         except (InvalidId, TypeError, InvalidDocument, DuplicateKeyError) as e:
             raise MWSServerError(400, str(e))
 
@@ -308,18 +467,17 @@ def db_collection_save(res_id, collection_name):
 def db_collection_remove(res_id, collection_name):
     parse_get_json()
     constraint = request.json.get('constraint') if request.json else {}
-    just_one = request.json and request.json.get('just_one', False)
+    options = request.json and request.json.get('options', False)
+    multi = not options.get('justOne')
 
     with UseResId(res_id) as db:
         collection = db[collection_name]
         try:
-            if just_one:
-                collection.find_and_modify(constraint, remove=True)
-            else:
-                collection.remove(constraint)
+            res = collection.remove(constraint, multi=multi)
+            pretty_response = pretty_remove.format(res.get('n'))
         except (InvalidDocument, InvalidId, TypeError, OperationFailure) as e:
             raise MWSServerError(400, str(e))
-        return empty_success()
+        return to_json({'pretty': pretty_response})
 
 
 @mws.route('/<res_id>/db/<collection_name>/drop', methods=['DELETE'])
@@ -343,4 +501,3 @@ def db_drop(res_id):
 @check_session_id
 def db_get_collection_names(res_id):
     return to_json({'result': get_collection_names(res_id)})
-
