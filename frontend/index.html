@@ -111,37 +111,6 @@
       </div>
     </div>
     <div style='display: none;'>
-      <form class="lpeRegForm formNotEmpty" method="post" enctype="application/x-www-form-urlencoded" action="http://info.mongodb.com/index.php/leadCapture/save" id="mktForm_1115" name="mktForm_1115"><ul class='mktLblLeft'><li  class='mktField' ><label>First Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="FirstName" id="FirstName" type='text' value=""  maxlength='255' tabIndex='1' /><span class='mktFormMsg'></span></span></li>
-      <li  class='mktField' ><label>Last Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="LastName" id="LastName" type='text' value=""  maxlength='255' tabIndex='2' /><span class='mktFormMsg'></span></span></li>
-      <li  class='mktField' ><label>Email Address:</label><span class='mktInput'><input class='mktFormText mktFormEmail' name="Email" id="Email" type='text' value=""  maxlength='255' tabIndex='3' /><span class='mktFormMsg'></span></span></li>
-      <li  class='mktField' ><label>Company Name:</label><span class='mktInput'><input class='mktFormText mktFormString' name="Company" id="Company" type='text' value=""  maxlength='255' tabIndex='4' /><span class='mktFormMsg'></span></span></li>
-      <li id='mktFrmButtons'><label>&nbsp;</label><input id='mktFrmSubmit' type='submit' style="width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;" value='Submit' name='submitButton' onclick='formSubmit(document.getElementById("mktForm_1115")); return false;' />&nbsp;<input style='width: auto; overflow: visible; padding-left: .25em; padding-right: .25em;' id='mktFrmReset' type='reset'
-                    value='Clear' name='resetButton' onclick='formReset(document.getElementById("mktForm_1115")); return false;' /></li>  </ul>
-        <span style="display:none;"><input type="text" name="_marketo_comments" value="" /></span>
-        <input type="hidden" name="lpId" value="1861" />
-        <input type="hidden" name="subId" value="158" />
-        <input type="hidden" name="munchkinId" value="017-HGS-593" />
-        <input type="hidden" name="kw" value="" />
-        <input type="hidden" name="cr" value="" />
-        <input type="hidden" name="searchstr" value="" />
-        <input type="hidden" name="lpurl" value="http://info.mongodb.com/Trymongodborg_form.html?cr={creative}&kw={keyword}" />
-        <input type="hidden" name="formid" value="1115" />
-        <input type="hidden" name="returnURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
-        <input type="hidden" name="retURL" value="http://info.mongodb.com/Trymongodborg_form.html" />
-        <input type="hidden" name="returnLPId" value="1861" />
-        <input type="hidden" name="_mkt_disp" value="return" />
-            <input type="hidden" name="_mkt_trk" value="id:017-HGS-593&token:_mch-mongodb.com-1377711905212-62158" />
-        </form>
-      <script type="text/javascript" src="http://info.mongodb.com/js/mktFormSupport.js"></script>
-      <script type="text/javascript">
-      function formSubmit(elt) {
-        return Mkto.formSubmit(elt);
-      }
-      function formReset(elt) {
-        return Mkto.formReset(elt);
-      }
-      </script>
-    </div>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
     <!-- build:js vendor.js -->
@@ -190,34 +159,12 @@
           shell.insertResponseLine("To try out an interactive tutorial type `tutorial`");
           mongo.events.bindOnce(shell, 'tutorial', advanceTutorial);
           mongo.events.bind(shell, 'next', advanceTutorial);
-          mongo.events.bind(shell, 'db.collection.insert', checkSubmission);
-          mongo.events.bind(shell, 'db.collection.save', checkSubmission);
           var turn = 0;
-          function checkSubmission(data){
-              if(data['collection'] === "contest"){
-                  var doc = data['arguments'][0];
-                  var firstName = doc['first_name'];
-                  var lastName = doc['last_name'];
-                  var email = doc['email'];
-                  if(firstName && firstName.length && lastName && lastName.length && email && email.length){
-                      $('#FirstName').val(firstName);
-                      $('#LastName').val(lastName);
-                      $('#Email').val(email);
-                      $.post($('form').attr('action'), $('form').serialize())
-                      $('#mktFrm_1115').submit();
-                      shell.insertResponseLine("Excellent!  You've been entered in a contest to win a MongoDB prize!");
-                      mongo.events.unbind(shell, 'db.collection.insert', checkSubmission);
-                      mongo.events.unbind(shell, 'db.collection.save', checkSubmission);
-                  }
-              }
-          }
           function advanceTutorial(){
               var nextTurn = tutorial[turn];
               if(nextTurn){
                   nextTurn();
                   turn += 1;
-              }else{
-                  shell.insertResponseLine("You've reached the end of the tutorial!");
               }
           }
           tutorial = {
@@ -381,6 +328,30 @@
     <span id="bizible-settings" data-attach-secure-forms="true" style="display: none;"></span>
 
     <script async type='text/javascript'src='//cdn.bizible.com/_biz-a.js' ></script>
+    <!-- Load Marketo Munchkin async -->
+    <script type="text/javascript">
+        (function() {
+          var didInit = false;
+          function initMunchkin() {
+            if(didInit === false) {
+              didInit = true;
+              Munchkin.init('017-HGS-593');
+            }
+          }
+          var s = document.createElement('script');
+          s.type = 'text/javascript';
+          s.async = true;
+          s.src = '//munchkin.marketo.net/munchkin.js';
+          s.onreadystatechange = function() {
+            if (this.readyState == 'complete' || this.readyState == 'loaded') {
+              initMunchkin();
+            }
+          };
+          s.onload = initMunchkin;
+          document.getElementsByTagName('head')[0].appendChild(s);
+        })();
+    </script>
+    <!-- End Load Marketo Munchkin async -->
 </body>
 </html>
 
