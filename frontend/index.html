@@ -262,7 +262,7 @@
                   var intro = "To delete matching documents only, add a query selector to the remove method:"
                   var removeQuery = "  db.users.remove({name: 'Sue'});";
                   var removeAll = "To delete everything from a collection:";
-                  var removeAllQuery = "  db.scores.remove();";
+                  var removeAllQuery = "  db.scores.remove({});";
                   shell.insertResponseLine(intro);
                   shell.insertResponseLine(removeQuery, []);
                   shell.insertResponseLine(removeAll);
